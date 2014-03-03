@@ -1,0 +1,140 @@
+#!/usr/bin/lua
+--[[==========================================================================#
+# This is a program to automate the alignment of a raw tilt series, use the   #
+# program RAPTOR to make a final alignment, use IMOD to estimate the defocus  #
+# and then correct the CTF by appropriate phase flipping, and then finally    #
+# using eTomo to create the reconstruction.                                   #
+#-----------------------------------------------------------------------------#
+# Author: Dustin Morado                                                       #
+# Written: February 27th 2014                                                 #
+# Contact: Dustin.Morado@uth.tmc.edu                                          #
+#-----------------------------------------------------------------------------#
+# Arguments: arg[1]= image stack file <filename.st>                           #
+#            arg[2]= fiducial size in nm <integer>                            #
+#==========================================================================--]]
+
+-- We need the struct library to handle reading the binary header
+local struct = require 'struct'
+local lfs = require 'lfs'
+
+rootDir=os.getenv("TOMOAUTOROOT")
+startDir=lfs.currentdir()
+globalConfigFile=rootDir .. "/tomoAuto.conf"
+localConfigFile=""
+
+--[[ 
+
+	TODO handle arguments 
+
+--]]
+
+filename=string.sub(arg[1],1,-4)
+
+local function checkFreeSpace()
+	local f=assert(io.popen("df -h "..startDir,r))
+	local space=tonumber(string.sub(string.match(f:read('*a'),".%d%%"),1,-2))
+	f:close()
+	return assert(space<=98,"Error: Disk usage is at or above 98% please make more space")
+end
+checkFreeSpace()
+
+local function runCheck(functionString)
+	local newFunctionString=functionString.." 2> /dev/null" -- Hide shell error message
+	local _,_,exit=os.execute(newFunctionString)
+	return assert(exit==0,"Error running "..functionString)
+end
+
+io.stdout:write("Running IMOD extracttilts for " .. file .. "\n")
+extractTiltsString="extracttilts -input "..arg[1].." -output "..filename..".rawtlt 2>&1 > /dev/null"
+runCheck(extractTiltsString)
+
+
+local function findPIR()
+	local f=assert(io.open(arg[1],"rb"))
+	local nx=struct.unpack('i4',f:read(4)) -- number of column
+	local ny=struct.unpack('i4',f:read(4)) -- number of rows
+	local nz=struct.unpack('i4',f:read(4)) -- number of sections
+	local mode=struct.unpack('i4',f:read(4)) -- map mode
+
+	f:seek('set',224)
+	local feiLabel=struct.unpack('c3',f:read(3)) -- Whether or not we have an FEI file
+
+	f:seek('set',1064)
+	local tiltAxis=struct.unpack('f',f:read(4)) -- Tilt axis rotation angle
+	if feiLabel=="Fei" then 
+		tiltAxis = tiltAxis*-1
+	end
+	local pixelSize=struct.unpack('f',f:read(4)) -- Pixel size in various sizes
+	if feiLabel=="Fei" then
+		pixelSize=pixelSize*1e9 -- convert from SI to nanometers
+	else
+		pixelSize=pixelSize/10 -- convert from Angstroms to namometers
+	end
+	local fidPix=math.floor((arg[2]/pixelSize)+0.5) -- Fiducial size in pixels rounded
+	return nx, ny, tiltAxis, fidPix, feiLabel
+end
+
+nx, ny, tiltAxis, fidPix, feiLabel=findPIR()
+
+assert(lfs.mkdir('Final_files'),"Error: Failed to make a directory. Check file permissions!")
+runCheck("cp "..arg[1].." Final_files/.")
+
+-- If we are dealing with an FEI file we should use protomo to clean and adjust
+-- the values of the image stack. This fixes the compensation done by the FEI
+-- software to adjust the data values from unsigned ints to signed ones. This
+-- shuold create a much more realistic histogram of densities.
+if feiLabel=="Fei" then
+	io.stdout:write("Making TIFF IMAGE copies to be cleaned\n")
+	runCheck("mrc2tif "..arg[1].." image 2>&1 > /dev/null")
+	assert(lfs.mkdir('clean'),"Error: Failed to make a directory. Check file permissions!")
+	assert(lfs.mkdir('raw'),"Error: Failed to make a directory. Check file permissions!")
+	runCheck("mv image* raw/.")
+	lfs.chdir('./clean')
+	runCheck("tomo-clean.sh 2>&1 > /dev/null")
+	io.stdout:write("Running concat to create a new stack from the cleaned image\n")
+	runCheck("concat -dim 3 image* "..filename.."_clean.st")
+	io.stdout:write("Formatting the header to the ccp4 format\n")
+	runCheck("cutimage -fmt ccp4 "..filename.."_clean.st "..filename.."_cleanccp4.st")
+	io.output(io.stdout):write("Fixing the header of the file\n")
+	runCheck("fixheader -mrc "..filename.."_cleanccp4.st")
+	runCheck("mv "..filename.."_cleanccp4.st ../.")
+	lfs.chdir('..')
+	runCheck("rm -r clean raw")
+	runCheck("mv "..arg[1].." "..filename.."_preclean.st && mv "..filename.."_cleanccp4.st "..arg[1])
+end
+
+-- A lot of the IMOD commands require command(COM) files to parse settings
+-- correctly. These settings are held in tomoAuto's global config file, but the
+-- user can also write local configs to overwrite the global settings on a per
+-- job basis. We write these files here:
+writeComFiles(arg[1],tiltAxis,globalConfigFile,localConfigFile)
+
+-- We should always remove the Xrays from the image using ccderaser
+io.stdout:write("Running ccderaser\n")
+runCheck('submfg -t ccderaser.com')
+runCheck('mv '..arg[1].." "..filename.."_orig.st && mv "..filename.."_fixed.st "..arg[1])
+
+io.stdout:write("Running Coarse Alignment for "..arg[1].."\n")
+runCheck('submfg -t tiltxcorr.com xftoxg.com newstack.com')
+
+-- Now we run RAPTOR to produce a succesfully aligned stack
+io.stdout:write("Now running RAPTOR (please be patient this may take some time)\n")
+io.stdout:write("RAPTOR starting for "..arg[1].."..........\n")
+checkFreeSpace()
+runCheck("RAPTOR -execPath /usr/local/RAPTOR3.0/bin -path "..
+	     startDir.." -input "..filename..".preali -output "..startDir.."/raptor1 -diameter "..fidPix)
+runCheck("mv "..startDir.."/raptor1/align/"..filename..".ali "..startDir)
+runCheck("mv "..startDir.."/raptor1/IMOD/"..filename..".tlt "..startDir)
+runCheck("mv "..startDir.."/raptor1/IMOD/"..filename..".xf "..startDir)
+io.stdout:write("RAPTOR alignment for "..arg[1].." SUCCESSFUL\n")
+checkFreeSpace()
+
+-- Now we use RAPTOR to make a fiducial model to erase the gold in the stack
+io.stdout:write("Now running RAPTOR to track gold to erase particles\n")
+io.stdout:write("RAPTOR starting for "..arg[1].."..........\n")
+checkFreeSpace()
+runCheck("RAPTOR -execPath /usr/local/RAPTOR3.0/bin/ -path "..
+	  startDir.." -input "..filename..".ali -output "..
+	  startDir.."/raptor2 -diameter "..fidPix.." -tracking")
+runCheck("mv "..startDir.."/raptor2/IMOD/"..filename..".fid.txt "..startDir.."/"..filename.."_erase.fid")
+
