@@ -71,10 +71,10 @@ local function findPIR()
 		pixelSize=pixelSize/10 -- convert from Angstroms to namometers
 	end
 	local fidPix=math.floor((arg[2]/pixelSize)+0.5) -- Fiducial size in pixels rounded
-	return nx, ny, tiltAxis, fidPix, feiLabel
+	return nx, ny, tiltAxis, pixelSize, fidPix, feiLabel
 end
 
-nx, ny, tiltAxis, fidPix, feiLabel=findPIR()
+nx, ny, tiltAxis, pixelSize, fidPix, feiLabel=findPIR()
 
 assert(lfs.mkdir('Final_files'),"Error: Failed to make a directory. Check file permissions!")
 runCheck("cp "..arg[1].." Final_files/.")
@@ -107,7 +107,7 @@ end
 -- correctly. These settings are held in tomoAuto's global config file, but the
 -- user can also write local configs to overwrite the global settings on a per
 -- job basis. We write these files here:
-writeComFiles(arg[1],tiltAxis,globalConfigFile,localConfigFile)
+writeComFiles(arg[1],tiltAxis,nx,ny,globalConfigFile,localConfigFile)
 
 -- We should always remove the Xrays from the image using ccderaser
 io.stdout:write("Running ccderaser\n")
@@ -138,3 +138,12 @@ runCheck("RAPTOR -execPath /usr/local/RAPTOR3.0/bin/ -path "..
 	  startDir.."/raptor2 -diameter "..fidPix.." -tracking")
 runCheck("mv "..startDir.."/raptor2/IMOD/"..filename..".fid.txt "..startDir.."/"..filename.."_erase.fid")
 
+-- Make the erase model more suitable for erasing gold
+runCheck('submfg -t model2point.com point2model.com')
+runCheck("mv "..startDir.."/"..filename.."_erase.fid "..startDir.."/"..filename.."_erase.fid_orig")
+runCheck("mv "..startDir.."/"..filename.."_erase.scatter.fid "..startDir.."/"..filename.."_erase.fid")
+io.stdout:write("Fiducial model created for "..arg[1].." SUCCESSFUL\n")
+
+-- Ok for the new stuff here we add CTF correction 
+-- noise background is in /usr/local/ImodCalib/CTFNoise/K2/K2Noise.cfg
+--
