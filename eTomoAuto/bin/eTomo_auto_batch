@@ -1,0 +1,174 @@
+#!/bin/bash
+#==============================================================================#
+# This script is a designed to run eTomo_auto for a number of .st files and    #
+# sort them into there appropriate sub-directories.                            #
+#------------------------------------------------------------------------------#
+# Author: Dustin Morado                                                        #
+# Written: January 27th 2011                                                   #
+# Contact: Dustin.Morado@uth.tmc.edu                                           #
+#------------------------------------------------------------------------------#
+# Arguments: None                                                              #
+#==============================================================================#
+
+# new attempt at a much more robust batch script for running multiple instances
+# of eTomo_auto
+# Set a variable for the current directory
+start_dir=$PWD
+# Handling arguments with getopts
+Cflag=-1
+gflag=-1
+hflag=-1
+jflag=-1
+nflag=-1
+Pflag=-1
+xflag=-1
+fflag=-1
+while getopts 'C:f:ghjn:P:x' OPTION
+do
+    case $OPTION in
+        C)
+            Cflag=1
+            Lconf="$OPTARG"
+            ;;
+        f)  fflag=1
+            fval="$OPTARG"
+            ;;
+        g)  gflag=1
+            ;;
+        h)  hflag=1
+            ;;
+        j)  jflag=1
+            ;;
+        n)  nflag=1
+            nval=$OPTARG
+            ;;
+        P)  Pflag=1
+            procnum="$OPTARG"
+            ;;
+        x)  xflag=1
+            ;;
+        ?)  printf "%b" "Invalid options please use eTomo_auto_batch.sh -h \
+                         for usage\n" >&2
+            exit 0
+            ;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+# Handle the -h flag
+if [ $hflag -ge 0 ]; then
+    printf "%b" "Usage: etomo_auto_batch.sh [Options]\n"
+    printf "%b" "Options:\n"
+    printf "%b" " -C <localfile>\n"
+    printf "%b" "    Use a local configuration file on top of the one located at\n"
+    printf "%b" "    \$ETOMOROOT/etomorc. This file will be sourced second and\n"
+    printf "%b" "    is used to overwrite the defaults in the global config\n"
+    printf "%b" " -f <integer>\n"
+    printf "%b" "    Specify the fiducial diameter size in nm.\n"
+    printf "%b" " -g\n"
+    printf "%b" "    Use GPU processing to run the tilt command, this option\n"
+    printf "%b" "    is easier than writing a local config just for the GPU\n"
+    printf "%b" " -h\n"
+    printf "%b" "    Print this help message\n"
+    printf "%b" " -j\n"
+    printf "%b" "    Use this option if the data is obtained with a JEM\n"
+    printf "%b" " -n <integer>\n"
+    printf "%b" "    Run eTomo_auto in batches of <integer> 4 is a good pick\n"
+    printf "%b" " -P <integer>\n"
+    printf "%b" "    Use <integer> processors in running tilt. Cannot be used\n"
+    printf "%b" "    with -g\n"
+    printf "%b" " -x\n"
+    printf "%b" "    Use ccderaser to fix errant xrays.\n"
+    printf "%b" "    This is similar to the preprocessing\n"
+    printf "%b" "    step done in the first option in eTomo\n"
+    exit 0
+fi
+
+# New less intense way of setting command line...
+cmd="eTomo_auto"
+if [ $Cflag -ge 0 ]; then
+    cmd="$cmd -C $start_dir/$Lconf"
+fi
+
+if [ $gflag -ge 0 ]; then
+    cmd="$cmd -g"
+fi
+
+if [ $jflag -ge 0 ]; then
+    cmd="$cmd -j"
+fi
+
+if [ $Pflag -ge 0 ]; then
+    cmd="$cmd -P $procnum"
+fi
+
+if [ $xflag -ge 0 ]; then
+    cmd="$cmd -x"
+fi
+
+# Set the size of the fiducials
+if [ $fflag -ge 0 ]; then
+    fiddiam=$fval
+else
+    fiddiam=15
+fi
+
+if [ $nflag -ge 0 ]; then
+    ls -1 *.st > ZLIST && lines=$(wc -l ZLIST | cut -d ' ' -f1)
+    let max=$lines/$nval && let rem=$lines%$nval
+    count=0
+    while [ $count -lt $max ]; do
+        innercount=1
+        while [ $innercount -lt $nval ]; do
+            let iter=$innercount+$count*$nval
+            file=$(sed -n ${iter}p ZLIST)
+            base=$(basename $file .st)
+            mkdir $base && mv $file $base/.
+            cd $base && eval "$cmd $file $fiddiam" &
+            sleep 5s && cd $start_dir
+            let innercount+=1
+        done
+        let iter+=1
+        file=$(sed -n ${iter}p ZLIST)
+        base=$(basename $file .st)
+        mkdir $base && mv $file $base/.
+        cd $base && eval "$cmd $file $fiddiam" 
+        roundup_exit=$?
+        if [ $roundup_exit -ne 0 ]; then
+            printf "%b" "ERROR: running batch UNSUCCESSFUL\n" >&2 
+            exit 3
+        fi
+        sleep 5s && cd $start_dir
+        let count+=1
+    done
+    if [ $rem -gt 0 ]; then
+        remiter=1
+        while [ $remiter -le $rem ]; do
+            let iter+=1
+            file=$(sed -n ${iter}p ZLIST)
+            base=$(basename $file .st)
+            mkdir $base && mv $file $base/.
+            cd $base && eval "$cmd $file $fiddiam"
+            roundup_exit=$?
+            if [ $roundup_exit -ne 0 ]; then
+                printf "%b" "ERROR: running batch UNSUCCESFUL\n" >&2
+                exit 3
+            fi
+            sleep 5s && cd $start_dir 
+            let remiter+=1
+        done
+    fi
+    rm ZLIST
+else
+    for f in ./*.st; do
+        base=$(basename $f .st)
+        mkdir $base && mv $f $base/.
+        cd $base && eval "$cmd $f $fiddiam"  
+        roundup_exit=$?
+        if [ $roundup_exit -ne 0 ]; then
+            printf "%b" "ERROR: running batch UNSUCCESSFUL\n" >&2
+            exit 3
+        fi
+        cd ..
+    done
+fi

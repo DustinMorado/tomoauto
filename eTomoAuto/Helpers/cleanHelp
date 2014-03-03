@@ -1,0 +1,66 @@
+#!/bin/bash
+#==============================================================================#
+# A script to use the protomo package to clean and adjust the values of the    #
+# image stack. This fixes the compesation done by the FEI software to adjust   #
+# the data values from unsigned integers to signed ones. This should create a  #
+# much more realistic histogram of densities.                                  #
+#------------------------------------------------------------------------------#
+# Author: Dustin Morado                                                        #
+# Written: January 27th 2011                                                   #
+# Contact: Dustin.Morado@uth.tmc.edu                                           #
+#------------------------------------------------------------------------------#
+# Arguments: $1= image file stack <filename.st>                                #
+#==============================================================================#
+
+base=$(basename $1 .st)
+
+printf "%b" "Making TIFF IMAGE copies to be cleaned\n"
+set -e
+mrc2tif $1 image 2>&1 > /dev/null 
+mrc2tif_exit=$?
+if [ $mrc2tif_exit -ne 0 ]; then
+    printf "%b" "ERROR: mrc2tif UNSUCCESSFUL\n"
+    exit 3
+fi
+
+mkdir clean raw 
+mv image* raw/.  
+cd clean 
+tomo-clean.sh 2>&1 > /dev/null
+clean_exit=$?
+if [ $clean_exit -ne 0 ]; then
+    printf "%b" "ERROR: tomo-clean UNSUCCESSFUL\n"
+    exit 3
+fi
+
+printf "%b" "Running concat to create a new stack from the cleaned image\n"
+concat -dim 3 image* ${base}_clean.st
+concat_exit=$?
+if [ $concat_exit -ne 0 ]; then
+    printf "%b" "ERROR: concat UNSUCCESSFUL\n"
+    exit 3
+fi
+
+printf "%b" "Formatting the header to the ccp4 format\n"
+cutimage -fmt ccp4 ${base}_clean.st ${base}_cleanccp4.st
+cutimage_exit=$?
+if [ $cutimage_exit -ne 0 ]; then
+    printf "%b" "ERROR: cutimage UNSUCCESSFUL\n"
+    exit 3
+fi
+
+printf "%b" "Fixing the header of the file\n"
+fixheader -mrc ${base}_cleanccp4.st
+fixheader_exit=$?
+if [ $fixheader_exit -ne 0 ]; then
+    printf "%b" "ERROR: fixheader UNSUCCESSFUL\n"
+    exit 3
+fi
+
+mv ${base}_cleanccp4.st ../. 
+cd .. 
+rm -r clean raw 
+mv $1 ${base}_preclean.st 
+mv ${base}_cleanccp4.st $1 
+set +e
+exit 0
