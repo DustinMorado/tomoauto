@@ -199,6 +199,23 @@ local function writeTiltCom(inputFile,nx,ny,gConfig,lConfig)
 	if tiltXTILTFILE_use then file:write("XTILTFILE "..filename..".xtilt\n") end
 end
 
+local function writeCTFPlotterCom(inputFile,tiltAxis,pixelSize,gConfig,lConfig)
+	local comName="ctfplotter.com"
+	local filename=string.sub(inputFile,1,-4)
+	dofile(gConfig)
+	if lConfig then dofile(lConfig) end
+
+	local file=assert(io.open(comName,"w"))
+	file:write("# command file to run ctfplotter\n")
+	file:write("####CreatedVersion#### 3.12.20\n")
+	file:write("$ctfplotter -StandardInput\n")
+	file:write("InputStack "..inputFile.."\n")
+	file:write("AngleFile "..filename..".tlt\n")
+	file:write("DefocusFile "..filename..".defocus\n")
+	file:write("AxisAngle "..tiltAxis.."\n")
+	file:write("PixelSize "..pixelSize.."\n")
+	file:write("ExpectedDefocus "..ctfExpectedDefocus.."\n")
+
 function writeComFiles(inputFile,rotatianAngle,nx,ny,gConfig,lConfig)
 	writeCcderaserCom(inputFile,gConfig,lConfig)
 	writeTiltXCorrCom(inputFile,rotationAngle,gConfig,lConfig)
