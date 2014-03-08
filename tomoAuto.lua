@@ -21,8 +21,7 @@ local struct = assert(require 'struct')
 local lfs = assert(require 'lfs')
 package.path = package.path .. ';' .. os.getenv('TOMOAUTOROOT') .. '/lib/?.lua'
 local comWriter = assert(require 'comWriter')
-
---	TODO handle arguments 
+local tomoOpt = assert(require 'tomoOpt')
 
 --[[==========================================================================#
 #                              Local Functions                                #
@@ -148,6 +147,8 @@ end
 --[[==========================================================================#
 #                                  tomoAuto                                   #
 #==========================================================================--]]
+shortOptsString('cghL:p:')
+longOptsString('CTF, GPU, help, config, parallel ')
 startDir = lfs.currentdir()
 filename = string.sub(arg[1], 1, -4)
 nx, ny, nz, feiLabel, tiltAxis, pixelSize, fidPix = findITP(arg[1], arg[2])
