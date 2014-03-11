@@ -3,10 +3,14 @@ local tomoOpt = {}
 
 local function shiftArg(arg, shift)
    local length = #arg
+   local toRemove = shift
    for i = length, 1, -1 do
       if i > shift then
          arg[i - shift] = arg[i]
-         table.remove(arg)
+         if toRemove > 0 then
+            table.remove(arg)
+            toRemove = toRemove - 1
+         end
       elseif i > (length - shift) then
          table.remove(arg)
       end

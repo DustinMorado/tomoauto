@@ -268,7 +268,7 @@ end
 local function writeCTFCorrectCom(inputFile,pixelSize)
 	local comName = 'ctfcorrection.com'
 	local filename = string.sub(inputFile,1, -4)
-	local file=assert(io.open(comName, 'w'))
+	local file = assert(io.open(comName, 'w'))
 	file:write('# Command file to run ctfphaseflip\n')
 	file:write('####CreatedVersion#### 3.12.20\n')
 	file:write('$ctfphaseflip -StandardInput\n')
@@ -287,7 +287,20 @@ local function writeCTFCorrectCom(inputFile,pixelSize)
 	file:close()
 end
 
-function comWriter.write(inputFile, tiltAxis, nx, ny, pixelSize)
+local function writeNADEED3DCom()
+   local comName = 'nad_eed_3d.com'
+   local file = assert(io.open(comName, 'w'))
+   file:write('# Command file to run nad_eed_3d\n')
+   file:write('####CreatedVersion#### 3.12.20\n')
+   file:write('$nad_eed_3d -k 2.56 -n 15 INPUTFILE OUTPUTFILE\n')
+   file:close()
+end
+
+function comWriter.write(inputFile, tiltAxis, nx, ny, pixelSize, configFile)
+   if configFile then
+      localConfig = loadfile(configFile)
+      if localConfig then localConfig() end
+   end
    writeCcderaserCom(inputFile)
    writeTiltXCorrCom(inputFile, tiltAxis)
    writeXfToXgCom(inputFile)
@@ -297,6 +310,7 @@ function comWriter.write(inputFile, tiltAxis, nx, ny, pixelSize)
    writeTiltCom(inputFile, nx, ny)
    writeCTFPlotterCom(inputFile, tiltAxis, pixelSize)
    writeCTFCorrectCom(inputFile,pixelSize)
+   writeNADEED3DCom()
 end
 
 return comWriter

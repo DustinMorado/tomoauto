@@ -28,6 +28,22 @@ local tomoOpt = assert(require 'tomoOpt')
 #==========================================================================--]]
 
 --[[==========================================================================#
+#                                  dispHelp                                   #
+#-----------------------------------------------------------------------------#
+# A function that displays the usage and options of tomoAuto                  #
+#==========================================================================--]]
+local function dispHelp()
+   io.write([[Usage: tomoAuto [-c -g -h -L <config> -p <procnum>]<file.st><fid>
+       Automates the alignment of tilt series and the reconstruction of these 
+       series into 3D tomograms.]])
+   io.write('\n\n-c, --CTF\t\tApplies CTF correction to the aligned stack\n')
+   io.write('-g, --GPU\t\tUses GPGPU methods to speed up the reconstruction\n')
+   io.write('-h, --help\t\tPrints this information and exits\n')
+   io.write('-L, --config\t\tSources a local config file\n')
+   io.write('-p, --parallel\t\tUses multiple processors to speed up tilt\n')
+   return
+end
+--[[==========================================================================#
 #                             checkFreeSpace                                  #
 #-----------------------------------------------------------------------------#
 # A function to check that there is enough free space to successfully run     #
@@ -128,27 +144,36 @@ local function writeLog()
    local model2pointLog= model2point:read('*a'); model2point:close()
    local point2model = assert(io.open('point2model.log', 'r'))
    local point2modelLog= point2model:read('*a'); point2model:close()
-   local ctfplotter = assert(io.open('ctfplotter.log', 'r'))
-   local ctfplotterLog = ctfplotter:read('*a'); ctfplotter:close()
-   local ctfcorrection = assert(io.open('ctfcorrection.log', 'r'))
-   local ctfcorrectionLog = ctfcorrection:read('*a'); ctfcorrection:close()
+   local ctfplotter = io.open('ctfplotter.log', 'r')
+   if ctfplotter then
+      local ctfplotterLog = ctfplotter:read('*a'); ctfplotter:close()
+   end
+   local ctfcorrection = io.open('ctfcorrection.log', 'r')
+   if ctfcorrection then
+      local ctfcorrectionLog = ctfcorrection:read('*a'); ctfcorrection:close()
+   end
    local gold = assert(io.open('gold_ccderaser.log', 'r'))
    local goldLog = gold:read('*a'); gold:close()
    local tilt = io.open('tilt.log', 'r')
    if tilt then tiltLog = tilt:read('*a'); tilt:close() end
    log:write(ccdLog .. '\n' .. tiltxcorrLog .. '\n' .. xftoxgLog .. '\n'
              .. newstackLog .. '\n' .. raptor1Log .. '\n' .. raptor2Log .. '\n'
-             .. model2pointLog .. '\n' .. point2modelLog .. '\n'
-             .. ctfplotterLog .. '\n' .. ctfcorrectionLog .. '\n'
-             .. goldLog .. '\n')
+             .. model2pointLog .. '\n' .. point2modelLog .. '\n')
+   if ctfplotterLog then
+      log:write(ctfplotterLog .. '\n' .. ctfcorrectionLog .. '\n')
+   end
+   log:write(goldLog .. '\n')
    if tiltLog then log:write(tiltLog .. '\n') end
    log:close()
 end
 --[[==========================================================================#
 #                                  tomoAuto                                   #
 #==========================================================================--]]
-shortOptsString('cghL:p:')
-longOptsString('CTF, GPU, help, config, parallel ')
+shortOptsString = 'cghL:p:'
+longOptsString = 'CTF, GPU, help, config, parallel'
+arg, options = tomoOpt.get(arg, shortOptsString, longOptsString)
+if options.h then dispHelp() return 0 end
+
 startDir = lfs.currentdir()
 filename = string.sub(arg[1], 1, -4)
 nx, ny, nz, feiLabel, tiltAxis, pixelSize, fidPix = findITP(arg[1], arg[2])
@@ -194,7 +219,13 @@ end
 -- correctly. These settings are held in tomoAuto's global config file, but the
 -- user can also write local configs to overwrite the global settings on a per
 -- job basis. We write these files here:
-comWriter.write(arg[1], tiltAxis, nx, ny, pixelSize)
+config = options['L:']
+comWriter.write(arg[1], tiltAxis, nx, ny, pixelSize, config)
+if options['g'] then 
+   local file = io.open('tilt.com', 'a')
+   file:write('UseGPU 0\n')
+   file:close()
+end
 
 -- We should always remove the Xrays from the image using ccderaser
 io.write('Running ccderaser\n')
@@ -240,44 +271,55 @@ io.write('Fiducial model created for ' .. arg[1] .. ' SUCCESSFUL\n')
 
 -- Ok for the new stuff here we add CTF correction 
 -- noise background is now set in the global config file
-io.write('Now running ctfplotter and ctfphaseflip for CTF correction\n')
-checkFreeSpace()
-runCheck('submfg -t ctfplotter.com ctfcorrection.com')
-runCheck('mv ' .. startDir .. '/' .. filename .. '.ali '
-         .. startDir .. '/' .. filename .. '_first.ali')
-runCheck('mv ' .. startDir .. '/' .. filename .. '_ctfcorr.ali '
-         .. startDir .. '/' .. filename .. '.ali')
+if options.c then
+   io.write('Now running ctfplotter and ctfphaseflip for CTF correction\n')
+   checkFreeSpace()
+   if options.p then
+      runCheck('splitcorrection ctfcorrection.com')
+      runCheck('processchunks ' .. options.p .. ' ctfcorrection')
+   else
+      runCheck('submfg -t ctfplotter.com ctfcorrection.com')
+   end
+   runCheck('mv ' .. startDir .. '/' .. filename .. '.ali '
+            .. startDir .. '/' .. filename .. '_first.ali')
+   runCheck('mv ' .. startDir .. '/' .. filename .. '_ctfcorr.ali '
+            .. startDir .. '/' .. filename .. '.ali')
+end
 io.write('Now erasing gold from aligned stack\n')
 runCheck('submfg -t gold_ccderaser.com')
 runCheck('mv ' .. startDir .. '/' .. filename .. '.ali '
          .. startDir .. '/' .. filename .. '_second.ali')
 runCheck('mv ' .. startDir .. '/' .. filename .. '_erase.ali '
          .. startDir .. '/' .. filename .. '.ali')
-if checkAlign(nz) then 
-   runCheck('submfg -t tilt.com')
+if checkAlign(nz) then
+   if options.p then
+      runCheck('splittilt -n ' .. options.p .. ' tilt.com')
+      runCheck('processchunks ' .. options.p .. ' tilt')
+   else
+      runCheck('submfg -t tilt.com')
+   end
 else
    io.write('Final alignment has cut too many sections! Aborting\n')
 end
 writeLog()
 runCheck('mv ' .. filename .. '_full.rec '
-         .. filename .. '.ali tomoAuto.log finalFiles/.')
+         .. filename .. '.ali ctfplotter.com tomoAuto.log finalFiles/.')
 runCheck('rm -rf ' .. startDir .. '/raptor*')
 runCheck('rm -f ' .. filename .. '* *.log *.com')
 runCheck('mv finalFiles/* ' .. startDir .. '/.')
 lfs.rmdir('finalFiles')
 runCheck('binvol -binning 4 ' .. filename .. '_full.rec '
          .. filename .. '.bin4 2>&1 /dev/null')
+runCheck('clip rotx ' .. filename .. '.bin4 ' .. filename .. '.bin4')
 runCheck('binvol -binning 4 -zbinning 1 ' .. filename .. '.ali '
          .. filename .. '.ali.bin4 2>&1 /dev/null')
+runCheck('chunksetup -m 10 -p 15 -o 4 nad_eed_3d.com ' .. filename .. '.bin4 '
+         .. filename .. '.bin4.nad')
+if options.p then
+   runCheck('processchunks ' .. options.p .. ' nad_eed_3d')
+else
+   runCheck('subm nad_eed_3d-all')
+end
 runCheck('rm -f ' .. filename .. '.ali')
-runCheck('permute -perm 1 0 0 0 0 1 0 1 0 ' .. filename .. '.bin4 '
-         .. filename .. '.perm')
-runCheck('compute-old ' .. filename .. '.rev = ' 
-         .. filename .. '.perm / -1')
-runCheck('filter -ccp4 -fd 0.6 0.6 0.6 -fs 0.1 0.1 0.1 '
-         .. filename .. '.rev ' .. filename .. '.bin4.low')
-runCheck('fixheader -ccp4 ' .. filename .. '.bin4.low')
-runCheck('preproc -med -m 1 1 7 ' .. filename .. '.bin4.low'
-         .. filename .. '.med7')
-runCheck('rm -f *.rev *.perm ' .. filename .. '.bin4')
+runCheck('rm -f ' .. filename .. '.bin4')
 io.write('tomoAuto complete for ' .. arg[1] .. '\n')
