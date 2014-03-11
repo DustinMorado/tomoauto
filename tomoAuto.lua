@@ -303,12 +303,6 @@ else
    io.write('Final alignment has cut too many sections! Aborting\n')
 end
 writeLog()
-runCheck('mv ' .. filename .. '_full.rec '
-         .. filename .. '.ali ctfplotter.com tomoAuto.log finalFiles/.')
-runCheck('rm -rf ' .. startDir .. '/raptor*')
-runCheck('rm -f ' .. filename .. '* *.log *.com')
-runCheck('mv finalFiles/* ' .. startDir .. '/.')
-lfs.rmdir('finalFiles')
 runCheck('binvol -binning 4 ' .. filename .. '_full.rec '
          .. filename .. '.bin4 2>&1 /dev/null')
 runCheck('clip rotx ' .. filename .. '.bin4 ' .. filename .. '.bin4')
@@ -321,6 +315,12 @@ if options.p then
 else
    runCheck('subm nad_eed_3d-all')
 end
+runCheck('mv ' .. filename .. '_full.rec '
+         .. filename .. '.ali* *.nad ctfplotter.com tomoAuto.log finalFiles/.')
 runCheck('rm -f ' .. filename .. '.ali')
 runCheck('rm -f ' .. filename .. '.bin4')
+runCheck('rm -rf ' .. startDir .. '/raptor*')
+runCheck('rm -f ' .. filename .. '* *.log *.com')
+runCheck('mv finalFiles/* ' .. startDir .. '/.')
+lfs.rmdir('finalFiles')
 io.write('tomoAuto complete for ' .. arg[1] .. '\n')
