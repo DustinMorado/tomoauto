@@ -20,6 +20,7 @@
 local struct = assert(require 'struct')
 local lfs = assert(require 'lfs')
 package.path = package.path .. ';' .. os.getenv('TOMOAUTOROOT') .. '/lib/?.lua'
+package.cpath = package.cpath .. ';' .. os.getenv('TOMOAUTOROOT') .. 'lib/?.so'
 local comWriter = assert(require 'comWriter')
 local tomoOpt = assert(require 'tomoOpt')
 
