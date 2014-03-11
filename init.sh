@@ -2,6 +2,7 @@
 
 # In case it wasn't set before set the root location
 
-export TOMOAUTOROOT="/usr/local/tomoAuto"
+export TOMOAUTOROOT=${TOMOAUTOROOT:=/usr/local/tomoAuto}
+export PATH=$TOMOAUTOROOT/bin:$PATH
 
 
