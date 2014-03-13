@@ -24,7 +24,7 @@ function tomoOpt.get(arg, shortString, longString)
    local index = 1
    local shift = 0
 
-   for letter in shortString:gmatch('%a%:?') do
+   for letter in shortString:gmatch('%a%_?') do
       table.insert(optArray, letter)
       shortOpts[letter] = false
    end
@@ -54,8 +54,8 @@ function tomoOpt.get(arg, shortString, longString)
                else error('Weird unexplained long option error!\n')
                end
             end
-         elseif shortOpts[option .. ':'] ~= nil then -- option requires an argument
-            shortOpts[option .. ':'] = arg[i+1]
+         elseif shortOpts[option .. '_'] ~= nil then -- option requires an argument
+            shortOpts[option .. '_'] = arg[i+1]
             shift = shift + 2
          elseif shortOpts[option] ~= nil then -- option is flag
             shortOpts[option] = true
