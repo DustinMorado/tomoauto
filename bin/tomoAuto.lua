@@ -38,6 +38,7 @@ local function dispHelp()
        Automates the alignment of tilt series and the reconstruction of these 
        series into 3D tomograms.]])
    io.write('\n\n-c, --CTF\t\tApplies CTF correction to the aligned stack\n')
+   io.write('-d, --defocus\t\tUses this as estimated defocus for ctfplotter\n')
    io.write('-g, --GPU\t\tUses GPGPU methods to speed up the reconstruction\n')
    io.write('-h, --help\t\tPrints this information and exits\n')
    io.write('-L, --config\t\tSources a local config file\n')
@@ -170,8 +171,8 @@ end
 --[[==========================================================================#
 #                                  tomoAuto                                   #
 #==========================================================================--]]
-shortOptsString = 'cghL:p:'
-longOptsString = 'CTF, GPU, help, config, parallel'
+shortOptsString = 'cd:ghL:p:'
+longOptsString = 'CTF, defocus, GPU, help, config, parallel'
 arg, options = tomoOpt.get(arg, shortOptsString, longOptsString)
 if options.h then dispHelp() return 0 end
 
@@ -185,10 +186,10 @@ checkFreeSpace()
 
 io.write('Running IMOD extracttilts for ' .. filename .. '\n')
 runCheck('extracttilts -input ' .. arg[1] .. ' -output ' 
-         .. filename .. '.rawtlt 2>&1 > /dev/null')
+.. filename .. '.rawtlt 2>&1 > /dev/null')
 
 assert(lfs.mkdir('finalFiles'),
-       'Error: Failed to make a directory. Check file permissions!')
+'Error: Failed to make a directory. Check file permissions!')
 runCheck('cp ' .. arg[1] .. ' finalFiles/.')
 
 -- If we are dealing with an FEI file we should use protomo to clean and adjust
@@ -196,27 +197,27 @@ runCheck('cp ' .. arg[1] .. ' finalFiles/.')
 -- software to adjust the data values from unsigned ints to signed ones. This
 -- should create a much more realistic histogram of densities.
 if feiLabel == 'Fei' then
-	io.write('Making TIFF IMAGE copies to be cleaned\n')
-	runCheck('mrc2tif ' .. arg[1] .. ' image 2>&1 > /dev/null')
-	assert(lfs.mkdir('clean'),
-          'Error: Failed to make a directory. Check file permissions!')
-	assert(lfs.mkdir('raw'),
-          'Error: Failed to make a directory. Check file permissions!')
-	runCheck('mv image* raw/.')
-	lfs.chdir('./clean')
-	runCheck('tomo-clean.sh 2>&1 > /dev/null')
-	io.write('Running concat to create a new stack from the cleaned image\n')
-	runCheck('concat -dim 3 image* ' .. filename .. '_clean.st')
-	io.write('Formatting the header to the ccp4 format\n')
-	runCheck('cutimage -fmt ccp4 ' .. filename .. '_clean.st '
-            .. filename .. '_cleanccp4.st')
-	io.write('Fixing the header of the file\n')
-	runCheck('fixheader -mrc ' .. filename .. '_cleanccp4.st')
-	runCheck('mv ' .. filename .. '_cleanccp4.st ../.')
-	lfs.chdir('..')
-	runCheck('rm -r clean raw')
-	runCheck('mv ' .. arg[1] .. ' ' .. filename .. '_preclean.st && mv '
-            .. filename .. '_cleanccp4.st ' .. arg[1])
+   io.write('Making TIFF IMAGE copies to be cleaned\n')
+   runCheck('mrc2tif ' .. arg[1] .. ' image 2>&1 > /dev/null')
+   assert(lfs.mkdir('clean'),
+   'Error: Failed to make a directory. Check file permissions!')
+   assert(lfs.mkdir('raw'),
+   'Error: Failed to make a directory. Check file permissions!')
+   runCheck('mv image* raw/.')
+   lfs.chdir('./clean')
+   runCheck('tomo-clean.sh 2>&1 > /dev/null')
+   io.write('Running concat to create a new stack from the cleaned image\n')
+   runCheck('concat -dim 3 image* ' .. filename .. '_clean.st')
+   io.write('Formatting the header to the ccp4 format\n')
+   runCheck('cutimage -fmt ccp4 ' .. filename .. '_clean.st '
+   .. filename .. '_cleanccp4.st')
+   io.write('Fixing the header of the file\n')
+   runCheck('fixheader -mrc ' .. filename .. '_cleanccp4.st')
+   runCheck('mv ' .. filename .. '_cleanccp4.st ../.')
+   lfs.chdir('..')
+   runCheck('rm -r clean raw')
+   runCheck('mv ' .. arg[1] .. ' ' .. filename .. '_preclean.st && mv '
+   .. filename .. '_cleanccp4.st ' .. arg[1])
 end
 
 -- A lot of the IMOD commands require command(COM) files to parse settings
@@ -235,7 +236,7 @@ end
 io.write('Running ccderaser\n')
 runCheck('submfg -t ccderaser.com')
 runCheck('mv ' .. arg[1] .. ' ' .. filename .. '_orig.st && mv '
-         .. filename .. '_fixed.st ' .. arg[1])
+.. filename .. '_fixed.st ' .. arg[1])
 io.write('Running Coarse Alignment for ' .. arg[1] .. '\n')
 runCheck('submfg -t tiltxcorr.com xftoxg.com newstack.com')
 
@@ -244,14 +245,14 @@ io.write('Now running RAPTOR (please be patient this may take some time)\n')
 io.write('RAPTOR starting for ' .. arg[1] .. '..........\n')
 checkFreeSpace()
 runCheck('RAPTOR -execPath /usr/local/RAPTOR3.0/bin -path '
-         ..	startDir .. ' -input ' .. filename .. '.preali -output '
-         .. startDir .. '/raptor1 -diameter ' .. fidPix)
+..	startDir .. ' -input ' .. filename .. '.preali -output '
+.. startDir .. '/raptor1 -diameter ' .. fidPix)
 runCheck('mv ' .. startDir .. '/raptor1/align/'
-         .. filename .. '.ali ' .. startDir)
+.. filename .. '.ali ' .. startDir)
 runCheck('mv ' .. startDir .. '/raptor1/IMOD/'
-         .. filename .. '.tlt ' .. startDir)
+.. filename .. '.tlt ' .. startDir)
 runCheck('mv ' .. startDir .. '/raptor1/IMOD/'
-          .. filename .. '.xf ' .. startDir)
+.. filename .. '.xf ' .. startDir)
 io.write('RAPTOR alignment for ' .. arg[1] .. ' SUCCESSFUL\n')
 checkFreeSpace()
 
@@ -260,17 +261,17 @@ io.write('Now running RAPTOR to track gold to erase particles\n')
 io.write('RAPTOR starting for ' .. arg[1] .. '..........\n')
 checkFreeSpace()
 runCheck('RAPTOR -execPath /usr/local/RAPTOR3.0/bin/ -path '
-         .. startDir .. ' -input ' .. filename .. '.ali -output '
-         .. startDir .. '/raptor2 -diameter ' .. fidPix ..' -tracking')
+.. startDir .. ' -input ' .. filename .. '.ali -output '
+.. startDir .. '/raptor2 -diameter ' .. fidPix ..' -tracking')
 runCheck('mv ' .. startDir .. '/raptor2/IMOD/' .. filename .. '.fid.txt '
-         .. startDir .. '/' .. filename .. '_erase.fid')
+.. startDir .. '/' .. filename .. '_erase.fid')
 
 -- Make the erase model more suitable for erasing gold
 runCheck('submfg -t model2point.com point2model.com')
 runCheck('mv ' .. startDir .. '/' .. filename .. '_erase.fid '
-         .. startDir .. '/' .. filename .. '_erase.fid_orig')
+.. startDir .. '/' .. filename .. '_erase.fid_orig')
 runCheck('mv ' .. startDir .. '/'.. filename .. '_erase.scatter.fid '
-         .. startDir .. '/' ..filename .. '_erase.fid')
+.. startDir .. '/' ..filename .. '_erase.fid')
 io.write('Fiducial model created for ' .. arg[1] .. ' SUCCESSFUL\n')
 
 -- Ok for the new stuff here we add CTF correction 
@@ -278,27 +279,37 @@ io.write('Fiducial model created for ' .. arg[1] .. ' SUCCESSFUL\n')
 if options.c then
    io.write('Now running ctfplotter and ctfphaseflip for CTF correction\n')
    checkFreeSpace()
-   if options.p then
+   if options['d:'] then
+      local newDefocus = tonumber(options['d:']) * 1000
+      local file = assert(io.open('ctfplotter.com', 'r'))
+      local ctfNew = file:read('*a'); file:close()
+      ctfNew = ctfNew:gsub('ExpectedDefocus (%d+%.?%d*)', 'ExpectedDefocus '
+                           .. newDefocus)
+      local file = assert(io.open('ctfplotter.com', 'w'))
+      file:write(ctfNew); file:close()
+   end
+   if options['p:'] then
+      runCheck('submfg -t ctfplotter.com')
       runCheck('splitcorrection ctfcorrection.com')
-      runCheck('processchunks ' .. options.p .. ' ctfcorrection')
+      runCheck('processchunks -g ' .. options['p:'] .. ' ctfcorrection')
    else
       runCheck('submfg -t ctfplotter.com ctfcorrection.com')
    end
+      runCheck('mv ' .. startDir .. '/' .. filename .. '.ali '
+      .. startDir .. '/' .. filename .. '_first.ali')
+      runCheck('mv ' .. startDir .. '/' .. filename .. '_ctfcorr.ali '
+      .. startDir .. '/' .. filename .. '.ali')
+   end
+   io.write('Now erasing gold from aligned stack\n')
+   runCheck('submfg -t gold_ccderaser.com')
    runCheck('mv ' .. startDir .. '/' .. filename .. '.ali '
-            .. startDir .. '/' .. filename .. '_first.ali')
-   runCheck('mv ' .. startDir .. '/' .. filename .. '_ctfcorr.ali '
-            .. startDir .. '/' .. filename .. '.ali')
-end
-io.write('Now erasing gold from aligned stack\n')
-runCheck('submfg -t gold_ccderaser.com')
-runCheck('mv ' .. startDir .. '/' .. filename .. '.ali '
-         .. startDir .. '/' .. filename .. '_second.ali')
-runCheck('mv ' .. startDir .. '/' .. filename .. '_erase.ali '
-         .. startDir .. '/' .. filename .. '.ali')
-if checkAlign(nz) then
-   if options.p then
-      runCheck('splittilt -n ' .. options.p .. ' tilt.com')
-      runCheck('processchunks ' .. options.p .. ' tilt')
+   .. startDir .. '/' .. filename .. '_second.ali')
+   runCheck('mv ' .. startDir .. '/' .. filename .. '_erase.ali '
+   .. startDir .. '/' .. filename .. '.ali')
+   if checkAlign(nz) then
+   if options['p:'] then
+      runCheck('splittilt -n ' .. options['p:'] .. ' tilt.com')
+      runCheck('processchunks -g ' .. options['p:'] .. ' tilt')
    else
       runCheck('submfg -t tilt.com')
    end
@@ -313,8 +324,8 @@ runCheck('binvol -binning 4 -zbinning 1 ' .. filename .. '.ali '
          .. filename .. '.ali.bin4 2>&1 /dev/null')
 runCheck('chunksetup -m 10 -p 15 -o 4 nad_eed_3d.com ' .. filename .. '.bin4 '
          .. filename .. '.bin4.nad')
-if options.p then
-   runCheck('processchunks ' .. options.p .. ' nad_eed_3d')
+if options['p:'] then
+   runCheck('processchunks -g ' .. options['p:'] .. ' nad_eed_3d')
 else
    runCheck('submfg nad_eed_3d-all')
 end
@@ -328,11 +339,17 @@ ctfNewPlot = ctfPlot:gsub('SaveAndExit', '#SaveAndExit')
 ctfNewPlotCom:write(ctfNewPlot)
 ctfNewPlotCom:close()
 
-runCheck('mv ' .. filename .. '_full.rec ' .. filename .. '.tlt ' 
-         .. filename .. '.bin4.nad ' .. filename .. '.ali* ctfplotter.com '
+runCheck('mv ' .. filename .. '_full.rec ' -- full reconstruction
+         .. filename .. '.bin4 ' -- for checking
+         .. filename .. '.tlt ' -- for ctfplotter.com
+         .. filename .. '.bin4.nad ' -- for checking
+         .. filename .. '_first.ali ' -- for ctfplotter.com
+         .. filename .. '.ali.bin4 ' -- for checking
+         .. filename .. '.defocus ' -- for ctfplotter.com
          .. 'tomoAuto.log finalFiles/.')
 runCheck('rm *.com *.log ' .. filename .. '*')
 runCheck('rm -rf raptor*')
 runCheck('mv finalFiles/* .')
 runCheck('rmdir finalFiles')
+runCheck('mv ' .. filename .. '_first.ali ' .. filename .. '.ali')
 io.write('tomoAuto complete for ' .. arg[1] .. '\n')
