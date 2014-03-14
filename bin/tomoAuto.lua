@@ -273,24 +273,6 @@ runCheck('mv ' .. startDir .. '/raptor1/IMOD/'
 io.write('RAPTOR alignment for ' .. arg[1] .. ' SUCCESSFUL\n')
 checkFreeSpace()
 
--- Now we use RAPTOR to make a fiducial model to erase the gold in the stack
-io.write('Now running RAPTOR to track gold to erase particles\n')
-io.write('RAPTOR starting for ' .. arg[1] .. '..........\n')
-checkFreeSpace()
-runCheck('RAPTOR -execPath /usr/local/RAPTOR3.0/bin/ -path '
-         .. startDir .. ' -input ' .. filename .. '.ali -output '
-         .. startDir .. '/raptor2 -diameter ' .. fidPix ..' -tracking')
-runCheck('mv ' .. startDir .. '/raptor2/IMOD/' .. filename .. '.fid.txt '
-         .. startDir .. '/' .. filename .. '_erase.fid')
-
--- Make the erase model more suitable for erasing gold
-runCheck('submfg -t model2point.com point2model.com')
-runCheck('mv ' .. startDir .. '/' .. filename .. '_erase.fid '
-         .. startDir .. '/' .. filename .. '_erase.fid_orig')
-runCheck('mv ' .. startDir .. '/'.. filename .. '_erase.scatter.fid '
-         .. startDir .. '/' ..filename .. '_erase.fid')
-io.write('Fiducial model created for ' .. arg[1] .. ' SUCCESSFUL\n')
-
 -- Ok for the new stuff here we add CTF correction
 -- noise background is now set in the global config file
 if Opts.c then
@@ -320,6 +302,24 @@ if Opts.c then
    runCheck('mv ' .. startDir .. '/' .. filename .. '_ctfcorr.ali '
             .. startDir .. '/' .. filename .. '.ali')
 end
+
+-- Now we use RAPTOR to make a fiducial model to erase the gold in the stack
+io.write('Now running RAPTOR to track gold to erase particles\n')
+io.write('RAPTOR starting for ' .. arg[1] .. '..........\n')
+checkFreeSpace()
+runCheck('RAPTOR -execPath /usr/local/RAPTOR3.0/bin/ -path '
+         .. startDir .. ' -input ' .. filename .. '.ali -output '
+         .. startDir .. '/raptor2 -diameter ' .. fidPix ..' -tracking')
+runCheck('mv ' .. startDir .. '/raptor2/IMOD/' .. filename .. '.fid.txt '
+         .. startDir .. '/' .. filename .. '_erase.fid')
+
+-- Make the erase model more suitable for erasing gold
+runCheck('submfg -t model2point.com point2model.com')
+runCheck('mv ' .. startDir .. '/' .. filename .. '_erase.fid '
+         .. startDir .. '/' .. filename .. '_erase.fid_orig')
+runCheck('mv ' .. startDir .. '/'.. filename .. '_erase.scatter.fid '
+         .. startDir .. '/' ..filename .. '_erase.fid')
+io.write('Fiducial model created for ' .. arg[1] .. ' SUCCESSFUL\n')
 io.write('Now erasing gold from aligned stack\n')
 runCheck('submfg -t gold_ccderaser.com')
 runCheck('mv ' .. startDir .. '/' .. filename .. '.ali '
@@ -369,6 +369,7 @@ ctfPlot = ctfPlotCom:read('*a')
 ctfPlotCom:close()
 ctfNewPlotCom = io.open('ctfplotter.com', 'w')
 ctfNewPlot = ctfPlot:gsub('SaveAndExit', '#SaveAndExit')
+ctfNewPlot = ctfNewPlot:gsub('AutoFitRangeAndStep', '#AutofitRangeAndStep')
 ctfNewPlotCom:write(ctfNewPlot)
 ctfNewPlotCom:close()
 
