@@ -185,8 +185,8 @@ end
 --[[==========================================================================#
 #                                  tomoAuto                                   #
 #==========================================================================--]]
-shortOptsString = 'cd_ghL_p_'
-longOptsString = 'CTF, defocus, GPU, help, config, parallel'
+shortOptsString = 'cd_ghL_p_z_'
+longOptsString = 'CTF, defocus, GPU, help, config, parallel, thickness'
 arg, Opts = tomoOpt.get(arg, shortOptsString, longOptsString)
 
 if Opts.h then dispHelp() return 0 end
@@ -246,6 +246,16 @@ comWriter.write(arg[1], tiltAxis, nx, ny, pixelSize, config)
 if Opts.g then
    local file = io.open('tilt.com', 'a')
    file:write('UseGPU 0\n')
+   file:close()
+end
+
+if Opts.z_ then
+   local file = io.open('tilt.com', 'r')
+   local cont = file:read('*a')
+   cont  = cont:gsub('tiltTHICKNESS = (%d+)', 'tiltTHICKNESS = ' 
+           .. tostring(Opts.z_))
+   file = io.open('tilt.com', 'w')
+   file:write(contents)
    file:close()
 end
 
