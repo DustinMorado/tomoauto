@@ -251,8 +251,8 @@ end
 
 if Opts.z_ then
    local file = io.open('tilt.com', 'r')
-   local cont = file:read('*a')
-   cont  = cont:gsub('tiltTHICKNESS = (%d+)', 'tiltTHICKNESS = ' 
+   local contents = file:read('*a')
+   cont  = contents:gsub('THICKNESS (%d+)', 'THICKNESS ' 
            .. tostring(Opts.z_))
    file = io.open('tilt.com', 'w')
    file:write(contents)
