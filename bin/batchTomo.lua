@@ -10,6 +10,7 @@
 # Arguments: arg[1] = fiducial size in nm <integer>                            #
 #===========================================================================--]]
 
+package.path = package.path .. ';' .. os.getenv('TOMOAUTOROOT') .. '/bin/?.lua'
 local lfs = assert(require 'lfs')
 local tomoAuto = assert(require 'tomoAuto')
 local tomoOpt = assert(require 'tomoOpt')
