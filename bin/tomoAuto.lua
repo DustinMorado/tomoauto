@@ -230,6 +230,7 @@ if Opts.p_ then
 else
    tomoLib.runCheck('submfg nad_eed_3d-all')
 end
+tomoLib.writeLog()
 
 io.write('Now running file and space cleanup\n')
 ctfPlotCom = io.open('ctfplotter.com', 'r')
@@ -255,5 +256,4 @@ tomoLib.runCheck('mv finalFiles/* .')
 tomoLib.runCheck('rmdir finalFiles')
 tomoLib.runCheck('mv ' .. filename .. '_first.ali ' .. filename .. '.ali')
 
-tomoLib.writeLog()
 io.write('tomoAuto complete for ' .. arg[1] .. '\n')
