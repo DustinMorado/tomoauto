@@ -34,15 +34,18 @@ local tomoOpt = assert(require 'tomoOpt')
 # A function that displays the usage and options of tomoAuto                  #
 #==========================================================================--]]
 local function dispHelp()
-   io.write([[Usage: tomoAuto [-c -g -h -L <config> -p <procnum>]<file.st><fid>
-            Automates the alignment of tilt series and the reconstruction of
-            these series into 3D tomograms.]])
-   io.write('\n\n-c, --CTF\t\tApplies CTF correction to the aligned stack\n')
-   io.write('-d, --defocus\t\tUses this as estimated defocus for ctfplotter\n')
-   io.write('-g, --GPU\t\tUses GPGPU methods to speed up the reconstruction\n')
-   io.write('-h, --help\t\tPrints this information and exits\n')
-   io.write('-L, --config\t\tSources a local config file\n')
-   io.write('-p, --parallel\t\tUses multiple processors to speed up tilt\n')
+   io.write(
+   '\nUsage: \n\z
+   tomoAuto [-c -d <int> -g -h -L <file> -p <int> -z <int>] <file.st> <fid>\n\z
+   Automates the alignment of tilt series and the reconstruction of\z
+   these series into 3D tomograms.\n\n\z
+   -c, --CTF \t Applies CTF correction to the aligned stack\n\z
+   -d, --defocus \t Uses this as estimated defocus for ctfplotter\n\z
+   -g, --GPU \t Uses GPGPU methods to speed up the reconstruction\n\z
+   -h, --help \t Prints this information and exits\n\z
+   -L, --config \t Sources a local config file\n\z
+   -p, --parallel \t Uses <int> processors to speed up tilt\n\z
+   -z, --thickness \t Create a tomogram with <int> thickness\n')
    return
 end
 --[[==========================================================================#
@@ -53,8 +56,8 @@ end
 #==========================================================================--]]
 local function checkFreeSpace()
 	local file = assert(io.popen('df -h ' .. startDir, 'r'))
-	local space = tonumber(string.sub(string.match(file:read('*a'),
-                                     '.%d%%'), 1, -2))
+	local space = string.sub(string.match(file:read('*a'), '.%d%%'), 1, -2)
+   space = tonumber(space)
 	file:close()
 	return assert(space <= 98,
                  'Error: Disk usage is at or above 98% please make more space')
@@ -68,8 +71,10 @@ end
 # Arguments: arg[1] = shell command to be run <'string'>                      #
 #==========================================================================--]]
 local function runCheck(functionString)
-	local _,_,exit=os.execute(functionString .. ' 2> /dev/null')
-	return assert(exit == 0, 'Error running ' .. functionString)
+	local success,exit,signal = os.execute(functionString .. ' 2> /dev/null')
+   if not success then
+      io.stderr:write('Error running ' .. functionString)
+   end
 end
 --[[==========================================================================#
 #                                 findITP                                     #
@@ -132,53 +137,68 @@ end
 #==========================================================================--]]
 local function writeLog()
    local log = assert(io.open('tomoAuto.log', 'w'))
-   local ccd = assert(io.open('ccderaser.log', 'r'))
-   local ccdLog = ccd:read('*a'); ccd:close()
-   local tiltxcorr = assert(io.open('tiltxcorr.log', 'r'))
-   local tiltxcorrLog = tiltxcorr:read('*a'); tiltxcorr:close()
-   local xftoxg = assert(io.open('xftoxg.log', 'r'))
-   local xftoxgLog = xftoxg:read('*a'); xftoxg:close()
-   local newstack = assert(io.open('newstack.log', 'r'))
-   local newstackLog = newstack:read('*a'); newstack:close()
-   local raptor1 = assert(io.open('raptor1/align/'
-                                  .. filename .. '_RAPTOR.log', 'r'))
-   local raptor1Log = raptor1:read('*a'); raptor1:close()
-   local raptor2 = assert(io.open('raptor2/align/'
-                                  .. filename .. '_RAPTOR.log', 'r'))
-   local raptor2Log = raptor2:read('*a'); raptor2:close()
-   local model2point = assert(io.open('model2point.log', 'r'))
-   local model2pointLog= model2point:read('*a'); model2point:close()
-   local point2model = assert(io.open('point2model.log', 'r'))
-   local point2modelLog= point2model:read('*a'); point2model:close()
-   local ctfplotter = io.open('ctfplotter.log', 'r')
 
-   if ctfplotter then
-      local ctfplotterLog = ctfplotter:read('*a'); ctfplotter:close()
+   local ccd = io.open('ccderaser.log', 'r')
+   if ccd then
+      local ccd_ = ccd:read('*a'); ccd:close(); log:write(ccd_ .. '\n')
+   end
+   
+   local txc = io.open('tiltxcorr.log', 'r')
+   if txc then
+      local txc_ = txc:read('*a'); txc:close(); log:write(txc_ .. '\n')
    end
 
-   local ctfcorrection = io.open('ctfcorrection.log', 'r')
-
-   if ctfcorrection then
-      local ctfcorrectionLog = ctfcorrection:read('*a'); ctfcorrection:close()
+   local ftg = io.open('xftoxg.log', 'r')
+   if ftg then
+      local ftg_ = ftg:read('*a'); ftg:close(); log:write(ftg_ .. '\n')
    end
 
-   local gold = assert(io.open('gold_ccderaser.log', 'r'))
-   local goldLog = gold:read('*a'); gold:close()
+   local ns = io.open('newstack.log', 'r')
+   if ns then
+      local ns_ = ns:read('*a'); ns:close(); log:write(ns_ .. '\n')
+   end
+
+   local r1 = io.open('raptor1/align/'
+                                  .. filename .. '_RAPTOR.log', 'r')
+   if r1 then
+      local r1_ = r1:read('*a'); r1:close(); log:write(r1_ .. '\n')
+   end
+
+   local r2 = io.open('raptor2/align/'
+                                  .. filename .. '_RAPTOR.log', 'r'))
+   if r2 then
+      local r2_ = r2:read('*a'); r2:close(); log:write(r2_ .. '\n')
+   end
+
+   local m2p = io.open('model2point.log', 'r')
+   if m2p then
+      local m2p_= m2p:read('*a'); m2p:close(); log:write(m2p_ .. '\n')
+   end
+
+   local p2m = io.open('point2model.log', 'r')
+   if p2m then
+      local p2m_= p2m:read('*a'); p2m:close(); log:write(p2m_ .. '\n')
+   end
+
+   local ctfp = io.open('ctfplotter.log', 'r')
+   if ctfp then
+      local ctfp_ = ctfp:read('*a'); ctfp:close(); log:write(ctfp_ .. '\n')
+   end
+
+   local ctfc = io.open('ctfcorrection.log', 'r')
+   if ctfc then 
+      local ctfc_ = ctfc:read('*a'); ctfc:close(); log:write(ctfc_ .. '\n')
+   end
+
+   local gold = io.open('gold_ccderaser.log', 'r')
+   if gold then
+      local gold_ = gold:read('*a'); gold:close(); log:write(gold_ .. '\n')
+   end
+
    local tilt = io.open('tilt.log', 'r')
-
-   if tilt then tiltLog = tilt:read('*a'); tilt:close() end
-
-   log:write(ccdLog .. '\n' .. tiltxcorrLog .. '\n' .. xftoxgLog .. '\n'
-             .. newstackLog .. '\n' .. raptor1Log .. '\n' .. raptor2Log .. '\n'
-             .. model2pointLog .. '\n' .. point2modelLog .. '\n')
-
-   if ctfplotterLog then
-      log:write(ctfplotterLog .. '\n' .. ctfcorrectionLog .. '\n')
+   if tilt then
+      local tilt_ = tilt:read('*a'); tilt:close(); log:write(tilt_ .. '\n')
    end
-
-   log:write(goldLog .. '\n')
-
-   if tiltLog then log:write(tiltLog .. '\n') end
 
    log:close()
 end
@@ -192,9 +212,16 @@ arg, Opts = tomoOpt.get(arg, shortOptsString, longOptsString)
 if Opts.h then dispHelp() return 0 end
 
 filename = string.sub(arg[1], 1, -4)
-assert(lfs.mkdir(filename))
-runCheck('mv ' .. arg[1] .. ' ' .. filename)
-assert(lfs.chdir(filename))
+if lfs.mkdir(filename) then -- successfully created directory
+   runCheck('mv ' .. arg[1] .. ' ' .. filename)
+   assert(lfs.chdir(filename))
+else -- either directory exists or permission denied
+   if not lfs.chdir(filename) then --
+      io.stderr:write('Cannot make start dir. Check Permissions')
+      return 1
+   end
+end
+
 startDir = lfs.currentdir()
 nx, ny, nz, feiLabel, tiltAxis, pixelSize, fidPix = findITP(arg[1], arg[2])
 checkFreeSpace()
@@ -204,7 +231,7 @@ runCheck('extracttilts -input ' .. arg[1] .. ' -output '
 .. filename .. '.rawtlt 2>&1 > /dev/null')
 
 assert(lfs.mkdir('finalFiles'),
-       'Error: Failed to make a directory. Check file permissions!')
+       'Error: Failed to make final files directory. Check Permissions!')
 runCheck('cp ' .. arg[1] .. ' finalFiles')
 
 -- If we are dealing with an FEI file we should use protomo to clean and adjust
