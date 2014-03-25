@@ -10,15 +10,15 @@
 # Arguments: arg[1] = fiducial size in nm <integer>                            #
 #===========================================================================--]]
 
-package.path = package.path .. ';' .. os.getenv('TOMOAUTOROOT') .. '/lib/?.lua'
+--package.path = package.path .. ';' .. os.getenv('TOMOAUTOROOT') .. '/lib/?.lua'
 package.path = package.path .. ';' .. os.getenv('TOMOAUTOROOT') .. '/bin/?.lua'
 local lfs = assert(require 'lfs')
 local tomoAuto = assert(require 'tomoAuto')
 local tomoOpt = assert(require 'tomoOpt')
 
-local shortOptsString = 'cd_hn_p_'
-local longOptsString = 'CTF, defocus, help, max, parallel'
-local arg, Opts = tomoOpt.get(arg, shortOptsString, longOptsString)
+--local shortOptsString = 'cd_hn_p_'
+--local longOptsString = 'CTF, defocus, help, max, parallel'
+--local arg, Opts = tomoOpt.get(arg, shortOptsString, longOptsString)
 
 local fileTable = {}
 local i = 1
@@ -37,10 +37,10 @@ local procs = Opts.n_ or 1
 
 local thread = coroutine.create(function ()
    for i = 1, total do
-      runString = 'tomoAuto.lua '
-
+      runString = 'tomoAuto.lua'
+--[[
       if Opts.c then
-         runString = runString .. '-c'
+        runString = runString .. ' -c'
       end
 
       if Opts.d_ then
@@ -50,8 +50,9 @@ local thread = coroutine.create(function ()
       if Opts.p_ then
          runString = runString .. ' -p ' .. Opts.p_
       end
+--]]
 
-      runString = runString .. ' ' .. fileTable .. ' ' .. arg[1]
+      runString = runString .. ' -c -d 10 -p 4 ' .. fileTable .. ' ' .. arg[1]
       
       success, exit, signal = os.execute(runString)
       
