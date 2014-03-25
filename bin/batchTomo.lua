@@ -10,14 +10,15 @@
 # Arguments: arg[1] = fiducial size in nm <integer>                            #
 #===========================================================================--]]
 
+package.path = package.path .. ';' .. os.getenv('TOMOAUTOROOT') .. '/lib/?.lua'
 package.path = package.path .. ';' .. os.getenv('TOMOAUTOROOT') .. '/bin/?.lua'
 local lfs = assert(require 'lfs')
 local tomoAuto = assert(require 'tomoAuto')
 local tomoOpt = assert(require 'tomoOpt')
 
-shortOptsString = 'cd_hn_p_'
-longOptsString = 'CTF, defocus, help, max, parallel'
-arg, Opts = tomoOpt.get(arg, shortOptsString, longOptsString)
+local shortOptsString = 'cd_hn_p_'
+local longOptsString = 'CTF, defocus, help, max, parallel'
+local arg, Opts = tomoOpt.get(arg, shortOptsString, longOptsString)
 
 local fileTable = {}
 local i = 1
