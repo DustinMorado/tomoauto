@@ -24,13 +24,13 @@ local lfs = assert(require 'lfs')
 local tomoOpt = assert(require 'tomoOpt')
 local tomoLib = assert(require 'tomoLib')
 
-shortOptsString = 'cd_ghL_p_z_'
-longOptsString = 'CTF, defocus, GPU, help, config, parallel, thickness'
-arg, Opts = tomoOpt.get(arg, shortOptsString, longOptsString)
+local shortOptsString = 'cd_ghL_p_z_'
+local longOptsString = 'CTF, defocus, GPU, help, config, parallel, thickness'
+local arg, Opts = tomoOpt.get(arg, shortOptsString, longOptsString)
 
 if Opts.h then tomoLib.dispHelp() return 0 end
 
-filename = string.sub(arg[1], 1, -4)
+local filename = string.sub(arg[1], 1, -4)
 if lfs.mkdir(filename) then -- successfully created directory
    tomoLib.runCheck('mv ' .. arg[1] .. ' ' .. filename)
    assert(lfs.chdir(filename))
@@ -41,8 +41,8 @@ else -- either directory exists or permission denied
    end
 end
 
-startDir = lfs.currentdir()
-nx, ny, nz, feiLabel, tiltAxis, pixelSize, fidPix = tomoLib.findITP(arg[1], arg[2])
+local startDir = lfs.currentdir()
+local nx, ny, nz, feiLabel, tiltAxis, pixelSize, fidPix = tomoLib.findITP(arg[1], arg[2])
 tomoLib.checkFreeSpace()
 
 io.write('Running IMOD extracttilts for ' .. filename .. '\n')
