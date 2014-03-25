@@ -165,7 +165,7 @@ local function writeLog()
    end
 
    local r2 = io.open('raptor2/align/'
-                                  .. filename .. '_RAPTOR.log', 'r'))
+                                  .. filename .. '_RAPTOR.log', 'r')
    if r2 then
       local r2_ = r2:read('*a'); r2:close(); log:write(r2_ .. '\n')
    end
