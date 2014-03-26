@@ -1,4 +1,3 @@
-#!/usr/bin/env lua
 --[[==========================================================================#
 # This is a program to automate the alignment of a raw tilt series, use the   #
 # program RAPTOR to make a final alignment, use IMOD to estimate the defocus  #
@@ -18,15 +17,17 @@ local comWriter = assert(dofile(rootDir .. '/lib/comWriter.lua'))
 local getOpt = assert(dofile(rootDir .. '/lib/getOpt.lua'))
 local tomoLib = assert(dofile(rootDir .. '/lib/tomoLib.lua'))
 
+local tomoAuto = {}
+function tomoAuto.reconstruct(stackFile, fidSize)
 local shortOptsString = 'c, d_, g, h, L_, p_, z_'
 local longOptsString = 'ctf, defocus, gpu, help, config, procnum, thickness'
 local arg, Opts = getOpt.parse(arg, shortOptsString, longOptsString)
 
 if Opts.h then tomoLib.dispHelp() return 0 end
 
-local filename = string.sub(arg[1], 1, -4)
+local filename = string.sub(stackFile, 1, -4)
 if lfs.mkdir(filename) then -- successfully created directory
-   tomoLib.runCheck('mv ' .. arg[1] .. ' ' .. filename)
+   tomoLib.runCheck('mv ' .. stackFile .. ' ' .. filename)
    assert(lfs.chdir(filename))
 else -- either directory exists or permission denied
    if not lfs.chdir(filename) then --
@@ -36,16 +37,16 @@ else -- either directory exists or permission denied
 end
 
 local startDir = lfs.currentdir()
-local nx, ny, nz, feiLabel, tiltAxis, pixelSize, fidPix = tomoLib.findITP(arg[1], arg[2])
+local nx, ny, nz, feiLabel, tiltAxis, pixelSize, fidPix = tomoLib.findITP(stackFile, fidSize)
 tomoLib.checkFreeSpace()
 
 io.write('Running IMOD extracttilts for ' .. filename .. '\n')
-tomoLib.runCheck('extracttilts -input ' .. arg[1] .. ' -output '
+tomoLib.runCheck('extracttilts -input ' .. stackFile .. ' -output '
 .. filename .. '.rawtlt 2>&1 > /dev/null')
 
 assert(lfs.mkdir('finalFiles'),
        'Error: Failed to make final files directory. Check Permissions!')
-tomoLib.runCheck('cp ' .. arg[1] .. ' finalFiles')
+tomoLib.runCheck('cp ' .. stackFile .. ' finalFiles')
 
 -- If we are dealing with an FEI file we should use protomo to clean and adjust
 -- the values of the image stack. This fixes the compensation done by the FEI
@@ -54,7 +55,7 @@ tomoLib.runCheck('cp ' .. arg[1] .. ' finalFiles')
 
 if feiLabel == 'Fei' then
    io.write('Making TIFF IMAGE copies to be cleaned\n')
-   tomoLib.runCheck('mrc2tif ' .. arg[1] .. ' image 2>&1 > /dev/null')
+   tomoLib.runCheck('mrc2tif ' .. stackFile .. ' image 2>&1 > /dev/null')
    assert(lfs.mkdir('clean'),
           'Error: Failed to make a directory. Check file permissions!')
    assert(lfs.mkdir('raw'),
@@ -72,8 +73,8 @@ if feiLabel == 'Fei' then
    tomoLib.runCheck('mv ' .. filename .. '_cleanccp4.st ..')
    lfs.chdir('..')
    tomoLib.runCheck('rm -r clean raw')
-   tomoLib.runCheck('mv ' .. arg[1] .. ' ' .. filename .. '_preclean.st && mv '
-            .. filename .. '_cleanccp4.st ' .. arg[1])
+   tomoLib.runCheck('mv ' .. stackFile .. ' ' .. filename .. '_preclean.st && mv '
+            .. filename .. '_cleanccp4.st ' .. stackFile)
 end
 
 -- A lot of the IMOD commands require command(COM) files to parse settings
@@ -82,7 +83,7 @@ end
 -- job basis. We write these files here:
 --
 config = Opts.L_
-comWriter.write(arg[1], tiltAxis, nx, ny, pixelSize, config)
+comWriter.write(stackFile, tiltAxis, nx, ny, pixelSize, config)
 
 if Opts.g then
    local file = io.open('tilt.com', 'a')
@@ -105,15 +106,15 @@ io.write('Running ccderaser\n')
 tomoLib.runCheck('submfg -t ccderaser.com')
 tomoLib.writeLog(filename)
 
-tomoLib.runCheck('mv ' .. arg[1] .. ' ' .. filename .. '_orig.st && mv '
-         .. filename .. '_fixed.st ' .. arg[1])
-io.write('Running Coarse Alignment for ' .. arg[1] .. '\n')
+tomoLib.runCheck('mv ' .. stackFile .. ' ' .. filename .. '_orig.st && mv '
+         .. filename .. '_fixed.st ' .. stackFile)
+io.write('Running Coarse Alignment for ' .. stackFile .. '\n')
 tomoLib.runCheck('submfg -t tiltxcorr.com xftoxg.com newstack.com')
 tomoLib.writeLog(filename)
 
 -- Now we run RAPTOR to produce a succesfully aligned stack
 io.write('Now running RAPTOR (please be patient this may take some time)\n')
-io.write('RAPTOR starting for ' .. arg[1] .. '..........\n')
+io.write('RAPTOR starting for ' .. stackFile .. '..........\n')
 tomoLib.checkFreeSpace()
 tomoLib.runCheck('RAPTOR -execPath /usr/local/RAPTOR3.0/bin -path '
          ..	startDir .. ' -input ' .. filename .. '.preali -output '
@@ -125,7 +126,7 @@ tomoLib.runCheck('mv ' .. startDir .. '/raptor1/IMOD/'
 tomoLib.runCheck('mv ' .. startDir .. '/raptor1/IMOD/'
          .. filename .. '.xf ' .. startDir)
 tomoLib.writeLog(filename)
-io.write('RAPTOR alignment for ' .. arg[1] .. ' SUCCESSFUL\n')
+io.write('RAPTOR alignment for ' .. stackFile .. ' SUCCESSFUL\n')
 
 tomoLib.checkFreeSpace()
 
@@ -162,7 +163,7 @@ end
 
 -- Now we use RAPTOR to make a fiducial model to erase the gold in the stack
 io.write('Now running RAPTOR to track gold to erase particles\n')
-io.write('RAPTOR starting for ' .. arg[1] .. '..........\n')
+io.write('RAPTOR starting for ' .. stackFile .. '..........\n')
 tomoLib.checkFreeSpace()
 tomoLib.runCheck('RAPTOR -execPath /usr/local/RAPTOR3.0/bin/ -path '
          .. startDir .. ' -input ' .. filename .. '.ali -output '
@@ -179,7 +180,7 @@ tomoLib.runCheck('mv ' .. startDir .. '/' .. filename .. '_erase.fid '
 tomoLib.runCheck('mv ' .. startDir .. '/'.. filename .. '_erase.scatter.fid '
          .. startDir .. '/' ..filename .. '_erase.fid')
 tomoLib.writeLog(filename)
-io.write('Fiducial model created for ' .. arg[1] .. ' SUCCESSFUL\n')
+io.write('Fiducial model created for ' .. stackFile .. ' SUCCESSFUL\n')
 
 io.write('Now erasing gold from aligned stack\n')
 tomoLib.runCheck('submfg -t gold_ccderaser.com')
@@ -251,4 +252,6 @@ tomoLib.runCheck('mv finalFiles/* .')
 tomoLib.runCheck('rmdir finalFiles')
 tomoLib.runCheck('mv ' .. filename .. '_first.ali ' .. filename .. '.ali')
 
-io.write('tomoAuto complete for ' .. arg[1] .. '\n')
+io.write('tomoAuto complete for ' .. stackFile .. '\n')
+end
+return tomoAuto

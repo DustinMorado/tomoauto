@@ -1,0 +1,6 @@
+#!/usr/bin/env lua
+
+local rootDir = os.getenv('TOMOAUTOROOT')
+local tomoAuto = assert(dofile(rootDir .. '/lib/tomoAuto.lua'))
+
+tomoAuto.reconstruct(arg[1], arg[2])
