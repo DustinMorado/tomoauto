@@ -9,16 +9,14 @@
 #------------------------------------------------------------------------------#
 # Arguments: arg[1] = fiducial size in nm <integer>                            #
 #===========================================================================--]]
-
---package.path = package.path .. ';' .. os.getenv('TOMOAUTOROOT') .. '/lib/?.lua'
-package.path = package.path .. ';' .. os.getenv('TOMOAUTOROOT') .. '/bin/?.lua'
+rootDir = os.getenv('TOMOAUTOROOT')
 local lfs = assert(require 'lfs')
-local tomoAuto = assert(require 'tomoAuto')
-local tomoOpt = assert(require 'tomoOpt')
+local tomoAuto = assert(dofile(rootDir .. '/bin/tomoAuto.lua'))
+local tomoOpt = assert(dofile(rootDir .. '/lib/getOpt.lua'))
 
---local shortOptsString = 'cd_hn_p_'
---local longOptsString = 'CTF, defocus, help, max, parallel'
---local arg, Opts = tomoOpt.get(arg, shortOptsString, longOptsString)
+shortString = 'c, d_, g, h, L_, p_, z_'
+longString = 'ctf, defocus, gpu, help, config, procnum, thickness'
+local arg, Opts = getOpt.parse(arg, shortString, longString)
 
 local fileTable = {}
 local i = 1

@@ -12,21 +12,15 @@
 # Arguments: arg[1]= image stack file <filename.st>                           #
 #            arg[2]= fiducial size in nm <integer>                            #
 #==========================================================================--]]
-
--- We need the struct module to handle reading the binary header
--- We need the lfs module to handle filesystem operations
--- We need to modify Lua's package search path to find the comwriter module
--- We need the comwriter module to write all of our IMOD command files
-package.path = package.path .. ';' .. os.getenv('TOMOAUTOROOT') .. '/lib/?.lua'
-package.cpath = package.cpath .. ';' .. os.getenv('TOMOAUTOROOT') .. '/lib/?.so'
-local comWriter = assert(require 'comWriter')
+local rootDir = os.getenv('TOMOAUTOROOT')
 local lfs = assert(require 'lfs')
-local tomoOpt = assert(require 'tomoOpt')
-local tomoLib = assert(require 'tomoLib')
+local comWriter = assert(dofile(rootDir .. '/lib/comWriter.lua'))
+local getOpt = assert(dofile(rootDir .. '/lib/getOpt.lua'))
+local tomoLib = assert(dofile(rootDir .. '/lib/tomoLib.lua'))
 
-local shortOptsString = 'cd_ghL_p_z_'
-local longOptsString = 'CTF, defocus, GPU, help, config, parallel, thickness'
-local arg, Opts = tomoOpt.get(arg, shortOptsString, longOptsString)
+local shortOptsString = 'c, d_, g, h, L_, p_, z_'
+local longOptsString = 'ctf, defocus, gpu, help, config, procnum, thickness'
+local arg, Opts = getOpt.parse(arg, shortOptsString, longOptsString)
 
 if Opts.h then tomoLib.dispHelp() return 0 end
 
@@ -86,6 +80,7 @@ end
 -- correctly. These settings are held in tomoAuto's global config file, but the
 -- user can also write local configs to overwrite the global settings on a per
 -- job basis. We write these files here:
+--
 config = Opts.L_
 comWriter.write(arg[1], tiltAxis, nx, ny, pixelSize, config)
 
