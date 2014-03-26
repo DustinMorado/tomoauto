@@ -8,20 +8,17 @@
 # Written: February 27th 2014                                                 #
 # Contact: Dustin.Morado@uth.tmc.edu                                          #
 #-----------------------------------------------------------------------------#
-# Arguments: arg[1]= image stack file <filename.st>                           #
-#            arg[2]= fiducial size in nm <integer>                            #
+# Arguments: arg[1] = image stack file <filename.st>                          #
+#            arg[2] = fiducial size in nm <integer>                           #
+#            arg[3] = table with option flags from getOpts                    #
 #==========================================================================--]]
 local rootDir = os.getenv('TOMOAUTOROOT')
 local lfs = assert(require 'lfs')
 local comWriter = assert(dofile(rootDir .. '/lib/comWriter.lua'))
-local getOpt = assert(dofile(rootDir .. '/lib/getOpt.lua'))
 local tomoLib = assert(dofile(rootDir .. '/lib/tomoLib.lua'))
 
 local tomoAuto = {}
-function tomoAuto.reconstruct(stackFile, fidSize)
-local shortOptsString = 'c, d_, g, h, L_, p_, z_'
-local longOptsString = 'ctf, defocus, gpu, help, config, procnum, thickness'
-local arg, Opts = getOpt.parse(arg, shortOptsString, longOptsString)
+function tomoAuto.reconstruct(stackFile, fidSize, Opts)
 
 if Opts.h then tomoLib.dispHelp() return 0 end
 

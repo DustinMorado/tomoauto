@@ -2,5 +2,9 @@
 
 local rootDir = os.getenv('TOMOAUTOROOT')
 local tomoAuto = assert(dofile(rootDir .. '/lib/tomoAuto.lua'))
+local getOpt = assert(dofile(rootDir .. '/lib/getOpt.lua'))
 
-tomoAuto.reconstruct(arg[1], arg[2])
+local sString = 'c, d_, g, h, L_, p_, z_'
+local lString = 'ctf, defocus, gpu, help, config, procnum, thickness'
+local arg, Opts = getOpt.parse(arg, sString, lString)
+tomoAuto.reconstruct(arg[1], arg[2], Opts)
