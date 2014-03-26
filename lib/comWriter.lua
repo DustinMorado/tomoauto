@@ -10,7 +10,7 @@
 #==========================================================================--]]
 local comWriter = {}
 local rootDir = os.getenv('TOMOAUTOROOT')
-local globalConfig = assert(loadfile(rootDir .. '/lib/globaConfig.lua'))
+local globalConfig = assert(loadfile(rootDir .. '/lib/globalConfig.lua'))
 globalConfig()
 
 local function writeCcderaserCom(inputFile)
