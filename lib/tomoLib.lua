@@ -96,9 +96,10 @@ end
 # tilt sections were not cut by newstack or RAPTOR. If more than 10% of the   #
 # original sections are missing, we abort the reconstruction                  #
 #-----------------------------------------------------------------------------#
-# Arguments: arg[1] = number of original sections <integer>                   #
+# Arguments: arg[1] = image filename <string>                                 #
+#            arg[2] = number of original sections <integer>                   #
 #==========================================================================--]]
-function tomoLib.checkAlign(nz)
+function tomoLib.checkAlign(filename, nz)
    local file = assert(io.open(filename .. '.ali', 'rb'))
    file:seek('set', 8)
    local aliNz = struct.unpack('i4', file:read(4))
@@ -111,8 +112,10 @@ end
 #                                  writeLog                                   #
 #-----------------------------------------------------------------------------#
 #  A fuction that writes the file tomoAuto.log                                #
+#-----------------------------------------------------------------------------#
+# Arguments: arg[1] = image filename <string>                                 #
 #==========================================================================--]]
-function tomoLib.writeLog()
+function tomoLib.writeLog(filename)
    local log = assert(io.open('tomoAuto.log', 'w'))
 
    local ccd = io.open('ccderaser.log', 'r')

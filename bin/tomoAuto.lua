@@ -103,13 +103,13 @@ end
 -- We should always remove the Xrays from the image using ccderaser
 io.write('Running ccderaser\n')
 tomoLib.runCheck('submfg -t ccderaser.com')
-tomoLib.writeLog()
+tomoLib.writeLog(filename)
 
 tomoLib.runCheck('mv ' .. arg[1] .. ' ' .. filename .. '_orig.st && mv '
          .. filename .. '_fixed.st ' .. arg[1])
 io.write('Running Coarse Alignment for ' .. arg[1] .. '\n')
 tomoLib.runCheck('submfg -t tiltxcorr.com xftoxg.com newstack.com')
-tomoLib.writeLog()
+tomoLib.writeLog(filename)
 
 -- Now we run RAPTOR to produce a succesfully aligned stack
 io.write('Now running RAPTOR (please be patient this may take some time)\n')
@@ -124,7 +124,7 @@ tomoLib.runCheck('mv ' .. startDir .. '/raptor1/IMOD/'
          .. filename .. '.tlt ' .. startDir)
 tomoLib.runCheck('mv ' .. startDir .. '/raptor1/IMOD/'
          .. filename .. '.xf ' .. startDir)
-tomoLib.writeLog()
+tomoLib.writeLog(filename)
 io.write('RAPTOR alignment for ' .. arg[1] .. ' SUCCESSFUL\n')
 
 tomoLib.checkFreeSpace()
@@ -152,7 +152,7 @@ if Opts.c then
    else
       tomoLib.runCheck('submfg -t ctfplotter.com ctfcorrection.com')
    end
-   tomoLib.writeLog()
+   tomoLib.writeLog(filename)
 
    tomoLib.runCheck('mv ' .. startDir .. '/' .. filename .. '.ali '
             .. startDir .. '/' .. filename .. '_first.ali')
@@ -172,25 +172,25 @@ tomoLib.runCheck('mv ' .. startDir .. '/raptor2/IMOD/' .. filename
 
 -- Make the erase model more suitable for erasing gold
 tomoLib.runCheck('submfg -t model2point.com point2model.com')
-tomoLib.writeLog()
+tomoLib.writeLog(filename)
 
 tomoLib.runCheck('mv ' .. startDir .. '/' .. filename .. '_erase.fid '
          .. startDir .. '/' .. filename .. '_erase.fid_orig')
 tomoLib.runCheck('mv ' .. startDir .. '/'.. filename .. '_erase.scatter.fid '
          .. startDir .. '/' ..filename .. '_erase.fid')
-tomoLib.writeLog()
+tomoLib.writeLog(filename)
 io.write('Fiducial model created for ' .. arg[1] .. ' SUCCESSFUL\n')
 
 io.write('Now erasing gold from aligned stack\n')
 tomoLib.runCheck('submfg -t gold_ccderaser.com')
-tomoLib.writeLog()
+tomoLib.writeLog(filename)
 
 tomoLib.runCheck('mv ' .. startDir .. '/' .. filename .. '.ali '
          .. startDir .. '/' .. filename .. '_second.ali')
 tomoLib.runCheck('mv ' .. startDir .. '/' .. filename .. '_erase.ali '
          .. startDir .. '/' .. filename .. '.ali')
 
-if tomoLib.checkAlign(nz) then
+if tomoLib.checkAlign(filename, nz) then
 
    if Opts.p_ then
       tomoLib.runCheck('splittilt -n ' .. Opts.p_ .. ' tilt.com')
@@ -202,7 +202,7 @@ if tomoLib.checkAlign(nz) then
 else
    io.write('Final alignment has cut too many sections! Aborting\n')
 end
-tomoLib.writeLog()
+tomoLib.writeLog(filename)
 
 tomoLib.runCheck('binvol -binning 4 ' .. filename .. '_full.rec '
          .. filename .. '.bin4 2>&1 /dev/null')
@@ -225,7 +225,7 @@ if Opts.p_ then
 else
    tomoLib.runCheck('submfg nad_eed_3d-all')
 end
-tomoLib.writeLog()
+tomoLib.writeLog(filename)
 
 io.write('Now running file and space cleanup\n')
 ctfPlotCom = io.open('ctfplotter.com', 'r')
