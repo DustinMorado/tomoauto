@@ -252,7 +252,7 @@ tomoLib.runCheck('rm -rf raptor*')
 tomoLib.runCheck('mv finalFiles/* .')
 tomoLib.runCheck('rmdir finalFiles')
 tomoLib.runCheck('mv ' .. filename .. '_first.ali ' .. filename .. '.ali')
-
+lfs.chdir('..')
 io.write('tomoAuto complete for ' .. stackFile .. '\n')
 end
 return tomoAuto

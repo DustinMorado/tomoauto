@@ -9,19 +9,45 @@
 #------------------------------------------------------------------------------#
 # Arguments: arg[1] = fiducial size in nm <integer>                            #
 #===========================================================================--]]
-rootDir = os.getenv('TOMOAUTOROOT')
+local rootDir = os.getenv('TOMOAUTOROOT')
 local lfs = assert(require 'lfs')
-local tomoAuto = assert(dofile(rootDir .. '/lib/tomoAuto.lua'))
 local getOpt = assert(dofile(rootDir .. '/lib/getOpt.lua'))
 
-shortString = 'c, d_, g, h, L_, p_, z_'
-longString = 'ctf, defocus, gpu, help, config, procnum, thickness'
+local shortString = 'c, d_, g, h, L_, n_, p_, z_'
+local longString = 'ctf, defocus, gpu, help, config, number, procnum, thickness'
 local arg, Opts = getOpt.parse(arg, shortString, longString)
+
+local fileList = {}
 
 for file in lfs.dir('.') do
 
    if file:find('%w+%.st$') then
-      tomoAuto.reconstruct(file, arg[1], Opts)
+      table.insert(fileList, file)
    end
 
+end
+
+local runString = 'tomoAuto '
+for k,v in pairs(Opts) do
+   if v then
+      runString = runString .. '-' .. k:sub(1,1) .. ' '
+      if v ~= true then
+         runString = runString .. v .. ' '
+      end
+   end
+end
+
+local parallel = Opts.n_ or 1
+local batchString = ''
+for i = 1, #fileList do
+   batchString = batchString .. runString .. ' ' .. fileList[i] .. ' ' .. arg[1] .. '&'
+   if i % parallel == 0 then
+      batchString = batchString .. 'wait'
+      os.execute(batchString)
+      batchString = ''
+   elseif i == #fileList then
+      batchString = batchString .. 'wait'
+      os.execute(batchString)
+      batchString = ''
+   end
 end
