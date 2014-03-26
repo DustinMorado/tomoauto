@@ -6,16 +6,19 @@
 # Author: Dustin Morado                                                        #
 # Written: March 24th 2014                                                     #
 # Contact: dustin.morado@uth.tmc.edu                                           #
-#------------------------------------------------------------------------------#
-# Arguments: arg[1] = fiducial size in nm <integer>                            #
 #===========================================================================--]]
 local rootDir = os.getenv('TOMOAUTOROOT')
 local lfs = assert(require 'lfs')
 local getOpt = assert(dofile(rootDir .. '/lib/getOpt.lua'))
 
-local shortString = 'c, d_, g, h, L_, n_, p_, z_'
-local longString = 'ctf, defocus, gpu, help, config, number, procnum, thickness'
+local shortString = 'c, d_, f_, g, h, L_, n_, p_, z_'
+local longString = 'ctf, defocus, fid, gpu, help, config, number, procnum, thickness'
 local arg, Opts = getOpt.parse(arg, shortString, longString)
+
+local fid = Opts.f_
+local parallel = Opts.n_ or 1
+Opts.f_ = nil
+Opts.n_ = nil
 
 local fileList = {}
 
@@ -37,17 +40,16 @@ for k,v in pairs(Opts) do
    end
 end
 
-local parallel = Opts.n_ or 1
 local batchString = ''
 for i = 1, #fileList do
-   batchString = batchString .. runString .. ' ' .. fileList[i] .. ' ' .. arg[1] .. '&'
+   batchString = batchString .. runString .. ' ' .. fileList[i] .. ' ' .. fid .. '&'
    if i % parallel == 0 then
       batchString = batchString .. 'wait'
-      os.execute(batchString)
+      print(batchString)
       batchString = ''
    elseif i == #fileList then
       batchString = batchString .. 'wait'
-      os.execute(batchString)
+      print(batchString)
       batchString = ''
    end
 end
