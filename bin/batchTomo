@@ -12,7 +12,7 @@
 rootDir = os.getenv('TOMOAUTOROOT')
 local lfs = assert(require 'lfs')
 local tomoAuto = assert(dofile(rootDir .. '/lib/tomoAuto.lua'))
-local tomoOpt = assert(dofile(rootDir .. '/lib/getOpt.lua'))
+local getOpt = assert(dofile(rootDir .. '/lib/getOpt.lua'))
 
 shortString = 'c, d_, g, h, L_, p_, z_'
 longString = 'ctf, defocus, gpu, help, config, procnum, thickness'
