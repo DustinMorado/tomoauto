@@ -10,7 +10,8 @@
 #==========================================================================--]]
 local comWriter = {}
 local rootDir = os.getenv('TOMOAUTOROOT')
-globalConfig = assert(dofile(rootDir .. '/lib/globalConfig.lua'))
+local globalConfig = assert(loadfile(rootDir .. '/lib/globaConfig.lua'))
+globalConfig()
 
 local function writeCcderaserCom(inputFile)
 	local comName = 'ccderaser.com'
@@ -374,5 +375,4 @@ function comWriter.write(inputFile, tiltAxis, nx, ny, pixelSize, configFile)
    writeCTFCorrectCom(inputFile,pixelSize)
    writeNADEED3DCom()
 end
-
 return comWriter

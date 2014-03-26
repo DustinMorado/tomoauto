@@ -104,23 +104,27 @@ tiltxcorrExcludeCentralPeak = nil
 -- BordersInXandY:
 -- Number of pixels to trim off each edge in X and in Y (the default is to use
 -- the whole image).
-tiltxcorrBordersInXandY_use = nil tiltxcorrBordersInXandY = "0 0"
+tiltxcorrBordersInXandY_use = nil
+tiltxcorrBordersInXandY = "0 0"
 
 -- XMinAndMax:
 -- Starting and ending X coordinates of a region to correlate, based on the
 -- position of the region at zero tilt.  This entry will override an X border
 -- value entered with BordersInXandY.
-tiltxcorrXMinAndMax_use = nil tiltxcorrXMinAndMax = "0 0"
+tiltxcorrXMinAndMax_use = nil
+tiltxcorrXMinAndMax = "0 0"
 
 -- YMinAndMax:
 -- Starting and ending Y coordinates of a region to correlate. This entry will
 -- override a Y border value entered with BordersInXandY.
-tiltxcorrYMinAndMax_use = nil tiltxcorrYMinAndMax = "0 0"
+tiltxcorrYMinAndMax_use = nil
+tiltxcorrYMinAndMax = "0 0"
 
 -- PadsInXandY:
 -- Number of pixels to pad images in X and in Y. The default is 5% of the image
 -- dimensions up to 20 pixels.
-tiltxcorrPadsInXandY_use = nil tiltxcorrPadsInXandY = "20 20" 
+tiltxcorrPadsInXandY_use = nil
+tiltxcorrPadsInXandY = "20 20" 
 
 -- TapersInXandY: Number of pixels to taper images in X and Y. The default is 10%
 -- of the image dimensions up to 100 pixels.
@@ -130,7 +134,8 @@ tiltxcorrTapersInXandY = "100 100"
 -- StartingEndingViews:
 -- Starting and ending view numbers, numbered from 1, for doing a subset of
 -- views.
-tiltxcorrStartingEndingViews_use = nil tiltxcorrStartingEndingViews = "1 129"
+tiltxcorrStartingEndingViews_use = nil
+tiltxcorrStartingEndingViews = "1 129"
  
 -- CumulativeCorrelation:
 -- Use this option to add up previously aligned pictures to get the reference
@@ -166,22 +171,26 @@ xftoxgNumberToFit = 0
 -- Do a global alignment to the given section; this will give the reference
 -- section a unit transform and keep it from being transformed. Sections are
 -- numbered from 1.
-xftoxgReferenceSection_use = nil xftoxgReferenceSection = 64
+xftoxgReferenceSection_use = nil
+xftoxgReferenceSection = 64
 
 -- OrderOfPolynomialFit:
 -- Order of the polynomial fit to the data. The default is 1 (linear fit).
-xftoxgOrderOfPolynomialFit_use = nil xftoxgOrderOfPolynomialFit = 1
+xftoxgOrderOfPolynomialFit_use = nil
+xftoxgOrderOfPolynomialFit = 1
 
 -- HybridFits:
 -- Number of parameters to eliminate trends for with a hybrid alignment: 2 for
 -- translations only, 3 for rotations also, 4 for size changes also.
-xftoxgHybridFits_use = nil xftoxgHybridFits = 2
+xftoxgHybridFits_use = nil
+xftoxgHybridFits = 2
 
 -- RangeOfAnglesInAverage:
 -- Compute the global average center position, and the center position for local
 -- fits, using the largest group of sections whose rotation angles fall within
 -- the given range.
-xftoxgRangeOfAnglesInAverage_use = nil xftoxgRangeofAnglesInAverage = 20.0
+xftoxgRangeOfAnglesInAverage_use = nil
+xftoxgRangeofAnglesInAverage = 20.0
 
 -- These are the options for the newstack command to apply the xforms produced
 -- and create a new image stack.
@@ -211,13 +220,15 @@ newstackFloatDensities = 2
 -- and white values. This works properly only when the output file will be
 -- bytes. It will not work if the data were loaded into 3dmod with intensity
 -- scaling; use mrcbyte in that case.
-newstackContrastBlackWhite_use = nil newstackContrastBlackWhite = "0 255"
+newstackContrastBlackWhite_use = nil
+newstackContrastBlackWhite = "0 255"
 
 -- ScaleMinAndMax:
 -- Rescale the densities of all sections by the same factors so that the
 -- original minimum and maximum density will be mapped to the Min and Max values
 -- that are entered.
-newstackScaleMinAndMax_use = nil newstackScaleMinAndMax = "0 255"
+newstackScaleMinAndMax_use = nil
+newstackScaleMinAndMax = "0 255"
 
 --[[==========================================================================#
 # Step 4: CTF Correction                                                      #
@@ -387,7 +398,8 @@ point2modelScatteredPoints_use = 1
 -- Maximum number of points per contour.  The default is to put all points into
 -- one contour.  This option is not allowed if the point file has contour
 -- numbers.
-point2modelPointsPerContour_use = nil point2modelPointsPerContour = 1
+point2modelPointsPerContour_use = nil
+point2modelPointsPerContour = 1
 
 -- PlanarContours:
 -- Start a new contour at each new Z value encountered when reading sequentially
@@ -531,8 +543,11 @@ tiltPARALLEL_use = nil
 -- PERPENDICULAR:
 -- Output slices perpendicular to the plane of the specimen. This output is the
 -- default since it corresponds to the way in which slices are computed.
-if tiltPARALLEL_use then tiltPERPENDICULAR_use = nil else tiltPERPENDICULAR_use
-   = 1 end
+if tiltPARALLEL_use then 
+   tiltPERPENDICULAR_use = nil 
+else 
+   tiltPERPENDICULAR_use = 1 
+end
 
 -- RADIAL:
 -- This entry controls low-pass filtering with the radial weighting function.The
@@ -564,7 +579,8 @@ tiltSHIFT = "0.0 0.0"
 -- The numbers refer to slices in the X/Z plane and correspond to Y coordinates
 -- in the projection images.  Slices are numbered from 0.  The interval entry is
 -- optional, must be positive, and defaults to 1 when omitted.
-tiltSLICE_use = nil tiltSLICE = "0 2048 1"
+tiltSLICE_use = nil
+tiltSLICE = "0 2048 1"
 
 -- SUBSETSTART:
 -- If the aligned stack contains a subset of the area in the original images,
@@ -573,7 +589,8 @@ tiltSLICE_use = nil tiltSLICE = "0 2048 1"
 -- coordinates (numbered from 0) of the lower left corner of the subset within
 -- the original images. A FULLIMAGE entry must also be included. If the aligned
 -- stack is larger than the original images, use negative values.
-tiltSUBSETSTART_use = nil tiltSUBSETSTART = "0 0"
+tiltSUBSETSTART_use = nil
+tiltSUBSETSTART = "0 0"
 
 -- THICKNESS:
 -- Thickness in Z of reconstructed volume, in pixels
@@ -584,11 +601,13 @@ tiltTHICKNESS = 800
 -- to use the best GPU on the system, or the number of a specific GPU (numbered
 -- from 1).  The GPU can be used for all types of operations as long as there is
 -- sufficient memory.
-tiltUseGPU_use = nil tiltUseGPU = 0
+tiltUseGPU_use = nil
+tiltUseGPU = 0
 
 -- WIDTH:
 -- The width of the output image; the default is the width of the input image.
-tiltWIDTH_use = nil tiltWIDTH = 2048
+tiltWIDTH_use = nil
+tiltWIDTH = 2048
 
 -- XAXISTILT:
 -- This entry allows one to rotate the reconstruction around the X axis, so that
@@ -598,7 +617,8 @@ tiltWIDTH_use = nil tiltWIDTH = 2048
 -- reconstruction extends 500 slices, and the section is 5 pixels below the
 -- middle in the first slice and 5 pixels above the middle in the last slice,
 -- the angle should be 1.1 (the arc sine of 10/500).
-tiltXAXISTILT_use = nil tiltXAXISTILT = 5.00
+tiltXAXISTILT_use = nil
+tiltXAXISTILT = 5.00
 
 -- XTILTFILE:
 -- Use this entry to specify a file containing a list of tilts to be applied
