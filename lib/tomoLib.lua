@@ -1,3 +1,4 @@
+local startDir = os.getenv('TOMOAUTOROOT')
 local struct = assert(require 'struct')
 
 --[[==========================================================================#
