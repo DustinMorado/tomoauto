@@ -23,14 +23,17 @@ function tomoAuto.reconstruct(stackFile, fidSize, Opts)
 if Opts.h then tomoLib.dispHelp() return 0 end
 
 local filename = string.sub(stackFile, 1, -4)
+
 if lfs.mkdir(filename) then -- successfully created directory
    tomoLib.runCheck('mv ' .. stackFile .. ' ' .. filename)
    assert(lfs.chdir(filename))
 else -- either directory exists or permission denied
+
    if not lfs.chdir(filename) then --
       io.stderr:write('Cannot make start dir. Check Permissions')
       return 1
    end
+
 end
 
 local startDir = lfs.currentdir()
@@ -129,6 +132,7 @@ tomoLib.checkFreeSpace()
 
 -- Ok for the new stuff here we add CTF correction
 -- noise background is now set in the global config file
+--
 if Opts.c then
    io.write('Now running ctfplotter and ctfphaseflip for CTF correction\n')
    tomoLib.checkFreeSpace()
