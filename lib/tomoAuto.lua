@@ -199,7 +199,7 @@ tomoLib.runCheck('mv ' .. startDir .. '/' .. filename .. '_erase.ali '
          .. startDir .. '/' .. filename .. '.ali')
 
 if not tomoLib.checkAlign(filename, nz) then
-   io.write('RAPTOR has cut too many sections! Bad Data!')
+   io.stderr:write('RAPTOR has cut too many sections! Bad Data!')
    tomoLib.writeLog(filename)
    return 1
 end
