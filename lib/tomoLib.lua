@@ -105,12 +105,9 @@ function tomoLib.checkAlign(filename, nz)
    local aliNz = struct.unpack('i4', file:read(4))
    file:close()
    local cut = nz - aliNz
-
-   if (aliNz / nz) >= 0.9 then return true else return nil end
-
    io.write('The number of intial sections is:\t' .. nz)
    io.write('The number of sections cut was:\t' .. cut)
-
+   if (aliNz / nz) >= 0.9 then return true else return nil end
 end
 --[[==========================================================================#
 #                                  writeLog                                   #
