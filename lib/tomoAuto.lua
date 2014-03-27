@@ -13,7 +13,7 @@
 #            arg[3] = table with option flags from getOpts                    #
 #==========================================================================--]]
 local rootDir = os.getenv('TOMOAUTOROOT')
-local lfs = assert(require 'lfs')
+-- local lfs = assert(require 'lfs')
 local comWriter = assert(dofile(rootDir .. '/lib/comWriter.lua'))
 local tomoLib = assert(dofile(rootDir .. '/lib/tomoLib.lua'))
 
@@ -83,7 +83,7 @@ end
 -- job basis. We write these files here:
 --
 config = Opts.L_
-comWriter.write(stackFile, tiltAxis, nx, ny, pixelSize, config)
+comWriter.write(stackFile, tiltAxis, nx, ny, pixelSize, fidPix, conig)
 
 if Opts.g then
    local file = io.open('tilt.com', 'a')
@@ -116,9 +116,7 @@ tomoLib.writeLog(filename)
 io.write('Now running RAPTOR (please be patient this may take some time)\n')
 io.write('RAPTOR starting for ' .. stackFile .. '..........\n')
 tomoLib.checkFreeSpace(startDir)
-tomoLib.runCheck('RAPTOR -execPath /usr/local/IMOD/bin/realbin/ -path '
-         ..	startDir .. ' -input ' .. filename .. '.preali -output '
-         .. startDir .. '/raptor1 -diameter ' .. fidPix)
+tomoLib.runCheck('submfg -t raptor1.com')
 tomoLib.runCheck('mv ' .. startDir .. '/raptor1/align/'
          .. filename .. '.ali ' .. startDir)
 tomoLib.runCheck('mv ' .. startDir .. '/raptor1/IMOD/'
@@ -172,9 +170,7 @@ end
 io.write('Now running RAPTOR to track gold to erase particles\n')
 io.write('RAPTOR starting for ' .. stackFile .. '..........\n')
 tomoLib.checkFreeSpace(startDir)
-tomoLib.runCheck('RAPTOR -execPath /usr/local/IMOD/bin/realbin/ -path '
-         .. startDir .. ' -input ' .. filename .. '.ali -output '
-         .. startDir .. '/raptor2 -diameter ' .. fidPix ..' -tracking')
+tomoLib.runCheck('submfg -t raptor2.com')
 tomoLib.runCheck('mv ' .. startDir .. '/raptor2/IMOD/' .. filename 
          .. '.fid.txt ' .. startDir .. '/' .. filename .. '_erase.fid')
 

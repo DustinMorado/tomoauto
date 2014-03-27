@@ -8,11 +8,12 @@
 # Date: 02/28/2014                                                            #
 # Contact: dustin.morado@uth.tmc.edu                                          #
 #==========================================================================--]]
-local comWriter = {}
+local lfs = require 'lfs'
 local rootDir = os.getenv('TOMOAUTOROOT')
 local globalConfig = assert(loadfile(rootDir .. '/lib/globalConfig.lua'))
 globalConfig()
 
+local comWriter = {}
 local function writeCcderaserCom(inputFile)
 	local comName = 'ccderaser.com'
 	local filename = string.sub(inputFile, 1, -4)
@@ -27,6 +28,7 @@ local function writeCcderaserCom(inputFile)
 	file:write('PeakCriterion ' .. ccderaserPeakCriterion .. '\n')
 	file:write('DiffCriterion ' .. ccderaserDiffCriterion .. '\n')
 	file:write('GrowCriterion ' .. ccderaserGrowCriterion .. '\n')
+
 	file:write('ScanCriterion ' .. ccderaserScanCriterion .. '\n')
 	file:write('MaximumRadius ' .. ccderaserMaximumRadius .. '\n')
 	file:write('AnnulusWidth ' .. ccderaserAnnulusWidth .. '\n')
@@ -133,6 +135,50 @@ local function writeNewstackCom(inputFile)
       file:write('ScaleMinAndMax ' .. newstackScaleMinAndMax .. '\n') end
 
 	file:close()
+end
+
+local function writeRaptorCom(inputFile, fidPix)
+   local comName1 = 'raptor1.com'
+   local comName2 = 'raptor2.com'
+   local filename = string.sub(inputFile, 1,-4)
+   local file1 = assert(io.open(comName1, 'w'))
+   local file2 = assert(io.open(comName2, 'w'))
+   file1:write('# THIS IS A COMMAND FILE TO RUN RAPTOR\n')
+   file1:write('$RAPTOR -StandardInput\n')
+   file1:write('RaptorExecPath ' .. raptorExecPath .. '\n')
+   file1:write('InputPath ' .. lfs.currentdir() .. '\n')
+   file1:write('InputFile ' .. filename .. '.preali\n')
+   file1:write('OutputPath ' .. lfs.currentdir() .. '/raptor1\n')
+   file1:write('Diameter ' .. fidPix .. '\n')
+   if raptorAnglesInHeader_use then
+      file1:write('AnglesInHeader\n')
+   end
+   if raptorBinning_use then
+      file1:write('Binning ' .. raptorBinning .. '\n')
+   end
+   if raptorxRay_use then
+      file1:write('xRay\n')
+   end
+   file1:close()
+
+   file2:write('# THIS IS A COMMAND FILE TO RUN RAPTOR\n')
+   file2:write('$RAPTOR -StandardInput\n')
+   file2:write('RaptorExecPath ' .. raptorExecPath .. '\n')
+   file2:write('InputPath ' .. lfs.currentdir() .. '\n')
+   file2:write('InputFile ' .. filename .. '.ali\n')
+   file2:write('OutputPath ' .. lfs.currentdir() .. '/raptor2\n')
+   file2:write('Diameter ' .. fidPix .. '\n')
+   if raptorAnglesInHeader_us then
+      file2:write('AnglesInHeader\n')
+   end
+   if raptorBinning_use then
+      file2:write('Binning ' .. raptorBinning .. '\n')
+   end
+   file2:write('TrackingOnly\n')
+   if raptorxRay_use then
+      file2:write('xRay\n')
+   end
+   file2:close()
 end
 
 local function writeOpen2ScatterCom(inputFile)
@@ -283,7 +329,7 @@ local function approximateDefocus(inputFile)
 	return sum / z
 end
 
-local function writeCTFPlotterCom(inputFile, tiltAxis, pixelSize)
+local function writeCTFPlotterCom(inputFile, tiltAxis, pixelSize, fidPix)
 	local comName = 'ctfplotter.com'
 	local filename = string.sub(inputFile, 1, -4)
 	expectDef = approximateDefocus(inputFile)
@@ -355,7 +401,7 @@ local function writeNADEED3DCom()
    file:close()
 end
 
-function comWriter.write(inputFile, tiltAxis, nx, ny, pixelSize, configFile)
+function comWriter.write(inputFile, tiltAxis, nx, ny, pixelSize, fidPix, configFile)
 
    if configFile then
       localConfig = loadfile(configFile)
@@ -368,6 +414,7 @@ function comWriter.write(inputFile, tiltAxis, nx, ny, pixelSize, configFile)
    writeTiltXCorrCom(inputFile, tiltAxis)
    writeXfToXgCom(inputFile)
    writeNewstackCom(inputFile)
+   writeRaptorCom(inputFile, fidPix)
    writeOpen2ScatterCom(inputFile)
    writeGoldCom(inputFile)
    writeTiltCom(inputFile, nx, ny)

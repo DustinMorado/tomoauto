@@ -1,5 +1,5 @@
 --[[==========================================================================# 
-#                                   globalConfig.lua                          #
+#                               globalConfig.lua                              #
 #-----------------------------------------------------------------------------#
 # This is the central configuration file for eTomo_auto it is a long file     #
 # and it has been attempted at great lengths to document this file as         #
@@ -8,7 +8,6 @@
 # manner in which eTomo_auto is run.  The defaults in this file are from the  #
 # defaults in eTomo and not necessarily the ones in the specific man pages.   #
 #==========================================================================--]]
-
 --[[==========================================================================#
 # Step 1: Pre-Processing                                                      #
 #-----------------------------------------------------------------------------#
@@ -229,6 +228,34 @@ newstackContrastBlackWhite = "0 255"
 -- that are entered.
 newstackScaleMinAndMax_use = nil
 newstackScaleMinAndMax = "0 255"
+
+--[[==========================================================================#
+# Step 4: RAPTOR automated alignment algorithm                                #
+#-----------------------------------------------------------------------------#
+# Commands: RAPTOR                                                            #
+#==========================================================================--]]
+-- These are the options for the RAPTOR command used to automatically create
+-- a gold tracking model and then align the model.
+
+-- RaptorExecPath:
+-- Path where RAPTOR binaries are located (REQUIRED)
+raptorExecPath = "/usr/local/IMOD/bin/realbin/"
+
+-- AnglesInHeader:
+-- If this option is specified, RAPTOR will extract tilt angles from the header
+-- of the input stack. Otherwise RAPTOR requires a .rawtlt file.
+raptorAnglesInHeader_use = nil
+
+-- Binning:
+-- This option causes RAPTOR to bin the image stack before computing the
+-- alignment. The binning does not affect the value of Diameter.
+raptorBinning_use = nil
+raptorBinning = 4
+
+-- xRay:
+-- if this option is specified long, straight line features will be attempted to
+-- be removed to help the marker identification process.
+raptorxRay_use = true
 
 --[[==========================================================================#
 # Step 4: CTF Correction                                                      #
