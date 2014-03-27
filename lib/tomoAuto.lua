@@ -116,7 +116,7 @@ tomoLib.writeLog(filename)
 io.write('Now running RAPTOR (please be patient this may take some time)\n')
 io.write('RAPTOR starting for ' .. stackFile .. '..........\n')
 tomoLib.checkFreeSpace(startDir)
-tomoLib.runCheck('RAPTOR -execPath /usr/local/RAPTOR3.0/bin -path '
+tomoLib.runCheck('RAPTOR -execPath /usr/local/IMOD/bin/realbin/ -path '
          ..	startDir .. ' -input ' .. filename .. '.preali -output '
          .. startDir .. '/raptor1 -diameter ' .. fidPix)
 tomoLib.runCheck('mv ' .. startDir .. '/raptor1/align/'
@@ -172,7 +172,7 @@ end
 io.write('Now running RAPTOR to track gold to erase particles\n')
 io.write('RAPTOR starting for ' .. stackFile .. '..........\n')
 tomoLib.checkFreeSpace(startDir)
-tomoLib.runCheck('RAPTOR -execPath /usr/local/RAPTOR3.0/bin/ -path '
+tomoLib.runCheck('RAPTOR -execPath /usr/local/IMOD/bin/realbin/ -path '
          .. startDir .. ' -input ' .. filename .. '.ali -output '
          .. startDir .. '/raptor2 -diameter ' .. fidPix ..' -tracking')
 tomoLib.runCheck('mv ' .. startDir .. '/raptor2/IMOD/' .. filename 

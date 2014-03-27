@@ -12,7 +12,7 @@ local tomoLib = {}
 #==========================================================================--]]
 function tomoLib.dispHelp()
    io.write(
-   '\nUsage: \n\z
+   [[\nUsage: \n\z
    tomoAuto [-c -d <int> -g -h -L <file> -p <int> -z <int>] <file.st> <fid>\n\z
    Automates the alignment of tilt series and the reconstruction of\z
    these series into 3D tomograms.\n\n\z
@@ -22,7 +22,7 @@ function tomoLib.dispHelp()
    -h, --help \t Prints this information and exits\n\z
    -L, --config \t Sources a local config file\n\z
    -p, --parallel \t Uses <int> processors to speed up tilt\n\z
-   -z, --thickness \t Create a tomogram with <int> thickness\n')
+   -z, --thickness \t Create a tomogram with <int> thickness\n]])
    return
 end
 --[[==========================================================================#
