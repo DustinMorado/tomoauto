@@ -45,11 +45,11 @@ for i = 1, #fileList do
    batchString = batchString .. runString .. ' ' .. fileList[i] .. ' ' .. fid .. '&'
    if i % parallel == 0 then
       batchString = batchString .. 'wait'
-      print(batchString)
+      os.execute(batchString)
       batchString = ''
    elseif i == #fileList then
       batchString = batchString .. 'wait'
-      print(batchString)
+      os.execute(batchString)
       batchString = ''
    end
 end
