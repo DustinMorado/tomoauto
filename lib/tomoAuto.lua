@@ -178,6 +178,12 @@ tomoLib.runCheck('RAPTOR -execPath /usr/local/RAPTOR3.0/bin/ -path '
 tomoLib.runCheck('mv ' .. startDir .. '/raptor2/IMOD/' .. filename 
          .. '.fid.txt ' .. startDir .. '/' .. filename .. '_erase.fid')
 
+if not tomoLib.checkAlign(filename, nz) then
+   io.stderr:write('RAPTOR has cut too many sections. Bad Data!')
+   tomoLib.writeLog(filename)
+   return 1
+end
+
 -- Make the erase model more suitable for erasing gold
 tomoLib.runCheck('submfg -t model2point.com point2model.com')
 tomoLib.writeLog(filename)
@@ -197,12 +203,6 @@ tomoLib.runCheck('mv ' .. startDir .. '/' .. filename .. '.ali '
          .. startDir .. '/' .. filename .. '_second.ali')
 tomoLib.runCheck('mv ' .. startDir .. '/' .. filename .. '_erase.ali '
          .. startDir .. '/' .. filename .. '.ali')
-
-if not tomoLib.checkAlign(filename, nz) then
-   io.stderr:write('RAPTOR has cut too many sections! Bad Data!')
-   tomoLib.writeLog(filename)
-   return 1
-end
 
 if Opts.p_ then
    tomoLib.runCheck('splittilt -n ' .. Opts.p_ .. ' tilt.com')
