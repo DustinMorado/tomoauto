@@ -128,6 +128,12 @@ tomoLib.runCheck('mv ' .. startDir .. '/raptor1/IMOD/'
 tomoLib.writeLog(filename)
 io.write('RAPTOR alignment for ' .. stackFile .. ' SUCCESSFUL\n')
 
+if not tomoLib.checkAlign(filename, nz) then
+   io.error:write('RAPTOR has cut too many sections. Bad Data!')
+   tomoLib.writeLog{filename)
+   return 1
+end
+
 tomoLib.checkFreeSpace()
 
 -- Ok for the new stuff here we add CTF correction
@@ -192,18 +198,19 @@ tomoLib.runCheck('mv ' .. startDir .. '/' .. filename .. '.ali '
 tomoLib.runCheck('mv ' .. startDir .. '/' .. filename .. '_erase.ali '
          .. startDir .. '/' .. filename .. '.ali')
 
-if tomoLib.checkAlign(filename, nz) then
-
-   if Opts.p_ then
-      tomoLib.runCheck('splittilt -n ' .. Opts.p_ .. ' tilt.com')
-      tomoLib.runCheck('processchunks -g ' .. Opts.p_ .. ' tilt')
-   else
-      tomoLib.runCheck('submfg -t tilt.com')
-   end
-
-else
-   io.write('Final alignment has cut too many sections! Aborting\n')
+if not tomoLib.checkAlign(filename, nz) then
+   io.write('RAPTOR has cut too many sections! Bad Data!')
+   tomoLib.writeLog(filename)
+   return 1
 end
+
+if Opts.p_ then
+   tomoLib.runCheck('splittilt -n ' .. Opts.p_ .. ' tilt.com')
+   tomoLib.runCheck('processchunks -g ' .. Opts.p_ .. ' tilt')
+else
+   tomoLib.runCheck('submfg -t tilt.com')
+end
+
 tomoLib.writeLog(filename)
 
 tomoLib.runCheck('binvol -binning 4 ' .. filename .. '_full.rec '

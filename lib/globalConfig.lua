@@ -311,7 +311,7 @@ ctfRightDefTol = 2000
 -- AngleRange:
 -- When -autoFit is entered, this entry sets the extent over which steps will be
 -- taken in autofitting.
-ctfAngleRange = '-30.0 30.0'
+ctfAngleRange = '-40.0 40.0'
 
 -- AutoFitRangeAndStep:
 -- Do initial autofitting over the whole tilt series with the given range of
