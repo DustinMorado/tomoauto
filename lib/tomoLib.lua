@@ -31,8 +31,8 @@ end
 # A function to check that there is enough free space to successfully run     #
 # some of the more data heavy IMOD routines                                   #
 #==========================================================================--]]
-function tomoLib.checkFreeSpace()
-	local file = assert(io.popen('df -h ' .. startDir, 'r'))
+function tomoLib.checkFreeSpace(Directory)
+	local file = assert(io.popen('df -h ' .. Directory, 'r'))
 	local space = string.sub(string.match(file:read('*a'), '.%d%%'), 1, -2)
    space = tonumber(space)
 	file:close()

@@ -38,7 +38,7 @@ end
 
 local startDir = lfs.currentdir()
 local nx, ny, nz, feiLabel, tiltAxis, pixelSize, fidPix = tomoLib.findITP(stackFile, fidSize)
-tomoLib.checkFreeSpace()
+tomoLib.checkFreeSpace(startDir)
 
 io.write('Running IMOD extracttilts for ' .. filename .. '\n')
 tomoLib.runCheck('extracttilts -input ' .. stackFile .. ' -output '
@@ -115,7 +115,7 @@ tomoLib.writeLog(filename)
 -- Now we run RAPTOR to produce a succesfully aligned stack
 io.write('Now running RAPTOR (please be patient this may take some time)\n')
 io.write('RAPTOR starting for ' .. stackFile .. '..........\n')
-tomoLib.checkFreeSpace()
+tomoLib.checkFreeSpace(startDir)
 tomoLib.runCheck('RAPTOR -execPath /usr/local/RAPTOR3.0/bin -path '
          ..	startDir .. ' -input ' .. filename .. '.preali -output '
          .. startDir .. '/raptor1 -diameter ' .. fidPix)
@@ -134,14 +134,14 @@ if not tomoLib.checkAlign(filename, nz) then
    return 1
 end
 
-tomoLib.checkFreeSpace()
+tomoLib.checkFreeSpace(startDir)
 
 -- Ok for the new stuff here we add CTF correction
 -- noise background is now set in the global config file
 --
 if Opts.c then
    io.write('Now running ctfplotter and ctfphaseflip for CTF correction\n')
-   tomoLib.checkFreeSpace()
+   tomoLib.checkFreeSpace(startDir)
 
    if Opts.d_ then
       local newDefocus = tonumber(Opts.d_) * 1000
@@ -171,7 +171,7 @@ end
 -- Now we use RAPTOR to make a fiducial model to erase the gold in the stack
 io.write('Now running RAPTOR to track gold to erase particles\n')
 io.write('RAPTOR starting for ' .. stackFile .. '..........\n')
-tomoLib.checkFreeSpace()
+tomoLib.checkFreeSpace(startDir)
 tomoLib.runCheck('RAPTOR -execPath /usr/local/RAPTOR3.0/bin/ -path '
          .. startDir .. ' -input ' .. filename .. '.ali -output '
          .. startDir .. '/raptor2 -diameter ' .. fidPix ..' -tracking')
