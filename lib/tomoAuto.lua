@@ -130,7 +130,7 @@ io.write('RAPTOR alignment for ' .. stackFile .. ' SUCCESSFUL\n')
 
 if not tomoLib.checkAlign(filename, nz) then
    io.error:write('RAPTOR has cut too many sections. Bad Data!')
-   tomoLib.writeLog{filename)
+   tomoLib.writeLog(filename)
    return 1
 end
 
