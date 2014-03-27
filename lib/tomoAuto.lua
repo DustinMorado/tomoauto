@@ -98,7 +98,17 @@ if Opts.z_ then
            .. tostring(Opts.z_))
    file = io.open('tilt.com', 'w')
    file:write(contents)
-   file:close()
+   file:close(); file = nil
+end
+
+if feiLabel == 'Fei' then
+   local file = io.open('ctfplotter.com', 'r')
+   local contents = file:read('*a')
+   contents = contents:gsub('K2background%/polara%-K2%-2013%.ctg', 
+      'CCDBackground%/polara%-CCD%-2012%.ctg')
+   file = io.open('ctfplotter.com', 'w')
+   file:write(contents)
+   file:close(); file = nil
 end
 
 -- We should always remove the Xrays from the image using ccderaser
@@ -230,6 +240,7 @@ if Opts.p_ then
 else
    tomoLib.runCheck('submfg nad_eed_3d-all')
 end
+tomoLib.stackSeven(filename)
 tomoLib.writeLog(filename)
 
 io.write('Now running file and space cleanup\n')
@@ -246,6 +257,7 @@ tomoLib.runCheck('mv ' .. filename .. '_full.rec ' -- full reconstruction
          .. filename .. '.bin4 ' -- for checking
          .. filename .. '.tlt ' -- for ctfplotter.com
          .. filename .. '.bin4.nad ' -- for checking
+         .. filename .. '.bin4.nad7 ' -- for picking subvols
          .. filename .. '_first.ali ' -- for ctfplotter.com
          .. filename .. '.ali.bin4 ' -- for checking
          .. filename .. '.defocus ' -- for ctfplotter.com

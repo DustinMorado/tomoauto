@@ -189,4 +189,42 @@ function tomoLib.writeLog(filename)
    log:close()
 end
 
+--[[===========================================================================#
+#                                  stackSeven                                  #
+#------------------------------------------------------------------------------#
+# A command that imitates the median 7 average filter                          #
+#------------------------------------------------------------------------------#
+# Arguments: arg[1] = image filename <string>                                  #
+#===========================================================================--]]
+function tomoLib.stackSeven(filename)
+   local file = assert(io.open('tilt.com', 'r'))
+   local contents = file:read('*a')
+   file:close(); file = nil
+   local thick = contents:match('THICKNESS%s(%d+)')
+   thick = thick / 4
+
+   for i = 1, thick do
+      if i < 4 then
+         sString = 'xyzproj -input ' .. filename .. '.bin4.nad -output '
+            .. filename .. '.avg_' .. string.format("%03d", i)
+            .. ' -zminmax "1 7" -axis Y'
+         tomoLib.runCheck(sString)
+      elseif i > thick - 3 then
+         eString = 'xyzproj -inpu ' .. filename .. '.bin4.nad -output '
+            .. filename .. '.avg_' .. string.format("03%d", i) 
+            .. ' -zminmax "' .. thick - 6 .. ' ' .. thick
+            .. '" -axis Y'
+         tomoLib.runCheck(eString)
+      else
+         mString = 'xyzproj -input ' .. filename .. '.bin4.nad -output '
+            .. filename .. '.avg_' .. string.format("%03d", i)
+            .. ' -zminmax "' .. i - 3 .. ' ' .. i + 3 .. '" -axis Y'
+         tomoLib.runCheck(mString)
+      end
+   end
+
+   tomoLib.runCheck('newstack ' .. filename .. '.avg_* ' 
+      .. filename .. '.bin4.nad7')
+   tomoLib.runCheck('rm -f ' .. filename .. '.avg_*')
+end
 return tomoLib
