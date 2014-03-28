@@ -329,6 +329,7 @@ local function writeCTFPlotterCom(inputFile, tiltAxis, pixelSize, defocus)
 	file:write('DefocusFile ' .. filename .. '.defocus\n')
 	file:write('AxisAngle ' .. tiltAxis .. '\n')
 	file:write('PixelSize ' .. pixelSize .. '\n')
+	defocus = defocus * 1000
 	file:write('ExpectedDefocus ' .. defocus .. '\n')
 	file:write('AngleRange ' .. ctfAngleRange .. '\n')
    file:write('AutoFitRangeAndStep ' .. ctfAutoFitRangeAndStep .. '\n')

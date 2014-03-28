@@ -43,7 +43,7 @@ tomoLib.checkFreeSpace(startDir)
 io.write('Running IMOD extracttilts for ' .. filename .. '\n')
 tomoLib.runCheck('extracttilts -input ' .. stackFile .. ' -output '
 .. filename .. '.rawtlt 2>&1 > /dev/null')
-defocus = Opts.d_
+defocus = tonumber(Opts.d_)
 
 assert(lfs.mkdir('finalFiles'),
        'Error: Failed to make final files directory. Check Permissions!')
