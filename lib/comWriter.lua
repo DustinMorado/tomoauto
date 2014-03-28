@@ -312,28 +312,9 @@ local function writeTiltCom(inputFile, nx, ny)
 	file:close()
 end
 
-local function approximateDefocus(inputFile)
-	local struct = assert(require 'struct')
-	local file = assert(io.open(inputFile, 'rb'))
-	local sum = 0
-	local defoci = {}
-	file:seek('set', 8)
-	z = struct.unpack('i4', file:read(4))
-	file:seek('set', 1052)
-	for i = 1, z do
-		defoci[i] = struct.unpack('f', file:read(4))
-		sum = sum + defoci[i]
-		file:seek('cur', 124)
-	end
-	file:close()
-	return sum / z
-end
-
-local function writeCTFPlotterCom(inputFile, tiltAxis, pixelSize, fidPix)
+local function writeCTFPlotterCom(inputFile, tiltAxis, pixelSize, defocus)
 	local comName = 'ctfplotter.com'
 	local filename = string.sub(inputFile, 1, -4)
-	expectDef = approximateDefocus(inputFile)
-   expectDef = string.format('%.2f', expectDef * -1000)
 	local file = assert(io.open(comName, 'w'))
 	file:write('# command file to run ctfplotter\n')
 	file:write('####CreatedVersion#### 3.12.20\n')
@@ -348,7 +329,7 @@ local function writeCTFPlotterCom(inputFile, tiltAxis, pixelSize, fidPix)
 	file:write('DefocusFile ' .. filename .. '.defocus\n')
 	file:write('AxisAngle ' .. tiltAxis .. '\n')
 	file:write('PixelSize ' .. pixelSize .. '\n')
-	file:write('ExpectedDefocus ' .. expectDef .. '\n')
+	file:write('ExpectedDefocus ' .. defocus .. '\n')
 	file:write('AngleRange ' .. ctfAngleRange .. '\n')
    file:write('AutoFitRangeAndStep ' .. ctfAutoFitRangeAndStep .. '\n')
 	file:write('Voltage ' .. ctfVoltage .. '\n')
@@ -401,7 +382,7 @@ local function writeNADEED3DCom()
    file:close()
 end
 
-function comWriter.write(inputFile, tiltAxis, nx, ny, pixelSize, fidPix, configFile)
+function comWriter.write(inputFile, tiltAxis, nx, ny, pixelSize, fidPix, defocus, configFile)
 
    if configFile then
       localConfig = loadfile(configFile)
@@ -418,7 +399,7 @@ function comWriter.write(inputFile, tiltAxis, nx, ny, pixelSize, fidPix, configF
    writeOpen2ScatterCom(inputFile)
    writeGoldCom(inputFile)
    writeTiltCom(inputFile, nx, ny)
-   writeCTFPlotterCom(inputFile, tiltAxis, pixelSize)
+   writeCTFPlotterCom(inputFile, tiltAxis, pixelSize, defocus)
    writeCTFCorrectCom(inputFile,pixelSize)
    writeNADEED3DCom()
 end

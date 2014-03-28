@@ -43,6 +43,7 @@ tomoLib.checkFreeSpace(startDir)
 io.write('Running IMOD extracttilts for ' .. filename .. '\n')
 tomoLib.runCheck('extracttilts -input ' .. stackFile .. ' -output '
 .. filename .. '.rawtlt 2>&1 > /dev/null')
+defocus = Opts.d_
 
 assert(lfs.mkdir('finalFiles'),
        'Error: Failed to make final files directory. Check Permissions!')
@@ -52,7 +53,7 @@ tomoLib.runCheck('cp ' .. stackFile .. ' finalFiles')
 -- the values of the image stack. This fixes the compensation done by the FEI
 -- software to adjust the data values from unsigned ints to signed ones. This
 -- should create a much more realistic histogram of densities.
-
+---[[
 if feiLabel == 'Fei' then
    io.write('Making TIFF IMAGE copies to be cleaned\n')
    tomoLib.runCheck('mrc2tif ' .. stackFile .. ' image 2>&1 > /dev/null')
@@ -76,14 +77,15 @@ if feiLabel == 'Fei' then
    tomoLib.runCheck('mv ' .. stackFile .. ' ' .. filename .. '_preclean.st && mv '
             .. filename .. '_cleanccp4.st ' .. stackFile)
 end
+--]]
 
 -- A lot of the IMOD commands require command(COM) files to parse settings
 -- correctly. These settings are held in tomoAuto's global config file, but the
 -- user can also write local configs to overwrite the global settings on a per
 -- job basis. We write these files here:
 --
-config = Opts.L_
-comWriter.write(stackFile, tiltAxis, nx, ny, pixelSize, fidPix, conig)
+
+comWriter.write(stackFile, tiltAxis, nx, ny, pixelSize, fidPix, defocus, conig)
 
 if Opts.g then
    local file = io.open('tilt.com', 'a')
@@ -105,7 +107,7 @@ if feiLabel == 'Fei' then
    local file = io.open('ctfplotter.com', 'r')
    local contents = file:read('*a')
    contents = contents:gsub('K2background%/polara%-K2%-2013%.ctg', 
-      'CCDBackground%/polara%-CCD%-2012%.ctg')
+      'CCDBackground/polara-CCD-2012.ctg')
    file = io.open('ctfplotter.com', 'w')
    file:write(contents)
    file:close(); file = nil
@@ -151,7 +153,7 @@ if Opts.c then
    io.write('Now running ctfplotter and ctfphaseflip for CTF correction\n')
    tomoLib.checkFreeSpace(startDir)
 
-   if Opts.d_ then
+   --[[if Opts.d_ then
       local newDefocus = tonumber(Opts.d_) * 1000
       local file = assert(io.open('ctfplotter.com', 'r'))
       local ctfNew = file:read('*a'); file:close()
@@ -159,7 +161,7 @@ if Opts.c then
                            .. newDefocus)
       local file = assert(io.open('ctfplotter.com', 'w'))
       file:write(ctfNew); file:close()
-   end
+   end--]]
 
    if Opts.p_ then
       tomoLib.runCheck('submfg -t ctfplotter.com')

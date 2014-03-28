@@ -90,6 +90,36 @@ function tomoLib.findITP(inputFile, fidSize)
 	return nx, ny, nz, feiLabel, tiltAxis, pixelSize, fidPix
 end
 --[[==========================================================================#
+#                              approximateDefocus                             #
+#-----------------------------------------------------------------------------#
+# A function that reads the header of the image stack and returns the defocus #
+# value. Please be aware that this is solely a good approximation and in many #
+# cases can be way off. If so please use the -d option for tomoAuto and       #
+# estimate the defocus manually.                                              #
+#-----------------------------------------------------------------------------#
+# Arguments: arg[1] = inputFile <string> the image stack to read              #
+#            arg[2] = feiLabel <string> whether or not its an CCD tomo        #
+#==========================================================================--]]
+function tomoLib.approximateDefocus(inputFile, feiLabel)
+   local file = assert(io.open(inputFile, 'rb'))
+   local sum = 0
+   file:seek('set', 8)
+   z = struct.unpack('i4', file:read(4))
+   file:seek('set', 1052)
+   for i = 1, z do
+      sum = sum + struct.unpack('f', file:read(4))
+      file:seek('cur', 124)
+   end
+   file:close(); file = nil
+   if feiLabel == 'Fei' then
+      sum = sum * 10000
+   else
+      sum = sum * -1000
+   end
+   local avg = sum / z
+   return string.format('%.2f', avg)
+end
+--[[==========================================================================#
 #                                 checkAlign                                  #
 #-----------------------------------------------------------------------------#
 # A function that checks the final alignment to make sure that too many high  #
