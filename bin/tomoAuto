@@ -1,8 +1,11 @@
 #!/usr/bin/env lua
 
-local rootDir = os.getenv('TOMOAUTOROOT')
-local tomoAuto = assert(dofile(rootDir .. '/lib/tomoAuto.lua'))
-local getOpt = assert(dofile(rootDir .. '/lib/getOpt.lua'))
+local tomoAutoDir = os.getenv('TOMOAUTOROOT')
+package.path = tomoAutoDir .. '/lib/?.lua;' .. package.path
+local tomoAuto = assert(require 'tomoAuto')
+local getOpt = assert(require 'getOpt')
+--local tomoAuto = assert(dofile(rootDir .. '/lib/tomoAuto.lua'))
+--local getOpt = assert(dofile(rootDir .. '/lib/getOpt.lua'))
 
 local sString = 'c, d_, g, h, L_, p_, z_'
 local lString = 'ctf, defocus, gpu, help, config, procnum, thickness'

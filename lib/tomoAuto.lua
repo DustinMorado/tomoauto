@@ -12,10 +12,13 @@
 #            arg[2] = fiducial size in nm <integer>                           #
 #            arg[3] = table with option flags from getOpts                    #
 #==========================================================================--]]
-local rootDir = os.getenv('TOMOAUTOROOT')
+local tomoAutoDir = os.getenv('TOMOAUTOROOT')
 -- local lfs = assert(require 'lfs')
-local comWriter = assert(dofile(rootDir .. '/lib/comWriter.lua'))
-local tomoLib = assert(dofile(rootDir .. '/lib/tomoLib.lua'))
+package.path = tomoAutoDir .. '/lib/?.lua;' .. package.path
+local comWriter = assert(require 'comWriter')
+local tomoLib = assert(require 'tomoLib')
+--local comWriter = assert(dofile(tomoAutoDir .. '/lib/comWriter.lua'))
+--local tomoLib = assert(dofile(tomoAutoDir .. '/lib/tomoLib.lua'))
 
 local tomoAuto = {}
 function tomoAuto.reconstruct(stackFile, fidSize, Opts)

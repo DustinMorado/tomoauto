@@ -1,4 +1,5 @@
-local startDir = os.getenv('TOMOAUTOROOT')
+local tomoAutoDir = os.getenv('TOMOAUTOROOT')
+package.cpath = tomoAutoDir .. '/lib/?.so;' .. package.cpath
 local struct = assert(require 'struct')
 
 --[[==========================================================================#
@@ -240,7 +241,7 @@ function tomoLib.stackSeven(filename)
             .. ' -zminmax "1 7" -axis Y'
          tomoLib.runCheck(sString)
       elseif i > thick - 3 then
-         eString = 'xyzproj -inpu ' .. filename .. '.bin4.nad -output '
+         eString = 'xyzproj -input ' .. filename .. '.bin4.nad -output '
             .. filename .. '.avg_' .. string.format("03%d", i) 
             .. ' -zminmax "' .. thick - 6 .. ' ' .. thick
             .. '" -axis Y'

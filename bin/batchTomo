@@ -7,9 +7,12 @@
 # Written: March 24th 2014                                                     #
 # Contact: dustin.morado@uth.tmc.edu                                           #
 #===========================================================================--]]
-local rootDir = os.getenv('TOMOAUTOROOT')
+local tomoAutoDir = os.getenv('TOMOAUTOROOT')
+package.cpath = tomoAutoDir .. '/lib/?.so;' .. package.cpath
+package.path = tomoAutoDir .. '/lib/?.lua;' .. package.path
 local lfs = assert(require 'lfs')
-local getOpt = assert(dofile(rootDir .. '/lib/getOpt.lua'))
+local getOpt = assert(require 'getOpt')
+--local getOpt = assert(dofile(tomoAutoDir .. '/lib/getOpt.lua'))
 
 local shortString = 'c, d_, f_, g, h, L_, n_, p_, z_'
 local longString = 'ctf, defocus, fid, gpu, help, config, number, procnum, thickness'
