@@ -1,4 +1,5 @@
 #!/usr/bin/env lua
+-- this is just for zsh test
 
 local tomoAutoDir = os.getenv('TOMOAUTOROOT')
 package.path = tomoAutoDir .. '/lib/?.lua;' .. package.path
