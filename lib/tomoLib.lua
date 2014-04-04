@@ -50,8 +50,8 @@ end
 #==========================================================================--]]
 function tomoLib.runCheck(functionString)
 	local success,exit,signal = os.execute(functionString .. ' 2> /dev/null')
-   if not success then
-      io.stderr:write('Error running ' .. functionString)
+   if signal ~= 0 then
+      io.stderr:write('\n\nError running ' .. functionString .. '\n\n')
    end
 end
 --[[==========================================================================#
