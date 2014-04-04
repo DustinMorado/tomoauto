@@ -621,7 +621,7 @@ tiltSUBSETSTART = "0 0"
 
 -- THICKNESS:
 -- Thickness in Z of reconstructed volume, in pixels
-tiltTHICKNESS = 800
+tiltTHICKNESS = 1200
 
 -- UseGPU:
 -- Use the GPU (graphical processing unit) for computations if possible; enter 0
