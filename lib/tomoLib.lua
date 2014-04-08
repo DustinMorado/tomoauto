@@ -1,5 +1,5 @@
 local tomoAutoDir = os.getenv('TOMOAUTOROOT')
-package.cpath = tomoAutoDir .. '/lib/?.so;' .. package.cpath
+package.cpath = package.cpath .. ';' .. tomoAutoDir .. '/lib/?.so;'
 local struct = assert(require 'struct')
 
 --[[==========================================================================#

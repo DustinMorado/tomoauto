@@ -8,14 +8,11 @@
 # Date: 02/28/2014                                                            #
 # Contact: dustin.morado@uth.tmc.edu                                          #
 #==========================================================================--]]
---local lfs = require 'lfs'
 local tomoAutoDir = os.getenv('TOMOAUTOROOT')
-package.cpath = tomoAutoDir .. '/lib/?.so;' .. package.cpath
-package.path = tomoAutoDir .. '/lib/?.lua;' .. package.path
+package.cpath = package.cpath .. ';' .. tomoAutoDir .. '/lib/?.so;'
+package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
 local lfs = assert(require 'lfs')
 local globalConfig = assert(require 'globalConfig')
---local globalConfig = assert(loadfile(tomoAutoDir .. '/lib/globalConfig.lua'))
---globalConfig()
 
 local comWriter = {}
 local function writeCcderaserCom(inputFile)

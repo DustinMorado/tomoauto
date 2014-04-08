@@ -13,12 +13,9 @@
 #            arg[3] = table with option flags from getOpts                    #
 #==========================================================================--]]
 local tomoAutoDir = os.getenv('TOMOAUTOROOT')
--- local lfs = assert(require 'lfs')
-package.path = tomoAutoDir .. '/lib/?.lua;' .. package.path
+package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
 local comWriter = assert(require 'comWriter')
 local tomoLib = assert(require 'tomoLib')
---local comWriter = assert(dofile(tomoAutoDir .. '/lib/comWriter.lua'))
---local tomoLib = assert(dofile(tomoAutoDir .. '/lib/tomoLib.lua'))
 
 local tomoAuto = {}
 function tomoAuto.reconstruct(stackFile, fidSize, Opts)

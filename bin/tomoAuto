@@ -2,7 +2,7 @@
 -- this is just for zsh test
 
 local tomoAutoDir = os.getenv('TOMOAUTOROOT')
-package.path = tomoAutoDir .. '/lib/?.lua;' .. package.path
+package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
 local tomoAuto = assert(require 'tomoAuto')
 local getOpt = assert(require 'getOpt')
 --local tomoAuto = assert(dofile(rootDir .. '/lib/tomoAuto.lua'))

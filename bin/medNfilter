@@ -1,7 +1,7 @@
 #!/usr/bin/env lua
-local tomoDir = os.getenv('TOMOAUTOROOT')
-package.cpath = package.cpath .. ';' .. tomoDir .. '/lib/?.so;'
-package.path = package.path .. ';' .. tomoDir .. '/lib/?.lua;'
+local tomoAutoDir = os.getenv('TOMOAUTOROOT')
+package.cpath = package.cpath .. ';' .. tomoAutoDir .. '/lib/?.so;'
+package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
 local struct = require 'struct'
 local tomoLib = require 'tomoLib'
 local filename = arg[1]
