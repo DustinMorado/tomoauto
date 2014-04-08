@@ -229,7 +229,6 @@ end
 #            arg[2]: filter size <integer>                                     #
 #===========================================================================--]]
 function tomoLib.medNfilter (filename, size)
-   local sizeNumber = tonumber(size)
    local file = assert(io.open(filename, 'rb'))
    file:seek('set', 8)
    local nz = struct.unpack('i4', file:read(4))
@@ -237,44 +236,45 @@ function tomoLib.medNfilter (filename, size)
    file = assert(io.open('filelist.txt', 'w'))
    file:write(nz .. '\n')
 
-   local isEven = (sizeNumber % 2 == 0) and true or false
+   local nSize = tonumber(size)
+   local isEven = (nSize % 2 == 0) and true or false
+
    for i = 1, nz do
       outfile = filename .. '.avg_' .. string.format("%04d", i)
       file:write(outfile .. '\n' .. '0\n')
-      if i < nz / 2 then
-         if isEven then
-            local n = 2 * i 
-            n = (n > sizeNumber) and sizeNumber or n
-            local lIdx = i - ((n / 2) - 1)
-            local rIdx = i + (n / 2)
-            assert(os.execute('xyzproj -z "' .. lIdx .. ' ' .. rIdx .. '" -axis Y '
-               .. filename .. ' ' .. outfile .. ' &> /dev/null'))
+      if isEven then
+         if i < nz / 2 then
+            lIdx = i - ((nSize / 2) - 1)
+            rIdx = i +  (nSize / 2)
+            if lIdx < 1 then
+               local shift = 1 - lIdx
+               lIdx = lIdx + shift
+               rIdx = rIdx + shift
+            end
          else
-            local n = (2 * i) - 1 
-            n = (n > sizeNumber) and sizeNumber or n
-            local lIdx = i - math.floor(n / 2)
-            local rIdx = i + math.floor(n / 2)
-            assert(os.execute('xyzproj -z "' .. lIdx .. ' ' .. rIdx .. '" -axis Y '
-               .. filename .. ' ' .. outfile .. ' &> /dev/null'))
-         end 
+            lIdx = i -  (nSize / 2)
+            rIdx = i + ((nSize / 2) - 1)
+            if rIdx > nz then
+               local shift = rIdx - nz
+               lIdx = lIdx - shift
+               rIdx = rIdx - shift
+            end
+         end
       else
-         local n = (nz + 1) - i 
-         if isEven then
-            n = 2 * n 
-            n = (n > sizeNumber) and sizeNumber or n
-            local lIdx = i - (n / 2)
-            local rIdx = i + ((n / 2) - 1)
-            assert(os.execute('xyzproj -z "' .. lIdx .. ' ' .. rIdx .. '" -axis Y '
+         lIdx = i - math.floor(nSize / 2)
+         rIdx = i + math.floor(nSize / 2)
+         if lIdx < 1 then
+            local shift = 1 - lIdx 
+            lIdx = lIdx + shift
+            rIdx = rIdx + shift
+         elseif rIdx > nz then
+            local shift = rIdx - nz
+            lIdx = lIdx - shift
+            rIdx = rIdx - shift
+         end
+      end
+      assert(os.execute('xyzproj -z "' .. lIdx .. ' ' .. rIdx .. '" -axis Y '
                .. filename .. ' ' .. outfile .. ' &> /dev/null'))
-         else
-            n = (2 * n) - 1 
-            n = (n > sizeNumber) and sizeNumber or n
-            local lIdx = i - math.floor(n / 2)
-            local rIdx = i + math.floor(n / 2)
-            assert(os.execute('xyzproj -z "' .. lIdx .. ' ' .. rIdx .. '" -axis Y '
-               .. filename .. ' ' .. outfile .. ' &> /dev/null'))
-         end 
-      end 
    end 
    file:close(); file = nil 
    assert(os.execute('newstack -filei filelist.txt ' .. filename .. size .. ' &> /dev/null'))
