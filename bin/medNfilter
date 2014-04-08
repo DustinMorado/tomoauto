@@ -1,56 +1,9 @@
 #!/usr/bin/env lua
---[[===========================================================================#
-#                                medNfilter                                    #
-#------------------------------------------------------------------------------#
-# Applies an unweighted average through the z-axis, similar to what is used in #
-# the slicer window of 3dmod with multiple sections.                           #
-#------------------------------------------------------------------------------#
-# Arguments: arg[1]: filename                                                  #
-#            arg[2]: amount of slices - must be odd for the time being         #
-#===========================================================================--]]
 local tomoDir = os.getenv('TOMOAUTOROOT')
-package.cpath = tomoDir .. '/lib/?.so;' .. package.cpath 
+package.cpath = package.cpath .. ';' .. tomoDir .. '/lib/?.so;'
+package.path = package.path .. ';' .. tomoDir .. '/lib/?.lua;'
 local struct = require 'struct'
-local string, math = string, math
+local tomoLib = require 'tomoLib'
 local filename = arg[1]
-
-local avg = tonumber(arg[2])
-
-if avg % 2 == 0 then
-   error('Median average amount must be an odd number\n')
-   return 1
-end
-
-local file = assert(io.open(filename, 'rb'))
-file:seek('set', 8)
-local nz = struct.unpack('i4', file:read(4))
-file:close(); file = nil
-
-for i = 1, nz do
-
-   if i < math.ceil(avg / 2) then
-      sString = 'xyzproj -input ' .. filename .. ' -output '
-         .. filename .. '.avg_' .. string.format("%04d", i)
-         .. ' -zminmax "1 ' .. avg .. '" -axis Y &> /dev/null'
-      assert(os.execute(sString))
-
-   elseif i > (nz - math.floor(avg / 2)) then
-      eString = 'xyzproj -input ' .. filename .. ' -output '
-         .. filename .. '.avg_' .. string.format("%04d", i)
-         .. ' -zminmax "' .. nz - avg + 1 .. ' ' .. nz
-         .. '" -axis Y &> /dev/null'
-      assert(os.execute(eString))
-
-   else
-      mString = 'xyzproj -input ' .. filename .. ' -output '
-         .. filename .. '.avg_' .. string.format("%04d", i)
-         .. ' -zminmax "' .. i - math.floor(avg / 2) .. ' '
-         .. i + math.floor(avg / 2) .. '" -axis Y &> /dev/null'
-      assert(os.execute(mString))
-   end
-
-end
-
-assert(os.execute('newstack ' .. filename .. '.avg_* '
-   .. filename .. '7 &> /dev/null'))
-assert(os.execute('rm -f ' .. filename .. '.avg_*'))
+local size = arg[2]
+tomoLib.medNfilter(filename, size)

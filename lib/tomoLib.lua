@@ -221,41 +221,63 @@ function tomoLib.writeLog(filename)
 end
 
 --[[===========================================================================#
-#                                  stackSeven                                  #
+#                                 medNfilter                                   #
 #------------------------------------------------------------------------------#
-# A command that imitates the median 7 average filter                          #
+# A command that imitates a median filter of N slices.                         #
 #------------------------------------------------------------------------------#
-# Arguments: arg[1] = image filename <string>                                  #
+# Arguments: arg[1]: image filename <string>                                   #
+#            arg[2]: filter size <integer>                                     #
 #===========================================================================--]]
-function tomoLib.stackSeven(filename)
-   local file = assert(io.open('tilt.com', 'r'))
-   local contents = file:read('*a')
-   file:close(); file = nil
-   local thick = contents:match('THICKNESS%s(%d+)')
-   thick = thick / 4
+function tomoLib.medNfilter (filename, size)
+   local sizeNumber = tonumber(size)
+   local file = assert(io.open(filename, 'rb'))
+   file:seek('set', 8)
+   local nz = struct.unpack('i4', file:read(4))
+   file:close()
+   file = assert(io.open('filelist.txt', 'w'))
+   file:write(nz .. '\n')
 
-   for i = 1, thick do
-      if i < 4 then
-         sString = 'xyzproj -input ' .. filename .. '.bin4.nad -output '
-            .. filename .. '.avg_' .. string.format("%03d", i)
-            .. ' -zminmax "1 7" -axis Y'
-         tomoLib.runCheck(sString)
-      elseif i > thick - 3 then
-         eString = 'xyzproj -input ' .. filename .. '.bin4.nad -output '
-            .. filename .. '.avg_' .. string.format("03%d", i) 
-            .. ' -zminmax "' .. thick - 6 .. ' ' .. thick
-            .. '" -axis Y'
-         tomoLib.runCheck(eString)
+   local isEven = (sizeNumber % 2 == 0) and true or false
+   for i = 1, nz do
+      outfile = filename .. '.avg_' .. string.format("%04d", i)
+      file:write(outfile .. '\n' .. '0\n')
+      if i < nz / 2 then
+         if isEven then
+            local n = 2 * i 
+            n = (n > sizeNumber) and sizeNumber or n
+            local lIdx = i - ((n / 2) - 1)
+            local rIdx = i + (n / 2)
+            assert(os.execute('xyzproj -z "' .. lIdx .. ' ' .. rIdx .. '" -axis Y '
+               .. filename .. ' ' .. outfile .. ' &> /dev/null'))
+         else
+            local n = (2 * i) - 1 
+            n = (n > sizeNumber) and sizeNumber or n
+            local lIdx = i - math.floor(n / 2)
+            local rIdx = i + math.floor(n / 2)
+            assert(os.execute('xyzproj -z "' .. lIdx .. ' ' .. rIdx .. '" -axis Y '
+               .. filename .. ' ' .. outfile .. ' &> /dev/null'))
+         end 
       else
-         mString = 'xyzproj -input ' .. filename .. '.bin4.nad -output '
-            .. filename .. '.avg_' .. string.format("%03d", i)
-            .. ' -zminmax "' .. i - 3 .. ' ' .. i + 3 .. '" -axis Y'
-         tomoLib.runCheck(mString)
-      end
-   end
-
-   tomoLib.runCheck('newstack ' .. filename .. '.avg_* ' 
-      .. filename .. '.bin4.nad7')
-   tomoLib.runCheck('rm -f ' .. filename .. '.avg_*')
+         local n = (nz + 1) - i 
+         if isEven then
+            n = 2 * n 
+            n = (n > sizeNumber) and sizeNumber or n
+            local lIdx = i - (n / 2)
+            local rIdx = i + ((n / 2) - 1)
+            assert(os.execute('xyzproj -z "' .. lIdx .. ' ' .. rIdx .. '" -axis Y '
+               .. filename .. ' ' .. outfile .. ' &> /dev/null'))
+         else
+            n = (2 * n) - 1 
+            n = (n > sizeNumber) and sizeNumber or n
+            local lIdx = i - math.floor(n / 2)
+            local rIdx = i + math.floor(n / 2)
+            assert(os.execute('xyzproj -z "' .. lIdx .. ' ' .. rIdx .. '" -axis Y '
+               .. filename .. ' ' .. outfile .. ' &> /dev/null'))
+         end 
+      end 
+   end 
+   file:close(); file = nil 
+   assert(os.execute('newstack -filei filelist.txt ' .. filename .. size .. ' &> /dev/null'))
+   assert(os.execute('rm -f filelist.txt ' .. filename .. '.avg_*'))
 end
 return tomoLib

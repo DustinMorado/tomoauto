@@ -245,7 +245,7 @@ if Opts.p_ then
 else
    tomoLib.runCheck('submfg nad_eed_3d-all')
 end
-tomoLib.stackSeven(filename)
+tomoLib.medNfilter(filename, 7)
 tomoLib.writeLog(filename)
 
 io.write('Now running file and space cleanup\n')
