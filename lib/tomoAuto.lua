@@ -49,36 +49,6 @@ assert(lfs.mkdir('finalFiles'),
        'Error: Failed to make final files directory. Check Permissions!')
 tomoLib.runCheck('cp ' .. stackFile .. ' finalFiles')
 
--- If we are dealing with an FEI file we should use protomo to clean and adjust
--- the values of the image stack. This fixes the compensation done by the FEI
--- software to adjust the data values from unsigned ints to signed ones. This
--- should create a much more realistic histogram of densities.
----[[
-if feiLabel == 'Fei' then
-   io.write('Making TIFF IMAGE copies to be cleaned\n')
-   tomoLib.runCheck('mrc2tif ' .. stackFile .. ' image 2>&1 > /dev/null')
-   assert(lfs.mkdir('clean'),
-          'Error: Failed to make a directory. Check file permissions!')
-   assert(lfs.mkdir('raw'),
-          'Error: Failed to make a directory. Check file permissions!')
-   tomoLib.runCheck('mv image* raw')
-   lfs.chdir('./clean')
-   tomoLib.runCheck('tomo-clean.sh 2>&1 > /dev/null')
-   io.write('Running concat to create a new stack from the cleaned image\n')
-   tomoLib.runCheck('concat -dim 3 image* ' .. filename .. '_clean.st')
-   io.write('Formatting the header to the ccp4 format\n')
-   tomoLib.runCheck('cutimage -fmt ccp4 ' .. filename .. '_clean.st '
-            .. filename .. '_cleanccp4.st')
-   io.write('Fixing the header of the file\n')
-   tomoLib.runCheck('fixheader -mrc ' .. filename .. '_cleanccp4.st')
-   tomoLib.runCheck('mv ' .. filename .. '_cleanccp4.st ..')
-   lfs.chdir('..')
-   tomoLib.runCheck('rm -r clean raw')
-   tomoLib.runCheck('mv ' .. stackFile .. ' ' .. filename .. '_preclean.st && mv '
-            .. filename .. '_cleanccp4.st ' .. stackFile)
-end
---]]
-
 -- A lot of the IMOD commands require command(COM) files to parse settings
 -- correctly. These settings are held in tomoAuto's global config file, but the
 -- user can also write local configs to overwrite the global settings on a per
@@ -221,9 +191,9 @@ end
 
 tomoLib.writeLog(filename)
 
+tomoLib.runCheck('clip rotx ' .. filename .. '_full.rec ' .. filename .. '_full.rec')
 tomoLib.runCheck('binvol -binning 4 ' .. filename .. '_full.rec '
          .. filename .. '.bin4 2>&1 /dev/null')
-tomoLib.runCheck('clip rotx ' .. filename .. '.bin4 ' .. filename .. '.bin4')
 tomoLib.runCheck('binvol -binning 4 -zbinning 1 ' .. filename .. '.ali '
          .. filename .. '.ali.bin4 2>&1 /dev/null')
 
