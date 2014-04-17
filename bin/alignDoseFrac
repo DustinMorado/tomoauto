@@ -1,0 +1,65 @@
+#!/usr/bin/env lua
+
+local io, os, string = io, os, string
+local struct = require 'struct'
+
+-- xfalign options
+local reduceByBinning = 2
+local preFilterOpt = '0.01 0.02 0 0.3'
+
+-- xftoxg options
+local numberToFit = 0
+
+-- newstack options
+local modeToOutput = 2
+local floatDensities = 2
+
+local function writeXfAlign(inputFile)
+   local comName = 'xfalign.com'
+   local filename = inputFile:sub(1, -5)
+   local file = io.open(comName, 'w')
+   file:write('$xfalign -StandardInput\n')
+   file:write('InputImageFile ' .. inputFile .. '\n')
+   file:write('OutputTransformFile ' .. filename .. '.xf\n')
+   file:write('ReduceByBinning ' .. reduceByBinning .. '\n')
+   file:write('PreCrossCorrelation\n')
+   file:write('XcorrFilter ' .. preFilterOpt .. '\n')
+   file:close()
+end
+
+local function writeXfToXg(inputFile)
+   local comName = 'xftoxg.com'
+   local filename = inputFile:sub(1, -5)
+   local file = assert(io.open(comName, 'w'))
+   file:write('# THIS IS A COMMAND FILE TO RUN XFTOXG\n')
+   file:write('####CreatedVersion#### 1.0.0\n')
+   file:write('$xftoxg -StandardInput\n')
+   file:write('InputFile ' .. filename .. '.xf\n')
+   file:write('GOutputFile ' .. filename .. '.xg\n')
+   file:write('NumberToFit ' .. numberToFit .. '\n')
+   file:close()
+end
+
+local function writeNewstack(inputFile)
+   local comName = 'newstack.com'
+   local filename = inputFile:sub(1, -5)
+   local file = assert(io.open(comName, 'w'))
+   file:write('# THIS IS A COMMAND FILE TO PRODUCE A PRE-ALIGNED STACK\n')
+   file:write('####CreatedVersion#### 1.0.0\n')
+   file:write('$newstack -StandardInput\n')
+   file:write('InputFile ' .. inputFile .. '\n')
+   file:write('OutputFile ' .. filename .. '.ali\n')
+   file:write('TransformFile ' .. filename .. '.xg\n')
+   file:write('ModeToOutput ' .. modeToOutput .. '\n')
+   file:write('FloatDensities ' .. floatDensities .. '\n')
+   file:close()
+end
+
+local inputFile = arg[1]
+local filename = inputFile:sub(1, -5)
+writeXfAlign(inputFile)
+writeXfToXg(inputFile)
+writeNewstack(inputFile)
+assert(os.execute('submfg -s -t xfalign.com xftoxg.com newstack.com'))
+assert(os.execute('clip average ' .. filename .. '.ali ' .. filename .. '_aligned.st'))
+assert(os.execute('rm *.com *.log *.xf *.xg ' .. filename .. '.ali'))
