@@ -83,7 +83,6 @@ function tomoLib.findITP(inputFile, fidSize)
    hT.feiLable = feiLabel
    file:seek('set',1064)
 	local tiltAxis = struct.unpack('f', file:read(4))
-   hT.tiltAxis = tiltAxis
 	local pixelSize = struct.unpack('f', file:read(4))
 	if feiLabel == 'Fei' then
 		pixelSize = pixelSize * 1e9
@@ -92,6 +91,7 @@ function tomoLib.findITP(inputFile, fidSize)
 		pixelSize = pixelSize / 10
 	end
    hT.pixelSize = pixelSize
+   hT.tiltAxis = tiltAxis
 	local fidPix = math.floor((fidSize / pixelSize) + 0.5)
    hT.fidPix = fidPix
    file:seek('set', 1052)

@@ -23,13 +23,13 @@ local tomoAuto = {}
 function tomoAuto.reconstruct(stackFile, fidSize, Opts)
 local filename = string.sub(stackFile, 1, -4)
 
-tomoLib.checkFreeSpace(startDir)
 assert(lfs.mkdir(filename),'\nCould not make root directory\n')
 assert(os.execute('mv ' .. stackFile .. ' ' .. filename), 
        '\nCould not move stackfile to file directory\n')
 assert(lfs.chdir(filename), '\nCould not change to file directory\n')
 
 local startDir = lfs.currentdir()
+tomoLib.checkFreeSpace(startDir)
 local header = tomoLib.findITP(stackFile, fidSize)
 if Opts.d_ then header.defocus = Opts.d_ end
 comWriter.write(stackFile, header, Opts.L_)
@@ -50,7 +50,7 @@ if Opts.z_ then
    file:close(); file = nil
 end
 
-if feiLabel == 'Fei' then
+if header.feiLabel == 'Fei' then
    local file = io.open('ctfplotter.com', 'r')
    local contents = file:read('*a')
    contents = contents:gsub('K2background%/polara%-K2%-2013%.ctg', 
@@ -89,7 +89,7 @@ assert(tomoLib.isFile(filename .. '.preali'),
 -- Now we run RAPTOR to produce a succesfully aligned stack
 tomoLib.checkFreeSpace(startDir)
 io.write('Now running RAPTOR (please be patient this may take some time)\n')
-tomoLib.runCheck('submfg -t raptor1.com')
+tomoLib.runCheck('submfg -s -t raptor1.com')
 tomoLib.writeLog(filename)
 assert(tomoLib.isFile('raptor1/align/' .. filename .. '.ali'),
        '\nRAPTOR alignment failed see log\n')
@@ -101,7 +101,7 @@ assert(os.execute('mv raptor1/IMOD/' .. filename .. '.xf .'),
        '\nCould not move file\n')
 io.write('RAPTOR alignment for ' .. stackFile .. ' SUCCESSFUL\n')
 
-if not tomoLib.checkAlign(filename, nz) then
+if not tomoLib.checkAlign(filename, header.nz) then
    io.stderr:write('RAPTOR has cut too many sections. Bad Data!')
    tomoLib.writeLog(filename)
    return 1
@@ -143,7 +143,7 @@ assert(tomoLib.isFile('raptor2/IMOD/' .. filename .. '.fid.txt'),
 assert(os.execute('mv raptor2/IMOD/' .. filename .. '.fid.txt '
        .. filename .. '_erase.fid'), '\nCould not move files\n')
 
-if not tomoLib.checkAlign(filename, nz) then
+if not tomoLib.checkAlign(filename, header.nz) then
    io.stderr:write('RAPTOR has cut too many sections. Bad Data!')
    tomoLib.writeLog(filename)
    return 1
