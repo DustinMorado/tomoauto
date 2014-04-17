@@ -75,8 +75,10 @@ tomoLib.runCheck('submfg -s -t ccderaser.com')
 tomoLib.writeLog(filename)
 assert(tomoLib.isFile(filename .. '_fixed.st'),
        '\nccderaser failed, see log\n')
-tomoLib.runCheck('mv ' .. stackFile .. ' ' .. filename .. '_orig.st && mv '
-         .. filename .. '_fixed.st ' .. stackFile)
+assert(os.execute('mv ' .. stackFile .. ' ' .. filename .. '_orig.st'), 
+       '\nCould not move file\n')
+assert(os.execute('mv ' .. filename .. '_fixed.st ' .. stackFile),
+       '\nCould not move file\n')
 
 io.write('Running Coarse Alignment for ' .. stackFile .. '\n')
 tomoLib.runCheck('submfg -s -t tiltxcorr.com xftoxg.com newstack.com')
@@ -89,14 +91,14 @@ tomoLib.checkFreeSpace(startDir)
 io.write('Now running RAPTOR (please be patient this may take some time)\n')
 tomoLib.runCheck('submfg -t raptor1.com')
 tomoLib.writeLog(filename)
-assert(tomoLib.isFile(startDir .. '/raptor1/align/' .. filename .. '.ali'),
+assert(tomoLib.isFile('raptor1/align/' .. filename .. '.ali'),
        '\nRAPTOR alignment failed see log\n')
-assert(os.execute('mv ' .. startDir .. '/raptor1/align/' .. filename .. '.ali '
-       .. startDir), '\nCould not move file\n')
-assert(os.execute('mv ' .. startDir .. '/raptor1/IMOD/' .. filename .. '.tlt '
-       .. startDir), '\nCould not move file\n')
-assert(os.execute('mv ' .. startDir .. '/raptor1/IMOD/' .. filename .. '.xf '
-       .. startDir), '\nCould not move file\n')
+assert(os.execute('mv raptor1/align/' .. filename .. '.ali .'), 
+       '\nCould not move file\n')
+assert(os.execute('mv raptor1/IMOD/' .. filename .. '.tlt .'),
+       '\nCould not move file\n')
+assert(os.execute('mv raptor1/IMOD/' .. filename .. '.xf .'),
+       '\nCould not move file\n')
 io.write('RAPTOR alignment for ' .. stackFile .. ' SUCCESSFUL\n')
 
 if not tomoLib.checkAlign(filename, nz) then
@@ -116,25 +118,30 @@ if Opts.c then
       assert(tomoLib.isFile(filename .. '.defocus'),
              '\nCTFplotter failed see log\n')
       tomoLib.runCheck('splitcorrection ctfcorrection.com')
-      tomoLib.runCheck('processchunks -g -C "0 0 0" -T "600, 0"' .. Opts.p_ .. ' ctfcorrection')
+      tomoLib.runCheck('processchunks -g -C "0 0 0" -T "600 0" ' 
+                       .. Opts.p_ .. ' ctfcorrection')
+      tomoLib.writeLog(filename)
    else
       tomoLib.runCheck('submfg -t ctfplotter.com ctfcorrection.com')
+      assert(tomoLib.isFile(filename .. '_ctfcorr.ali'),
+             '\nCTFcorrection failed see log\n')
+      tomoLib.writeLog(filename)
    end
-   tomoLib.writeLog(filename)
 
-   tomoLib.runCheck('mv ' .. startDir .. '/' .. filename .. '.ali '
-            .. startDir .. '/' .. filename .. '_first.ali')
-   tomoLib.runCheck('mv ' .. startDir .. '/' .. filename .. '_ctfcorr.ali '
-            .. startDir .. '/' .. filename .. '.ali')
+   assert(os.execute('mv ' .. filename .. '.ali ' .. filename .. '_first.ali'),
+          '\nCould not move files\n')
+   assert(os.execute('mv ' .. filename .. '_ctfcorr.ali ' .. filename .. '.ali'),
+          '\nCould not move files\n')
 end
 
 -- Now we use RAPTOR to make a fiducial model to erase the gold in the stack
 io.write('Now running RAPTOR to track gold to erase particles\n')
-io.write('RAPTOR starting for ' .. stackFile .. '..........\n')
 tomoLib.checkFreeSpace(startDir)
 tomoLib.runCheck('submfg -t raptor2.com')
-tomoLib.runCheck('mv ' .. startDir .. '/raptor2/IMOD/' .. filename 
-         .. '.fid.txt ' .. startDir .. '/' .. filename .. '_erase.fid')
+assert(tomoLib.isFile('raptor2/IMOD/' .. filename .. '.fid.txt'),
+       '\nCould not make fiducial model see log.\n')
+assert(os.execute('mv raptor2/IMOD/' .. filename .. '.fid.txt '
+       .. filename .. '_erase.fid'), '\nCould not move files\n')
 
 if not tomoLib.checkAlign(filename, nz) then
    io.stderr:write('RAPTOR has cut too many sections. Bad Data!')
@@ -145,55 +152,63 @@ end
 -- Make the erase model more suitable for erasing gold
 tomoLib.runCheck('submfg -t model2point.com point2model.com')
 tomoLib.writeLog(filename)
+assert(tomoLib.isFile(filename .. '_erase.scatter.fid'),
+       '\nError making point model from RAPTOR text model see log.\n')
 
-tomoLib.runCheck('mv ' .. startDir .. '/' .. filename .. '_erase.fid '
-         .. startDir .. '/' .. filename .. '_erase.fid_orig')
-tomoLib.runCheck('mv ' .. startDir .. '/'.. filename .. '_erase.scatter.fid '
-         .. startDir .. '/' ..filename .. '_erase.fid')
-tomoLib.writeLog(filename)
-io.write('Fiducial model created for ' .. stackFile .. ' SUCCESSFUL\n')
+assert(os.execute('mv ' .. filename .. '_erase.fid ' .. filename 
+       .. '_erase.fid_orig'), '\nCould not move file\n')
+assert(os.execute('mv ' .. filename .. '_erase.scatter.fid ' ..filename 
+       .. '_erase.fid'), '\nCould not move file\n')
 
 io.write('Now erasing gold from aligned stack\n')
 tomoLib.runCheck('submfg -t gold_ccderaser.com')
 tomoLib.writeLog(filename)
+assert(tomoLib.isFile(filename .. '_erase.ali'),
+       '\nCould not erase gold see log.\n')
 
-tomoLib.runCheck('mv ' .. startDir .. '/' .. filename .. '.ali '
-         .. startDir .. '/' .. filename .. '_second.ali')
-tomoLib.runCheck('mv ' .. startDir .. '/' .. filename .. '_erase.ali '
-         .. startDir .. '/' .. filename .. '.ali')
+assert(os.execute('mv ' .. filename .. '.ali ' .. filename .. '_second.ali'),
+       '\nCould not move file.\n')
+assert(os.execute('mv ' .. filename .. '_erase.ali ' .. filename .. '.ali'),
+       '\nCould not move file.\n')
 
 if Opts.p_ then
    tomoLib.runCheck('splittilt -n ' .. Opts.p_ .. ' tilt.com')
-   tomoLib.runCheck('processchunks -g ' .. Opts.p_ .. ' tilt')
+   tomoLib.runCheck('processchunks -g -C "0 0 0" -T "600 0" '
+                    .. Opts.p_ .. ' tilt')
+   tomoLib.writeLog(filename)
+   assert(tomoLib.isFile(filename .. '_full.rec'),
+          '\nError running tilt reconstruction see log.\n')
 else
-   tomoLib.runCheck('submfg -t tilt.com')
+   tomoLib.runCheck('submfg -s -t tilt.com')
+   tomoLib.writeLog(filename)
+   assert(tomoLib.isFile(filename .. '_full.rec'),
+          '\nError running tilt reconstruction see log.\n')
 end
 
-tomoLib.writeLog(filename)
-
-tomoLib.runCheck('clip rotx ' .. filename .. '_full.rec ' .. filename .. '_full.rec')
+tomoLib.runCheck('clip rotx ' .. filename .. '_full.rec ' .. filename 
+                 .. '_full.rec')
 tomoLib.runCheck('binvol -binning 4 ' .. filename .. '_full.rec '
-         .. filename .. '.bin4 2>&1 /dev/null')
+                 .. filename .. '.bin4 2>&1 /dev/null')
 tomoLib.runCheck('binvol -binning 4 -zbinning 1 ' .. filename .. '.ali '
-         .. filename .. '.ali.bin4 2>&1 /dev/null')
-
-local chunkSize = 10
+                 .. filename .. '.ali.bin4 2>&1 /dev/null')
 
 if Opts.p_ then
-   chunkSize = Opts.p_ * 3
-end
-
-tomoLib.runCheck('chunksetup -m ' .. chunkSize .. ' -p 15 -o 4 nad_eed_3d.com '
-         .. filename .. '.bin4 '
-         .. filename .. '.bin4.nad')
-
-if Opts.p_ then
-   tomoLib.runCheck('processchunks -g ' .. Opts.p_ .. ' nad_eed_3d')
+   tomoLib.runCheck('chunksetup -p 15 -o 4 nad_eed_3d.com ' .. filename 
+                    .. '.bin4 ' .. filename .. '.bin4.nad')
+   tomoLib.runCheck('processchunks -g -C "0 0 0" -T "600 0" ' 
+                    .. Opts.p_ .. ' nad_eed_3d')
+   tomoLib.writeLog(filename)
 else
-   tomoLib.runCheck('submfg nad_eed_3d-all')
+   tomoLib.runCheck('submfg -s -t nad_eed_3d.com')
+   tomoLib.writeLog(filename)
 end
+
+assert(tomoLib.isFile(filename .. '.bin4.nad'),
+       '\nError computing NAD filter, see log.\n')
 tomoLib.medNfilter(filename .. '.bin4.nad', 7)
 tomoLib.writeLog(filename)
+assert(tomoLib.isFile(filename .. '.bin4.nad7'),
+       '\nError computing med7 filter\n')
 
 io.write('Now running file and space cleanup\n')
 ctfPlotCom = io.open('ctfplotter.com', 'r')
@@ -205,20 +220,23 @@ ctfNewPlot = ctfNewPlot:gsub('AutoFitRangeAndStep', '#AutofitRangeAndStep')
 ctfNewPlotCom:write(ctfNewPlot)
 ctfNewPlotCom:close()
 
-tomoLib.runCheck('mv ' .. filename .. '_full.rec ' -- full reconstruction
-         .. filename .. '.bin4 ' -- for checking
-         .. filename .. '.tlt ' -- for ctfplotter.com
-         .. filename .. '.bin4.nad ' -- for checking
-         .. filename .. '.bin4.nad7 ' -- for picking subvols
-         .. filename .. '_first.ali ' -- for ctfplotter.com
-         .. filename .. '.ali.bin4 ' -- for checking
-         .. filename .. '.defocus ' -- for ctfplotter.com
-         .. 'ctfplotter.com tomoAuto.log finalFiles')
-tomoLib.runCheck('rm *.com *.log ' .. filename .. '*')
-tomoLib.runCheck('rm -rf raptor*')
-tomoLib.runCheck('mv finalFiles/* .')
-tomoLib.runCheck('rmdir finalFiles')
-tomoLib.runCheck('mv ' .. filename .. '_first.ali ' .. filename .. '.ali')
+assert(os.execute('mv ' .. filename .. '_full.rec ' -- full reconstruction
+                 .. filename .. '.bin4 ' -- for checking
+                 .. filename .. '.tlt ' -- for ctfplotter.com
+                 .. filename .. '.bin4.nad ' -- for checking
+                 .. filename .. '.bin4.nad7 ' -- for picking subvols
+                 .. filename .. '_first.ali ' -- for ctfplotter.com
+                 .. filename .. '.ali.bin4 ' -- for checking
+                 .. filename .. '.defocus ' -- for ctfplotter.com
+                 .. 'ctfplotter.com tomoAuto.log finalFiles'),
+       '\nCould not move final files.\n')
+assert(os.execute('rm *.com *.log ' .. filename .. '*'),
+       '\nCould not remove command and log files.\n')
+assert(os.execute('rm -rf raptor*'), '\nCould not remove raptor files.\n')
+assert(os.execute('mv finalFiles/* .'), '\nCould not move files.\n')
+assert(os.execute('rmdir finalFiles'), '\nCould not remove directory.\n')
+assert(os.execute('mv ' .. filename .. '_first.ali ' .. filename .. '.ali'),
+      '\nCould not move files.\n')
 lfs.chdir('..')
 io.write('tomoAuto complete for ' .. stackFile .. '\n')
 end
