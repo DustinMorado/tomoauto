@@ -125,7 +125,9 @@ local function writeNewstackCom(inputFile)
 	file:write('InputFile ' .. inputFile .. '\n')
 	file:write('OutputFile ' .. filename .. '.preali\n')
 	file:write('TransformFile ' .. filename .. '.prexg\n')
-	file:write('ModeToOutput ' .. newstackModeToOutput .. '\n')
+   if newstackModeToOutput_use then
+	   file:write('ModeToOutput ' .. newstackModeToOutput .. '\n')
+   end
 	file:write('FloatDensities ' .. newstackFloatDensities .. '\n')
 
 	if newstackContrastBlackWhite_use then

@@ -198,7 +198,8 @@ xftoxgRangeofAnglesInAverage = 20.0
 -- The storage mode of the output file; 0 for byte, 1 for 16-bit signed integer,
 -- 6 for 16-bit unsigned integer, or 2 for 32-bit floating point. The default is
 -- the mode of the first input file.
-newstackModeToOutput = 0
+newstackModeToOutput_use = nil
+newstackModeToOutput = 6
 
 -- LinearInterpolation:
 -- Use linear instead of cubic interpolation to transform images. Linear
