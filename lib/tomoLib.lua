@@ -49,14 +49,14 @@ end
 # Arguments: arg[1] = shell command to be run <'string'>                      #
 #==========================================================================--]]
 function tomoLib.runCheck(functionString)
-	local success,exit,signal = os.execute(functionString .. ' 2> /dev/null')
+	local success,exit,signal = os.execute(functionString .. ' &> /dev/null')
    if signal ~= 0 then
-      io.stderr:write('\n\nError running ' .. functionString .. '\n\n')
+      io.stderr:write('\n\nERROR: ' .. functionString .. ' nonzero exit.\n\n')
       return false, signal
    end
 end
 --[[==========================================================================#
-#                                 findITP                                     #
+#                                 readHeader                                  #
 #-----------------------------------------------------------------------------#
 # A function that reads the image stack binary header file and finds the      #
 # image size (nx, ny), the tilt axis rotation angle (tilt_axis) and the pixel #
@@ -69,7 +69,7 @@ end
 # Arguments: arg[1] = image stack file <filename.st>                          #
 #            arg[2] = fiducial diameter in nanometers <integer>               #
 #==========================================================================--]]
-function tomoLib.findITP(inputFile, fidSize)
+function tomoLib.readHeader(inputFile, fidSize)
    local hT = {}
 	local file = assert(io.open(inputFile, 'rb'))
 	local nx = struct.unpack('i4', file:read(4))
@@ -80,7 +80,7 @@ function tomoLib.findITP(inputFile, fidSize)
    hT.nz = nz
    file:seek('set', 224)
 	local feiLabel = struct.unpack('c3', file:read(3))
-   hT.feiLable = feiLabel
+   hT.feiLabel = feiLabel
    file:seek('set',1064)
 	local tiltAxis = struct.unpack('f', file:read(4))
 	local pixelSize = struct.unpack('f', file:read(4))
@@ -101,7 +101,7 @@ function tomoLib.findITP(inputFile, fidSize)
       sum = sum + defocus
       file:seek('cur', 124)
    end
-   local defocus = sum / nz * -1000
+   local defocus = sum / nz * -1
    if feiLabel == 'Fei' then
       defocus = defocus * 1e6
    end
@@ -138,7 +138,7 @@ function tomoLib.checkAlign(filename, nz)
    file:close()
    local cut = nz - aliNz
    io.write('\nThe number of intial sections is:\t' .. nz)
-   io.write('\nThe number of sections cut was:\t' .. cut .. '\n')
+   io.write('\nThe number of sections cut was:\t' .. cut .. '\n\n')
    if (aliNz / nz) >= 0.9 then return true else return nil end
 end
 --[[==========================================================================#
