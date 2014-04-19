@@ -49,13 +49,14 @@ end
 # Arguments: arg[1] = shell command to be run <'string'>                      #
 #==========================================================================--]]
 function tomoLib.runCheck(functionString)
-	local success,exit,signal = os.execute(functionString .. ' 2> /dev/null')
+	local success,exit,signal = os.execute(functionString .. ' &> /dev/null')
    if signal ~= 0 then
-      io.stderr:write('\n\nError running ' .. functionString .. '\n\n')
+      io.stderr:write('\n\nERROR: ' .. functionString .. ' nonzero exit.\n\n')
+      return false, signal
    end
 end
 --[[==========================================================================#
-#                                 findITP                                     #
+#                                 readHeader                                  #
 #-----------------------------------------------------------------------------#
 # A function that reads the image stack binary header file and finds the      #
 # image size (nx, ny), the tilt axis rotation angle (tilt_axis) and the pixel #
@@ -68,57 +69,57 @@ end
 # Arguments: arg[1] = image stack file <filename.st>                          #
 #            arg[2] = fiducial diameter in nanometers <integer>               #
 #==========================================================================--]]
-function tomoLib.findITP(inputFile, fidSize)
+function tomoLib.readHeader(inputFile, fidSize)
+   local hT = {}
 	local file = assert(io.open(inputFile, 'rb'))
 	local nx = struct.unpack('i4', file:read(4))
+   hT.nx = nx
 	local ny = struct.unpack('i4', file:read(4))
+   hT.ny = ny
    local nz = struct.unpack('i4', file:read(4))
+   hT.nz = nz
    file:seek('set', 224)
 	local feiLabel = struct.unpack('c3', file:read(3))
+   hT.feiLabel = feiLabel
    file:seek('set',1064)
 	local tiltAxis = struct.unpack('f', file:read(4))
 	local pixelSize = struct.unpack('f', file:read(4))
-
 	if feiLabel == 'Fei' then
 		pixelSize = pixelSize * 1e9
       tiltAxis = tiltAxis * -1
 	else
 		pixelSize = pixelSize / 10
 	end
-
+   hT.pixelSize = pixelSize
+   hT.tiltAxis = tiltAxis
 	local fidPix = math.floor((fidSize / pixelSize) + 0.5)
-	file:close()
-	return nx, ny, nz, feiLabel, tiltAxis, pixelSize, fidPix
-end
---[[==========================================================================#
-#                              approximateDefocus                             #
-#-----------------------------------------------------------------------------#
-# A function that reads the header of the image stack and returns the defocus #
-# value. Please be aware that this is solely a good approximation and in many #
-# cases can be way off. If so please use the -d option for tomoAuto and       #
-# estimate the defocus manually.                                              #
-#-----------------------------------------------------------------------------#
-# Arguments: arg[1] = inputFile <string> the image stack to read              #
-#            arg[2] = feiLabel <string> whether or not its an CCD tomo        #
-#==========================================================================--]]
-function tomoLib.approximateDefocus(inputFile, feiLabel)
-   local file = assert(io.open(inputFile, 'rb'))
-   local sum = 0
-   file:seek('set', 8)
-   z = struct.unpack('i4', file:read(4))
+   hT.fidPix = fidPix
    file:seek('set', 1052)
-   for i = 1, z do
-      sum = sum + struct.unpack('f', file:read(4))
+   local sum = 0
+   for i = 1, nz do
+      local defocus = struct.unpack('f', file:read(4))
+      sum = sum + defocus
       file:seek('cur', 124)
    end
-   file:close(); file = nil
+   local defocus = sum / nz * -1
    if feiLabel == 'Fei' then
-      sum = sum * 10000
-   else
-      sum = sum * -1000
+      defocus = defocus * 1e6
    end
-   local avg = sum / z
-   return string.format('%.2f', avg)
+   hT.defocus = defocus
+	file:close(); file = nil
+	return hT
+end
+--[[==========================================================================#
+#                                   isFile                                    #
+#-----------------------------------------------------------------------------#
+# A function to check if file exists, since older versions of IMOD have a     #
+# funny way of handling exit codes in case of errors.                         #
+#-----------------------------------------------------------------------------#
+# Arguments: arg[1] = filename to check <string>                              #
+#==========================================================================--]]
+function tomoLib.isFile(filename)
+   local file = io.open(filename, 'r')
+   if file ~= nil then io.close(file) return true else return false end
 end
 --[[==========================================================================#
 #                                 checkAlign                                  #
@@ -137,7 +138,7 @@ function tomoLib.checkAlign(filename, nz)
    file:close()
    local cut = nz - aliNz
    io.write('\nThe number of intial sections is:\t' .. nz)
-   io.write('\nThe number of sections cut was:\t' .. cut .. '\n')
+   io.write('\nThe number of sections cut was:\t' .. cut .. '\n\n')
    if (aliNz / nz) >= 0.9 then return true else return nil end
 end
 --[[==========================================================================#
