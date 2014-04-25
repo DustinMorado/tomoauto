@@ -240,23 +240,29 @@ newstackScaleMinAndMax = "0 255"
 
 -- RaptorExecPath:
 -- Path where RAPTOR binaries are located (REQUIRED)
-raptorExecPath = "/usr/local/IMOD/bin/realbin/"
+raptorExecPath = "/usr/local/RAPTOR3.0/bin/"
 
 -- AnglesInHeader:
 -- If this option is specified, RAPTOR will extract tilt angles from the header
 -- of the input stack. Otherwise RAPTOR requires a .rawtlt file.
-raptorAnglesInHeader_use = nil
+raptorAnglesInHeader_use = true
+
+-- Markers:
+-- This is the most critical parameter. Here it is set incredibly high, which
+-- makes it run very slowly, you can try lowering it to see how fast you can
+-- get it without many of the alignments failing.
+raptorMarkers = 100
 
 -- Binning:
 -- This option causes RAPTOR to bin the image stack before computing the
 -- alignment. The binning does not affect the value of Diameter.
-raptorBinning_use = nil
-raptorBinning = 4
+raptorBinning_use = true
+raptorBinning = 2
 
 -- xRay:
 -- if this option is specified long, straight line features will be attempted to
 -- be removed to help the marker identification process.
-raptorxRay_use = true
+raptorxRay_use = nil
 
 --[[==========================================================================#
 # Step 4: CTF Correction                                                      #
