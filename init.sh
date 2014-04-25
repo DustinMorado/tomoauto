@@ -4,5 +4,3 @@
 
 export TOMOAUTOROOT=${TOMOAUTOROOT:=/usr/local/tomoAuto}
 export PATH=$TOMOAUTOROOT/bin:$PATH
-
-

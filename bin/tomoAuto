@@ -8,7 +8,11 @@ local getOpt = assert(require 'getOpt')
 --local tomoAuto = assert(dofile(rootDir .. '/lib/tomoAuto.lua'))
 --local getOpt = assert(dofile(rootDir .. '/lib/getOpt.lua'))
 
-local sString = 'c, d_, g, h, L_, p_, z_'
-local lString = 'ctf, defocus, gpu, help, config, procnum, thickness'
+local sString = 'b, c, d_, g, h, l_, p_, s, \z
+                 t,  z_'
+
+local lString = 'bflow, ctf, defocus, gpu, help, config, procnum, SIRT, \z
+                 tomo3D, thickness'
+
 local arg, Opts = getOpt.parse(arg, sString, lString)
 tomoAuto.reconstruct(arg[1], arg[2], Opts)

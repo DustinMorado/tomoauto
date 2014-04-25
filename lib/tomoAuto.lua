@@ -34,20 +34,22 @@ local header = tomoLib.readHeader(stackFile, fidSize)
 if Opts.d_ then header.defocus = Opts.d_ end
 comWriter.write(stackFile, header, Opts.L_)
 
-if Opts.g then
-   local file = io.open('tilt.com', 'a')
-   file:write('UseGPU 0\n')
-   file:close()
-end
+if not Opts.t then
+   if Opts.g then
+      local file = io.open('tilt.com', 'a')
+      file:write('UseGPU 0\n')
+      file:close()
+   end
 
-if Opts.z_ then
-   local file = io.open('tilt.com', 'r')
-   local contents = file:read('*a')
-   contents  = contents:gsub('THICKNESS (%d+)', 'THICKNESS ' 
-           .. tostring(Opts.z_))
-   file = io.open('tilt.com', 'w')
-   file:write(contents)
-   file:close(); file = nil
+   if Opts.z_ then
+      local file = io.open('tilt.com', 'r')
+      local contents = file:read('*a')
+      contents  = contents:gsub('THICKNESS (%d+)', 'THICKNESS ' 
+                  .. tostring(Opts.z_))
+      file = io.open('tilt.com', 'w')
+      file:write(contents)
+      file:close(); file = nil
+   end
 end
 
 if header.feiLabel == 'Fei' then
@@ -180,45 +182,93 @@ assert(os.execute('mv ' .. filename .. '_erase.ali ' .. filename .. '.ali'),
        '\n\nCould not move file.\n')
 
 io.write('Now running reconstruction, this will take some time.\n')
-if Opts.p_ then
-   tomoLib.runCheck('splittilt -n ' .. Opts.p_ .. ' tilt.com')
-   tomoLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 '
-                    .. Opts.p_ .. ' tilt')
-   tomoLib.writeLog(filename)
-   assert(tomoLib.isFile(filename .. '_full.rec'),
-          '\n\nError running tilt reconstruction see log.\n')
+if not Opts.t then
+   if not Opts.s then
+      if Opts.p_ then
+         tomoLib.runCheck('splittilt -n ' .. Opts.p_ .. ' tilt.com')
+         tomoLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 '
+                          .. Opts.p_ .. ' tilt')
+         tomoLib.writeLog(filename)
+         assert(tomoLib.isFile(filename .. '_full.rec'),
+                '\n\nError running tilt reconstruction see log.\n')
+      else
+         tomoLib.runCheck('submfg -s -t tilt.com')
+         tomoLib.writeLog(filename)
+         assert(tomoLib.isFile(filename .. '_full.rec'),
+                '\n\nError running tilt reconstruction see log.\n')
+      end
+   else
+      local thds = Opts.p_ or "1"
+      tomoLib.runCheck('sirtsetup -n ' .. thds .. ' -i 15 tilt.com')
+      tomeLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 '
+                       .. thds .. ' tilt_sirt')
+   end
 else
-   tomoLib.runCheck('submfg -s -t tilt.com')
-   tomoLib.writeLog(filename)
-   assert(tomoLib.isFile(filename .. '_full.rec'),
-          '\n\nError running tilt reconstruction see log.\n')
+   local z = Opts.z_ or '1200'
+   local tomo3dString = 'tomo3d -a ' .. filename .. '.tlt -H '
+                        .. '-i ' .. filename .. '.ali -z '  .. z
+   if Opts.s then
+      tomo3dString = tomo3dString .. ' -S -o ' .. filename .. '_sirt.rec'
+   else
+      tomo3dString = tomo3dString .. ' -o ' .. filename .. '_tomo3d.rec'
+   end
+   tomoLib.runCheck(tomo3dString)
 end
 
 io.write('Now running post-processing on reconstruction.\n')
-tomoLib.runCheck('clip rotx ' .. filename .. '_full.rec ' .. filename 
-                 .. '_full.rec')
-tomoLib.runCheck('binvol -binning 4 ' .. filename .. '_full.rec '
+local recString = ''
+if Opts.t and Opts.s then
+   recString = '_sirt'
+elseif Opts.t then
+   recString = '_tomo3d'
+else
+   recString = '_full'
+end
+tomoLib.runCheck('clip rotx ' .. filename .. recString .. '.rec ' 
+                 .. filename .. recString .. '.rec')
+tomoLib.runCheck('binvol -binning 4 ' .. filename .. recString .. '.rec '
                  .. filename .. '.bin4')
 tomoLib.runCheck('binvol -binning 4 -zbinning 1 ' .. filename .. '.ali '
                  .. filename .. '.ali.bin4')
 
-io.write('Now computing non-linear anisotropic diffusion filter.\n')
-if Opts.p_ then
-   tomoLib.runCheck('chunksetup -p 15 -o 4 nad_eed_3d.com ' .. filename 
-                    .. '.bin4 ' .. filename .. '.bin4.nad')
-   tomoLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 ' 
-                    .. Opts.p_ .. ' nad_eed_3d')
-   tomoLib.writeLog(filename)
+io.write('Now computing post-processing filter.\n')
+local fStr = ''
+if not Opts.t then
+   fStr = 'nad'
+   if Opts.p_ then
+      tomoLib.runCheck('chunksetup -p 15 -o 4 nad_eed_3d.com ' .. filename 
+                       .. '.bin4 ' .. filename .. '.bin4.nad')
+      tomoLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 ' 
+                       .. Opts.p_ .. ' nad_eed_3d')
+      tomoLib.writeLog(filename)
+   else
+      tomoLib.runCheck('submfg -s -t nad_eed_3d.com')
+      tomoLib.writeLog(filename)
+   end
+elseif Opts.t and Opts.b then
+   fStr = 'bflow'
+   local thds = 24
+   if Opts.p_ then 
+      if tonumber(Opts.p_) < 24 then
+         thds = Opts.p_
+      end
+      tomoLib.runCheck('tomobflow -t ' .. thds .. ' ' .. filename .. '.bin4 '
+                       .. ' ' .. filename .. '.bin4.bflow')
+   else
+      tomoLib.runCheck('tomobflow ' .. filename .. '.bin4 ' .. ' ' .. filename
+                       .. '.bin4.bflow')
+   end
 else
-   tomoLib.runCheck('submfg -s -t nad_eed_3d.com')
-   tomoLib.writeLog(filename)
+   fStr = 'eed'
+   tomoLib.runCheck('tomoeed -H ' .. filename .. '.bin4 ' .. ' ' .. filename
+                    .. '.bin4.eed')
 end
 
-assert(tomoLib.isFile(filename .. '.bin4.nad'),
-       '\n\nError computing NAD filter, see log.\n')
-tomoLib.medNfilter(filename .. '.bin4.nad', 7)
+assert(tomoLib.isFile(filename .. '.bin4.' .. fStr),
+       '\n\nError computing filter, see log.\n')
+tomoLib.medNfilter(filename .. '.bin4.' .. fStr .. ', 7')
 tomoLib.writeLog(filename)
-assert(tomoLib.isFile(filename .. '.bin4.nad7'),
+assert(tomoLib.isFile(filename .. '.bin4.' .. fStr .. '7'),
        '\n\nError computing med7 filter\n')
 
 io.write('Now running file and space cleanup\n')
@@ -231,10 +281,10 @@ ctfNewPlot = ctfNewPlot:gsub('AutoFitRangeAndStep', '#AutofitRangeAndStep')
 ctfNewPlotCom:write(ctfNewPlot)
 ctfNewPlotCom:close()
 
-assert(os.execute('mv ' .. filename .. '_full.rec ' -- full reconstruction
+assert(os.execute('mv ' .. filename .. recString .. '.rec ' -- reconstruction
                  .. filename .. '.bin4 ' -- for checking
                  .. filename .. '.tlt ' -- for ctfplotter.com
-                 .. filename .. '.bin4.nad7 ' -- for picking subvols
+                 .. filename .. '.bin4.' .. fStr .. '7 ' -- for picking subvols
                  .. filename .. '_first.ali ' -- for ctfplotter.com
                  .. filename .. '.ali.bin4 ' -- for checking
                  .. filename .. '.defocus ' -- for ctfplotter.com
