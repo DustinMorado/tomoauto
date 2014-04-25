@@ -9,6 +9,7 @@ function getOpt.parse(arg, shortString, longString)
    local stringArg = ' '
    local shift = 0 
    for l in shortString:gmatch('(%a_?),?') do
+      print(l)
       table.insert(mapOpts, l)
       optTable[l] = false 
    end
@@ -55,6 +56,8 @@ function getOpt.parse(arg, shortString, longString)
          elseif optTable[option] ~= nil then
             optTable[option] = true
          else
+            print('option ' .. option .. '; shift ' .. shift .. '\n\n')
+            for k,v in pairs(optTable) do print(k,v) end
             error('Invalid short option, please check usage.')
          end
       else -- globbed short options

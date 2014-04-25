@@ -12,31 +12,18 @@ package.cpath = package.cpath .. ';' .. tomoAutoDir .. '/lib/?.so;'
 package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
 local lfs = assert(require 'lfs')
 local getOpt = assert(require 'getOpt')
---local getOpt = assert(dofile(tomoAutoDir .. '/lib/getOpt.lua'))
-
-local sString = 'b, c, d_, f_, g, h, l_, n_, \z
-                 p_, s, t, z_'
-
-local lString = 'bflow, ctf, defocus, fid, gpu, help, config, number, \z
-                 procnum, SIRT, tomo3D, thickness'
-
+local sString = 'b, c, d_, f_, g, h, l_, n_, p_, s, t, z_'
+local lString = 'bflow, ctf, defocus, fid, gpu, help, config, number, procnum, SIRT, tomo3D, thickness'
 local arg, Opts = getOpt.parse(arg, sString, lString)
-
 local fid = Opts.f_
 local parallel = Opts.n_ or 1
-Opts.f_ = nil
-Opts.n_ = nil
 
 local fileList = {}
-
 for file in lfs.dir('.') do
-
    if file:find('%w+%.st$') then
       table.insert(fileList, file)
    end
-
 end
-
 local runString = 'tomoAuto '
 for k,v in pairs(Opts) do
    if v then
@@ -46,7 +33,6 @@ for k,v in pairs(Opts) do
       end
    end
 end
-
 local batchString = ''
 for i = 1, #fileList do
    batchString = batchString .. runString .. ' ' .. fileList[i] .. ' ' .. fid .. '&'
