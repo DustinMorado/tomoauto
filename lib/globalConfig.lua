@@ -240,7 +240,7 @@ newstackScaleMinAndMax = "0 255"
 
 -- RaptorExecPath:
 -- Path where RAPTOR binaries are located (REQUIRED)
-raptorExecPath = "/usr/local/RAPTOR3.0/bin/"
+raptorExecPath = "/usr/local/IMOD/bin/realbin/"
 
 -- AnglesInHeader:
 -- If this option is specified, RAPTOR will extract tilt angles from the header

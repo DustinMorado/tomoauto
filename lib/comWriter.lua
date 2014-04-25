@@ -146,40 +146,43 @@ local function writeRaptorCom(inputFile, fidPix)
    local filename = string.sub(inputFile, 1,-4)
    local file1 = assert(io.open(comName1, 'w'))
    local file2 = assert(io.open(comName2, 'w'))
-
-   file1:write('#!/bin/sh\n')
-   local r1Str = '/usr/local/RAPTOR3.0/bin/RAPTOR '
-   r1Str = r1Str .. '-execPath ' .. raptorExecPath
-   r1Str = r1Str .. ' -path ' .. lfs.currentdir()
-   r1Str = r1Str .. ' -input ' .. filename .. '.preali'
-   r1Str = r1Str .. ' -output ' ..lfs.currentdir() .. '/raptor1'
-   r1Str = r1Str .. ' -diameter ' .. fidPix
-   r1Str = r1Str .. ' -markers ' .. raptorMarkers
+   file1:write('# THIS IS A COMMAND FILE TO RUN RAPTOR\n')
+   file1:write('$RAPTOR -StandardInput\n')
+   file1:write('RaptorExecPath ' .. raptorExecPath .. '\n')
+   file1:write('InputPath ' .. lfs.currentdir() .. '\n')
+   file1:write('InputFile ' .. filename .. '.preali\n')
+   file1:write('OutputPath ' .. lfs.currentdir() .. '/raptor1\n')
+   file1:write('Diameter ' .. fidPix .. '\n')
+   file1:write('MarkersPerImage ' .. raptorMarkers .. '\n')
    if raptorAnglesInHeader_use then
-      r1Str = r1Str .. ' -angles'
+      file1:write('AnglesInHeader\n')
    end
    if raptorBinning_use then
-      r1Str = r1Str .. ' -bin ' .. raptorBinning
+      file1:write('Binning ' .. raptorBinning .. '\n')
    end
-   file1:write(r1Str)
+   if raptorxRay_use then
+      file1:write('xRay\n')
+   end
    file1:close()
 
-   file2:write('#!/bin/sh\n')
-   local r2Str = '/usr/local/RAPTOR3.0/bin/RAPTOR '
-   r2Str = r2Str .. '-execPath ' .. raptorExecPath
-   r2Str = r2Str .. ' -path ' .. lfs.currentdir()
-   r2Str = r2Str .. ' -input ' .. filename .. '.ali'
-   r2Str = r2Str .. ' -output ' ..lfs.currentdir() .. '/raptor2'
-   r2Str = r2Str .. ' -diameter ' .. fidPix
-   r2Str = r2Str .. ' -markers ' .. raptorMarkers
-   r2Str = r2Str .. ' -tracking'
-   if raptorAnglesInHeader_use then
-      r2Str = r2Str .. ' -angles'
+   file2:write('# THIS IS A COMMAND FILE TO RUN RAPTOR\n')
+   file2:write('$RAPTOR -StandardInput\n')
+   file2:write('RaptorExecPath ' .. raptorExecPath .. '\n')
+   file2:write('InputPath ' .. lfs.currentdir() .. '\n')
+   file2:write('InputFile ' .. filename .. '.ali\n')
+   file2:write('OutputPath ' .. lfs.currentdir() .. '/raptor2\n')
+   file2:write('Diameter ' .. fidPix .. '\n')
+   file2:write('MarkersPerImage ' .. raptorMarkers .. '\n')
+   if raptorAnglesInHeader_us then
+      file2:write('AnglesInHeader\n')
    end
    if raptorBinning_use then
-      r2Str = r2Str .. ' -bin ' .. raptorBinning
+      file2:write('Binning ' .. raptorBinning .. '\n')
    end
-   file2:write(r2Str)
+   file2:write('TrackingOnly\n')
+   if raptorxRay_use then
+      file2:write('xRay\n')
+   end
    file2:close()
 end
 
