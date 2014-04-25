@@ -70,8 +70,8 @@ if header.feiLabel == 'Fei' then
 end
 
 io.write('Running IMOD extracttilts for ' .. filename .. '\n')
-tomoLib.runCheck('extracttilts -input ' .. stackFile .. ' -output '
-                 .. filename .. '.rawtlt')
+assert(tomoLib.runCheck('extracttilts -input ' .. stackFile .. ' -output '
+                 .. filename .. '.rawtlt'))
 
 assert(lfs.mkdir('finalFiles'),
        '\n\nCould not make finalFiles directory\n')
@@ -80,7 +80,7 @@ assert(os.execute('cp ' .. stackFile .. ' finalFiles'),
 
 -- We should always remove the Xrays from the image using ccderaser
 io.write('Running ccderaser\n')
-tomoLib.runCheck('submfg -s -t ccderaser.com')
+assert(tomoLib.runCheck('submfg -s -t ccderaser.com'))
 tomoLib.writeLog(filename)
 assert(tomoLib.isFile(filename .. '_fixed.st'),
        '\n\nccderaser failed, see log\n')
@@ -90,7 +90,7 @@ assert(os.execute('mv ' .. filename .. '_fixed.st ' .. stackFile),
        '\n\nCould not move file\n')
 
 io.write('Running Coarse Alignment for ' .. stackFile .. '\n')
-tomoLib.runCheck('submfg -s -t tiltxcorr.com xftoxg.com newstack.com')
+assert(tomoLib.runCheck('submfg -s -t tiltxcorr.com xftoxg.com newstack.com'))
 tomoLib.writeLog(filename)
 assert(tomoLib.isFile(filename .. '.preali'),
        '\n\ncoarse alignment failed see log\n')
@@ -98,7 +98,7 @@ assert(tomoLib.isFile(filename .. '.preali'),
 -- Now we run RAPTOR to produce a succesfully aligned stack
 tomoLib.checkFreeSpace(startDir)
 io.write('Now running RAPTOR (please be patient this may take some time)\n')
-tomoLib.runCheck('submfg -s -t raptor1.com')
+assert(tomoLib.runCheck('submfg -s -t raptor1.com'))
 tomoLib.writeLog(filename)
 assert(tomoLib.isFile('raptor1/align/' .. filename .. '.ali'),
        '\n\nRAPTOR alignment failed see log\n')
@@ -123,15 +123,15 @@ if Opts.c then
    io.write('Now running ctfplotter and ctfphaseflip for CTF correction\n')
 
    if Opts.p_ then
-      tomoLib.runCheck('submfg -s -t ctfplotter.com')
+      assert(tomoLib.runCheck('submfg -s -t ctfplotter.com'))
       assert(tomoLib.isFile(filename .. '.defocus'),
              '\n\nCTFplotter failed see log\n')
-      tomoLib.runCheck('splitcorrection ctfcorrection.com')
-      tomoLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 ' 
-                       .. Opts.p_ .. ' ctfcorrection')
+      assert(tomoLib.runCheck('splitcorrection ctfcorrection.com'))
+      assert(tomoLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 ' 
+                       .. Opts.p_ .. ' ctfcorrection'))
       tomoLib.writeLog(filename)
    else
-      tomoLib.runCheck('submfg -t ctfplotter.com ctfcorrection.com')
+      assert(tomoLib.runCheck('submfg -t ctfplotter.com ctfcorrection.com'))
       assert(tomoLib.isFile(filename .. '_ctfcorr.ali'),
              '\n\nCTFcorrection failed see log\n')
       tomoLib.writeLog(filename)
@@ -146,7 +146,7 @@ end
 -- Now we use RAPTOR to make a fiducial model to erase the gold in the stack
 io.write('Now running RAPTOR to track gold to erase particles\n')
 tomoLib.checkFreeSpace(startDir)
-tomoLib.runCheck('submfg -t raptor2.com')
+assert(tomoLib.runCheck('submfg -t raptor2.com'))
 tomoLib.writeLog(filename)
 assert(tomoLib.isFile('raptor2/IMOD/' .. filename .. '.fid.txt'),
        '\n\nCould not make fiducial model see log.\n')
@@ -160,7 +160,7 @@ if not tomoLib.checkAlign(filename, header.nz) then
 end
 
 -- Make the erase model more suitable for erasing gold
-tomoLib.runCheck('submfg -t model2point.com point2model.com')
+assert(tomoLib.runCheck('submfg -t model2point.com point2model.com'))
 tomoLib.writeLog(filename)
 assert(tomoLib.isFile(filename .. '_erase.scatter.fid'),
        '\n\nError making point model from RAPTOR text model see log.\n')
@@ -171,7 +171,7 @@ assert(os.execute('mv ' .. filename .. '_erase.scatter.fid ' ..filename
        .. '_erase.fid'), '\n\nCould not move file\n')
 
 io.write('Now erasing gold from aligned stack\n')
-tomoLib.runCheck('submfg -t gold_ccderaser.com')
+assert(tomoLib.runCheck('submfg -t gold_ccderaser.com'))
 tomoLib.writeLog(filename)
 assert(tomoLib.isFile(filename .. '_erase.ali'),
        '\n\nCould not erase gold see log.\n')
@@ -185,25 +185,27 @@ io.write('Now running reconstruction, this will take some time.\n')
 if not Opts.t then
    if not Opts.s then
       if Opts.p_ then
-         tomoLib.runCheck('splittilt -n ' .. Opts.p_ .. ' tilt.com')
-         tomoLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 '
-                          .. Opts.p_ .. ' tilt')
+         assert(tomoLib.runCheck('splittilt -n ' .. Opts.p_ .. ' tilt.com'))
+         assert(tomoLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 '
+                          .. Opts.p_ .. ' tilt'))
          tomoLib.writeLog(filename)
          assert(tomoLib.isFile(filename .. '_full.rec'),
                 '\n\nError running tilt reconstruction see log.\n')
       else
-         tomoLib.runCheck('submfg -s -t tilt.com')
+         assert(tomoLib.runCheck('submfg -s -t tilt.com'))
          tomoLib.writeLog(filename)
          assert(tomoLib.isFile(filename .. '_full.rec'),
                 '\n\nError running tilt reconstruction see log.\n')
       end
    else
       local thds = Opts.p_ or "1"
-      tomoLib.runCheck('sirtsetup -n ' .. thds .. ' -i 15 tilt.com')
+      assert(tomoLib.runCheck('sirtsetup -n ' .. thds .. ' -i 15 tilt.com'))
       tomeLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 '
                        .. thds .. ' tilt_sirt')
    end
 else
+   assert(tomoLib.runCheck('newstack -mo 1 ' .. filename .. '.ali ' 
+          .. filename .. '.ali'))
    local z = Opts.z_ or '1200'
    local tomo3dString = 'tomo3d -a ' .. filename .. '.tlt -H '
                         .. '-i ' .. filename .. '.ali -z '  .. z
@@ -212,7 +214,7 @@ else
    else
       tomo3dString = tomo3dString .. ' -o ' .. filename .. '_tomo3d.rec'
    end
-   tomoLib.runCheck(tomo3dString)
+   assert(tomoLib.runCheck(tomo3dString))
 end
 
 io.write('Now running post-processing on reconstruction.\n')
@@ -224,25 +226,25 @@ elseif Opts.t then
 else
    recString = '_full'
 end
-tomoLib.runCheck('clip rotx ' .. filename .. recString .. '.rec ' 
-                 .. filename .. recString .. '.rec')
-tomoLib.runCheck('binvol -binning 4 ' .. filename .. recString .. '.rec '
-                 .. filename .. '.bin4')
-tomoLib.runCheck('binvol -binning 4 -zbinning 1 ' .. filename .. '.ali '
-                 .. filename .. '.ali.bin4')
+assert(tomoLib.runCheck('clip rotx ' .. filename .. recString .. '.rec ' 
+                 .. filename .. recString .. '.rec'))
+assert(tomoLib.runCheck('binvol -binning 4 ' .. filename .. recString .. '.rec '
+                 .. filename .. '.bin4'))
+assert(tomoLib.runCheck('binvol -binning 4 -zbinning 1 ' .. filename .. '.ali '
+                 .. filename .. '.ali.bin4'))
 
 io.write('Now computing post-processing filter.\n')
 local fStr = ''
 if not Opts.t then
    fStr = 'nad'
    if Opts.p_ then
-      tomoLib.runCheck('chunksetup -p 15 -o 4 nad_eed_3d.com ' .. filename 
-                       .. '.bin4 ' .. filename .. '.bin4.nad')
-      tomoLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 ' 
-                       .. Opts.p_ .. ' nad_eed_3d')
+      assert(tomoLib.runCheck('chunksetup -p 15 -o 4 nad_eed_3d.com ' .. filename 
+                       .. '.bin4 ' .. filename .. '.bin4.nad'))
+      assert(tomoLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 ' 
+                       .. Opts.p_ .. ' nad_eed_3d'))
       tomoLib.writeLog(filename)
    else
-      tomoLib.runCheck('submfg -s -t nad_eed_3d.com')
+      assert(tomoLib.runCheck('submfg -s -t nad_eed_3d.com'))
       tomoLib.writeLog(filename)
    end
 elseif Opts.t and Opts.b then
@@ -252,16 +254,16 @@ elseif Opts.t and Opts.b then
       if tonumber(Opts.p_) < 24 then
          thds = Opts.p_
       end
-      tomoLib.runCheck('tomobflow -t ' .. thds .. ' ' .. filename .. '.bin4 '
-                       .. ' ' .. filename .. '.bin4.bflow')
+      assert(tomoLib.runCheck('tomobflow -t ' .. thds .. ' ' .. filename .. '.bin4 '
+                       .. ' ' .. filename .. '.bin4.bflow'))
    else
-      tomoLib.runCheck('tomobflow ' .. filename .. '.bin4 ' .. ' ' .. filename
-                       .. '.bin4.bflow')
+      assert(tomoLib.runCheck('tomobflow ' .. filename .. '.bin4 ' .. ' ' .. filename
+                       .. '.bin4.bflow'))
    end
 else
    fStr = 'eed'
-   tomoLib.runCheck('tomoeed -H ' .. filename .. '.bin4 ' .. ' ' .. filename
-                    .. '.bin4.eed')
+   assert(tomoLib.runCheck('tomoeed -H ' .. filename .. '.bin4 ' .. ' ' .. filename
+                    .. '.bin4.eed'))
 end
 
 assert(tomoLib.isFile(filename .. '.bin4.' .. fStr),

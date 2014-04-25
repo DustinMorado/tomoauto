@@ -52,7 +52,9 @@ function tomoLib.runCheck(functionString)
 	local success,exit,signal = os.execute(functionString .. ' &> /dev/null')
    if signal ~= 0 then
       io.stderr:write('\n\nERROR: ' .. functionString .. ' nonzero exit.\n\n')
-      return false, signal
+      return false
+   else
+      return true
    end
 end
 --[[==========================================================================#

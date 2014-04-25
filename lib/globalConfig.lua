@@ -256,7 +256,7 @@ raptorMarkers = 100
 -- Binning:
 -- This option causes RAPTOR to bin the image stack before computing the
 -- alignment. The binning does not affect the value of Diameter.
-raptorBinning_use = true
+raptorBinning_use = nil
 raptorBinning = 2
 
 -- xRay:
