@@ -50,6 +50,12 @@ if not Opts.t then
       file:write(contents)
       file:close(); file = nil
    end
+
+   if Opts.s then
+      local file = io.open('tilt.com', 'a')
+      file:write('SUBSETSTART 0 0\n')
+      file:close()
+   end
 end
 
 if header.feiLabel == 'Fei' then
@@ -200,7 +206,7 @@ if not Opts.t then
    else
       local thds = Opts.p_ or "1"
       assert(tomoLib.runCheck('sirtsetup -n ' .. thds .. ' -i 15 tilt.com'))
-      tomeLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 '
+      tomoLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 '
                        .. thds .. ' tilt_sirt')
    end
 else
