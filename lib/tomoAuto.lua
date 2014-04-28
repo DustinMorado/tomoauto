@@ -249,16 +249,16 @@ if not Opts.t then
    end
 elseif Opts.t and Opts.b then
    fStr = 'bflow'
-   local thds = 24
    if Opts.p_ then 
-      if tonumber(Opts.p_) < 24 then
+      local thds = 31
+      if tonumber(Opts.p_) < thds then
          thds = Opts.p_
       end
       assert(tomoLib.runCheck('tomobflow -t ' .. thds .. ' ' .. filename .. '.bin4 '
                        .. ' ' .. filename .. '.bin4.bflow'))
    else
-      assert(tomoLib.runCheck('tomobflow ' .. filename .. '.bin4 ' .. ' ' .. filename
-                       .. '.bin4.bflow'))
+      assert(tomoLib.runCheck('tomobflow -t 1 ' .. filename .. '.bin4 ' .. ' ' 
+             .. filename .. '.bin4.bflow'))
    end
 else
    fStr = 'eed'
