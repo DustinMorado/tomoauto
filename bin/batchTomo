@@ -18,6 +18,9 @@ local arg, Opts = getOpt.parse(arg, sString, lString)
 local fid = Opts.f_
 local parallel = Opts.n_ or 1
 
+Opts.f_ = nil
+Opts.n_ = nil
+
 local fileList = {}
 for file in lfs.dir('.') do
    if file:find('%w+%.st$') then
