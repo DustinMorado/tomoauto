@@ -274,7 +274,7 @@ end
 
 assert(tomoLib.isFile(filename .. '.bin4.' .. fStr),
        '\n\nError computing filter, see log.\n')
-tomoLib.medNfilter(filename .. '.bin4.' .. fStr .. ', 7')
+tomoLib.medNfilter(filename .. '.bin4.' .. fStr, 7)
 tomoLib.writeLog(filename)
 assert(tomoLib.isFile(filename .. '.bin4.' .. fStr .. '7'),
        '\n\nError computing med7 filter\n')
