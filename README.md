@@ -1,5 +1,9 @@
 #tomoAuto
 ---
+
+### Version 0.1.02
+---
+
 ### About
 tomoAuto is a Lua program to automate the alignment, correction and
 recontstruction of cryo-electron tomography (Cryo-ET) data. Coupled with
@@ -9,8 +13,10 @@ that more time can be spent on data analysis.
 tomoAuto is simply a script that handles the use of several popular software
 packages in the field and simplifies their use in collection by globalizing the
 command line calls and configurations. It has been running in some form or
-fashion in our lab for the last 3 years with good results. It is a very rough
-release and has many TODOs that have yet to be implemented.  
+fashion in our lab for the last 3 years with good results. 
+
+It is a very rough release and has many TODOs that have yet to be implemented.  
+
 ---
 
 ### Software used
