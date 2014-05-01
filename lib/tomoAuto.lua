@@ -281,14 +281,11 @@ else
           '\n\nError running tomoeed.\n')
 end
 
-<<<<<<< HEAD
 assert(tomoLib.isFile(filtFile), '\n\nError computing filter, see log.\n')
 tomoLib.medNfilter(filtFile, 7)
-=======
 assert(tomoLib.isFile(filename .. '.bin4.' .. fStr),
        '\n\nError computing filter, see log.\n')
 tomoLib.medNfilter(filename .. '.bin4.' .. fStr, 7)
->>>>>>> 85edd29ee8d8d360671222eb42bfb9140c42c80c
 tomoLib.writeLog(filename)
 local filt7File = filtFile .. '7'
 assert(tomoLib.isFile(filt7File), '\n\nError computing med7 filter\n')
