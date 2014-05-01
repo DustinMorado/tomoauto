@@ -201,8 +201,8 @@ io.write('Now running reconstruction, this will take some time.\n')
 local recFile = ''
 if not Opts.t then
    if not Opts.s then
+      recFile = filename .. '_full.rec'
       if Opts.p_ then
-         recFile = filename .. '_full.rec'
          assert(tomoLib.runCheck('splittilt -n ' .. Opts.p_ .. ' tilt.com'))
          assert(tomoLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 '
                 .. Opts.p_ .. ' tilt'))
@@ -250,15 +250,16 @@ io.write('Now computing post-processing filter.\n')
 local filtFile = ''
 if not Opts.t then
    filtFile = binFile .. '.nad'
+   assert(tomoLib.runCheck('chunksetup -p 15 -o 4 nad_eed_3d.com ' 
+          .. binFile .. ' ' .. filtFile),
+          '\n\nError setting up NAD chunks.\n')
    if Opts.p_ then
-      assert(tomoLib.runCheck('chunksetup -p 15 -o 4 nad_eed_3d.com ' 
-             .. binFile .. ' ' .. filtFile),
-             '\n\nError setting up NAD chunks.\n')
       assert(tomoLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 ' 
              .. Opts.p_ .. ' nad_eed_3d'))
       tomoLib.writeLog(filename)
    else
-      assert(tomoLib.runCheck('submfg -s -t nad_eed_3d.com'))
+      assert(tomoLib.runCheck('processchunks -g -C 0,0,0 -T 600,0 ' 
+             .. 1 .. ' nad_eed_3d'))
       tomoLib.writeLog(filename)
    end
 elseif Opts.t and Opts.b then
