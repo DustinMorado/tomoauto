@@ -283,9 +283,6 @@ end
 
 assert(tomoLib.isFile(filtFile), '\n\nError computing filter, see log.\n')
 tomoLib.medNfilter(filtFile, 7)
-assert(tomoLib.isFile(filename .. '.bin4.' .. fStr),
-       '\n\nError computing filter, see log.\n')
-tomoLib.medNfilter(filename .. '.bin4.' .. fStr, 7)
 tomoLib.writeLog(filename)
 local filt7File = filtFile .. '7'
 assert(tomoLib.isFile(filt7File), '\n\nError computing med7 filter\n')
