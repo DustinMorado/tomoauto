@@ -1,0 +1,54 @@
+#!/usr/bin/env lua
+local tomoAutoDir = os.getenv('TOMOAUTOROOT')
+package.cpath = package.cpath .. ';' .. tomoAutoDir .. '/lib/?.so;'
+package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
+local struct = require 'struct'
+local tomoLib = require 'tomoLib'
+local filename = arg[1]
+local fidDiam = 50
+local io = io
+
+local headerTable = tomoLib.readHeader(filename, fidDiam)
+for k,v in pairs(headerTable) do print(k,v) end
+local nx          = headerTable.nx
+local ny          = headerTable.ny
+local nz          = headerTable.nz
+local mode        = headerTable.mode
+local xPixSpacing = headerTable.xPixSpacing
+local yPixSpacing = headerTable.yPixSpacing
+local zPixSpacing = headerTable.zPixSpacing
+local amin        = headerTable.amin
+local amax        = headerTable.amax
+local amean       = headerTable.amean
+if mode == 2 then
+   amin              = string.format('%.4f', amin)
+   amax              = string.format('%.4f', amax)
+   amean             = string.format('%.4f', amean)
+else
+   amin              = string.format('%d', amin)
+   amax              = string.format('%d', amax)
+   amean             = string.format('%d', amean)
+end
+local tiltAxis    = headerTable.tiltAxis
+tiltAxis          = string.format('%.1f', tostring(tiltAxis))
+local pixelSize   = headerTable.pixelSize
+pixelSize         = string.format('%.4f', tostring(pixelSize))
+local defocus     = headerTable.defocus
+defocus           = string.format('%.4f', tostring(defocus))
+
+io.stdout:write('\nNumber of columns, rows, sections .............\t'
+   .. nx .. '\t' .. ny .. '\t' .. nz)
+io.stdout:write('\nMap mode ......................................\t'
+   .. mode)
+io.stdout:write('\nMinimum density ...............................\t'
+   .. amin)
+io.stdout:write('\nMaximum density ...............................\t'
+   .. amax)
+io.stdout:write('\nMean density ..................................\t'
+   .. amean)
+io.stdout:write('\nTilt axis rotation angle ......................\t'
+   .. tiltAxis)
+io.stdout:write('\nPixel size in nanometers ......................\t'
+   .. pixelSize)
+io.stdout:write('\nApproximate Defocus in microns ................\t'
+   .. defocus .. '\n\n')

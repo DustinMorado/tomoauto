@@ -72,17 +72,44 @@ end
 #            arg[2] = fiducial diameter in nanometers <integer>               #
 #==========================================================================--]]
 function tomoLib.readHeader(inputFile, fidSize)
-   local hT = {}
+   local header = {}
 	local file = assert(io.open(inputFile, 'rb'))
 	local nx = struct.unpack('i4', file:read(4))
-   hT.nx = nx
+   header.nx = nx
 	local ny = struct.unpack('i4', file:read(4))
-   hT.ny = ny
+   header.ny = ny
    local nz = struct.unpack('i4', file:read(4))
-   hT.nz = nz
+   header.nz = nz
+   local mode = struct.unpack('i4', file:read(4))
+   header.mode = mode
+   local nxstart = struct.unpack('i4', file:read(4))
+   header.nxstart = nxstart
+   local nystart = struct.unpack('i4', file:read(4))
+   header.nystart = nystart
+   local nzstart = struct.unpack('i4', file:read(4))
+   header.nzstart = nzstart
+   local mx = struct.unpack('i4', file:read(4))
+   local my = struct.unpack('i4', file:read(4))
+   local mz = struct.unpack('i4', file:read(4))
+   local xlen = struct.unpack('f', file:read(4))
+   local ylen = struct.unpack('f', file:read(4))
+   local zlen = struct.unpack('f', file:read(4))
+   local xPixSpacing = xlen/mx
+   header.xPixSpacing = xPixSpacing
+   local yPixSpacing = ylen/my
+   header.yPixSpacing = yPixSpacing
+   local zPixSpacing = zlen/mz
+   header.zPixSpacing = zPixSpacing
+   file:seek('set', 76)
+   local amin = struct.unpack('f', file:read(4))
+   header.amin = amin
+   local amax = struct.unpack('f', file:read(4))
+   header.amax = amax
+   local amean = struct.unpack('f', file:read(4))
+   header.amean = amean
    file:seek('set', 224)
 	local feiLabel = struct.unpack('c3', file:read(3))
-   hT.feiLabel = feiLabel
+   header.feiLabel = feiLabel
    file:seek('set',1064)
 	local tiltAxis = struct.unpack('f', file:read(4))
 	local pixelSize = struct.unpack('f', file:read(4))
@@ -92,25 +119,35 @@ function tomoLib.readHeader(inputFile, fidSize)
 	else
 		pixelSize = pixelSize / 10
 	end
-   hT.pixelSize = pixelSize
-   hT.tiltAxis = tiltAxis
+   header.pixelSize = pixelSize
+   header.tiltAxis = tiltAxis
 	local fidPix = math.floor((fidSize / pixelSize) + 0.5)
-   hT.fidPix = fidPix
+   header.fidPix = fidPix
    file:seek('set', 1052)
    local sum = 0
+   local flatDefocus = 0
    for i = 1, nz do
       local defocus = struct.unpack('f', file:read(4))
+      if i == math.floor(nz/2) then
+         flatDefocus = defocus
+      end
       sum = sum + defocus
       file:seek('cur', 124)
    end
    local defocus = sum / nz * -1
    if feiLabel == 'Fei' then
       defocus = defocus * 1e6
+      flatDefocus = flatDefocus * 1e6
    end
-   hT.defocus = defocus
+   header.defocus = defocus
+   header.flatDefocus = flatDefocus
 	file:close(); file = nil
-	return hT
+	return header
 end
+--[[==========================================================================#
+#                              readExtendedHeader                             #
+#-----------------------------------------------------------------------------#
+# A function that reads the image stack binary extended header 
 --[[==========================================================================#
 #                                   isFile                                    #
 #-----------------------------------------------------------------------------#
