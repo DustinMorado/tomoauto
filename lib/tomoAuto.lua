@@ -15,12 +15,13 @@
 local tomoAutoDir = os.getenv('TOMOAUTOROOT')
 package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
 local comWriter = assert(require 'comWriter')
+local MRCIOLib = assert(require 'MRCIOLib') 
 local tomoLib = assert(require 'tomoLib')
 local lfs, os, string = lfs, os, string
 
 local tomoAuto = {}
 
-function tomoAuto.reconstruct(stackFile, fidSize, Opts)
+function tomoAuto.reconstruct(stackFile, fidNm, Opts)
 local filename = string.sub(stackFile, 1, -4)
 
 assert(lfs.mkdir(filename),'\n\nCould not make root directory\n')
@@ -30,8 +31,18 @@ assert(lfs.chdir(filename), '\n\nCould not change to file directory\n')
 
 local startDir = lfs.currentdir()
 tomoLib.checkFreeSpace(startDir)
-local header = tomoLib.readHeader(stackFile, fidSize)
-if Opts.d_ then header.defocus = Opts.d_ end
+local header = MRCIOLib.getReqdHeader(stackFile, fidNm)
+if Opts.c then
+   if Opts.d_ then 
+      header.defocus = Opts.d_
+   else
+      io.stderr:write('You need to enter an approximate defocus to run with \
+                       CTF correction.\n')
+      return 1
+   end
+else
+   header.defocus = 0
+end
 comWriter.write(stackFile, header, Opts.L_)
 
 if not Opts.t then
@@ -58,7 +69,7 @@ if not Opts.t then
    end
 end
 
-if header.feiLabel == 'Fei' then
+if header.fType == 'Fei' then
    local tempFile = io.open('temp.com', 'w')
    for line in io.lines('ctfplotter.com') do
       if line:match('ConfigFile') then

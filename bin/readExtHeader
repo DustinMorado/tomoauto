@@ -71,7 +71,17 @@ local function printExtHeader(filename)
       '\n\nInput Filename ....................\t%s\n\n', filename))
    for i = 1, H.nz do
       local eH = MRCIOLib.getExtendedHeader(filename, i)
-      if Opts.t and eH.b_tilt then
+      if Opts.p then
+         if eH[ref] then
+            io.stdout:write(string.format(
+               '%s : ....................\t%5.4e\n',
+                refName, eH[ref]))
+         else
+            io.stderr:write(string.format(
+               'No %s found in the extended header.\n\n', refName))
+            return 1
+         end
+      elseif Opts.t and eH.b_tilt then
          if eH[ref] then
             io.stdout:write(string.format(
                '%s : ....................\t%5.2f\t%5.2f\n',

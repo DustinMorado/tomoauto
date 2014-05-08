@@ -388,22 +388,23 @@ local function writeNADEED3DCom()
    file:close()
 end
 
-function comWriter.write(inputFile, hT, configFile)
+function comWriter.write(inputFile, header, configFile)
    if configFile then
       localConfig = loadfile(configFile)
       if localConfig then localConfig() end
    end
 
    writeCcderaserCom(inputFile)
-   writeTiltXCorrCom(inputFile, hT.tiltAxis)
+   writeTiltXCorrCom(inputFile, header.tilt_axis)
    writeXfToXgCom(inputFile)
    writeNewstackCom(inputFile)
-   writeRaptorCom(inputFile, hT.fidPix)
+   writeRaptorCom(inputFile, header.fidPx)
    writeOpen2ScatterCom(inputFile)
    writeGoldCom(inputFile)
-   writeTiltCom(inputFile, hT.nx, hT.ny)
-   writeCTFPlotterCom(inputFile, hT.tiltAxis, hT.pixelSize, hT.defocus)
-   writeCTFCorrectCom(inputFile,hT.pixelSize)
+   writeTiltCom(inputFile, header.nx, header.ny)
+   writeCTFPlotterCom(inputFile, header.tilt_axis, header.pixel_size,
+                      header.defocus)
+   writeCTFCorrectCom(inputFile, header.pixel_size)
    writeNADEED3DCom()
 end
 return comWriter

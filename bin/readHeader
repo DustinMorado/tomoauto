@@ -3,7 +3,7 @@ local tomoAutoDir = os.getenv('TOMOAUTOROOT')
 package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
 local MRCIOLib = require 'MRCIOLib'
 local filename = arg[1]
-local io = io
+local io, string = io, string
 
 local function printHeader(filename)
    local H = MRCIOLib.getHeader(filename)

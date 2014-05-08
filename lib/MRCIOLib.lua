@@ -19,13 +19,13 @@ local MRCIOLib = {}
 #            arg[2] = fiducial diameter in nanometers <integer>               #
 #==========================================================================--]]
 function MRCIOLib.getHeader(inputFile)
-   local header = {}
+   local H = {}
 	local file = assert(io.open(inputFile, 'rb'))
 	
    -- Image size information 
-   header.nx = struct.unpack('i4', file:read(4)) -- # of columns (fastest)
-	header.ny = struct.unpack('i4', file:read(4)) -- # of rows
-   header.nz = struct.unpack('i4', file:read(4)) -- # of sections (slowest)
+   H.nx = struct.unpack('i4', file:read(4)) -- # of columns (fastest)
+	H.ny = struct.unpack('i4', file:read(4)) -- # of rows
+   H.nz = struct.unpack('i4', file:read(4)) -- # of sections (slowest)
 
    -- Image/transform data format
    -- 0: Image:      unsigned or signed byte (-128, 127; 0-255)
@@ -34,53 +34,53 @@ function MRCIOLib.getHeader(inputFile)
    -- 3: Transform:  16-bit (2x short) complex integer
    -- 4: Transform:  64-bit (2x float) complex float
    -- 6: Image:      unsigned short (0, 65,536)
-   header.mode = struct.unpack('i4', file:read(4))
+   H.mode = struct.unpack('i4', file:read(4))
 
    -- Image size lower bounds
-   header.nxstart = struct.unpack('i4', file:read(4))
-   header.nystart = struct.unpack('i4', file:read(4))
-   header.nzstart = struct.unpack('i4', file:read(4))
+   H.nxstart = struct.unpack('i4', file:read(4))
+   H.nystart = struct.unpack('i4', file:read(4))
+   H.nzstart = struct.unpack('i4', file:read(4))
 
    -- Image grid sizes
-   header.mx = struct.unpack('i4', file:read(4))
-   header.my = struct.unpack('i4', file:read(4))
-   header.mz = struct.unpack('i4', file:read(4))
+   H.mx = struct.unpack('i4', file:read(4))
+   H.my = struct.unpack('i4', file:read(4))
+   H.mz = struct.unpack('i4', file:read(4))
 
    -- Image cell sizes
-   header.xlen = struct.unpack('f', file:read(4))
-   header.ylen = struct.unpack('f', file:read(4))
-   header.zlen = struct.unpack('f', file:read(4))
+   H.xlen = struct.unpack('f', file:read(4))
+   H.ylen = struct.unpack('f', file:read(4))
+   H.zlen = struct.unpack('f', file:read(4))
 
    -- Image cell angles (Not used all set to 90)
-   header.alpha   = struct.unpack('f', file:read(4))
-   header.beta    = struct.unpack('f', file:read(4))
-   header.gamma   = struct.unpack('f', file:read(4))
+   H.alpha   = struct.unpack('f', file:read(4))
+   H.beta    = struct.unpack('f', file:read(4))
+   H.gamma   = struct.unpack('f', file:read(4))
 
    -- Axis Mappings (Not used, should be 1,2,3 -> X,Y,Z)
-   header.mapc = struct.unpack('i4', file:read(4)) -- map columns
-   header.mapr = struct.unpack('i4', file:read(4)) -- map rows
-   header.maps = struct.unpack('i4', file:read(4)) -- map sections
+   H.mapc = struct.unpack('i4', file:read(4)) -- map columns
+   H.mapr = struct.unpack('i4', file:read(4)) -- map rows
+   H.maps = struct.unpack('i4', file:read(4)) -- map sections
 
    -- Image data value stats
-   header.amin    = struct.unpack('f', file:read(4)) -- min pixel value
-   header.amax    = struct.unpack('f', file:read(4)) -- max pixel value
-   header.amean   = struct.unpack('f', file:read(4)) -- mean pixel value
+   H.amin    = struct.unpack('f', file:read(4)) -- min pixel value
+   H.amax    = struct.unpack('f', file:read(4)) -- max pixel value
+   H.amean   = struct.unpack('f', file:read(4)) -- mean pixel value
 
    -- Space group number (not used, set to 0)
-   header.ispg = struct.unpack('i2', file:read(2))
+   H.ispg = struct.unpack('i2', file:read(2))
 
    -- Symmetry info (not used, set to 0)
-   header.nsymbt = struct.unpack('i2', file:read(2))
+   H.nsymbt = struct.unpack('i2', file:read(2))
 
    -- This value describes the offset in bytes from the end of the header to the
    -- first image dataset.
-   header.Next = struct.unpack('i4', file:read(4))
+   H.Next = struct.unpack('i4', file:read(4))
 
    -- Creator ID (not used, set to 0)
-   header.dvid = struct.unpack('i2', file:read(2))
+   H.dvid = struct.unpack('i2', file:read(2))
 
    -- 30 Extra bytes (not used, set to 0)
-   header.extra = struct.unpack('i30', file:read(30))
+   H.extra = struct.unpack('i30', file:read(30))
 
    -- These next two shorts vary on whether or not they come from SerialEM or
    -- use the Agard format for the extended header. The first short nint is the
@@ -88,75 +88,75 @@ function MRCIOLib.getHeader(inputFile)
    -- (SerialEM). The second short nreal is the number of reals per section
    -- (Agard) or bit flags for which type of data is in the extended header
    -- (SerialEM).
-   header.nint    = struct.unpack('i2', file:read(2))
-   header.nreal   = struct.unpack('i2', file:read(2))
+   H.nint    = struct.unpack('i2', file:read(2))
+   H.nreal   = struct.unpack('i2', file:read(2))
 
    -- These are a bunch of entries that aren't used
-   header.sub     = struct.unpack('i2', file:read(2))
-   header.zfac    = struct.unpack('i2', file:read(2))
-   header.min2    = struct.unpack('f', file:read(4))
-   header.max2    = struct.unpack('f', file:read(4))
-   header.min3    = struct.unpack('f', file:read(4))
-   header.max3    = struct.unpack('f', file:read(4))
+   H.sub     = struct.unpack('i2', file:read(2))
+   H.zfac    = struct.unpack('i2', file:read(2))
+   H.min2    = struct.unpack('f', file:read(4))
+   H.max2    = struct.unpack('f', file:read(4))
+   H.min3    = struct.unpack('f', file:read(4))
+   H.max3    = struct.unpack('f', file:read(4))
 
    -- These two values if from Biol3d packages deviate from the standard and we
    -- follow this deviation...grudgingly.
-   header.imodStamp = struct.unpack('i4', file:read(4))
+   H.imodStamp = struct.unpack('i4', file:read(4))
    -- Bit flags:
    -- 1 = bytes are stored as signed
    -- 2 = pixel spacing was set from size in extended header
    -- 4 = origin is stored with sign inverted from definition below
-   header.imodFlags = struct.unpack('i4', file:read(4))
+   H.imodFlags = struct.unpack('i4', file:read(4))
 
    -- Image ID type
    -- 0: mono 1: tilt 2: tilts 3: lina 4: lins
-   header.idtype = struct.unpack('i2', file:read(2))
+   H.idtype = struct.unpack('i2', file:read(2))
 
    -- lens (who knows what that means?)
-   header.lens = struct.unpack('i2', file:read(2))
+   H.lens = struct.unpack('i2', file:read(2))
 
    -- nd1, nd2 (who knows what that means?)
    -- if idtype = 1 then nd1 = axis (1,2,3 -> X,Y,Z)
-   header.nd1 = struct.unpack('i2', file:read(2))
-   header.nd2 = struct.unpack('i2', file:read(2))
+   H.nd1 = struct.unpack('i2', file:read(2))
+   H.nd2 = struct.unpack('i2', file:read(2))
 
    -- vd1, vd2 (who knows what that means?)
    -- vd1 = 100. * tilt increment
    -- vd2 = 100. * starting angle
-   header.vd1 = struct.unpack('i2', file:read(2))
-   header.vd2 = struct.unpack('i2', file:read(2))
+   H.vd1 = struct.unpack('i2', file:read(2))
+   H.vd2 = struct.unpack('i2', file:read(2))
 
    -- Image tilt angles 0,1,2 = original 3,4,5 = current
-   header.tiltAngles = {}
+   H.tiltAngles = {}
    for i=1,6 do
       local tiltAngle = struct.unpack('f', file:read(4))
-      table.insert(header.tiltAngles, tiltAngle)
+      table.insert(H.tiltAngles, tiltAngle)
    end
 
    -- Image origin
-   header.xorg = struct.unpack('f', file:read(4))
-   header.yorg = struct.unpack('f', file:read(4))
-   header.zorg = struct.unpack('f', file:read(4))
+   H.xorg = struct.unpack('f', file:read(4))
+   H.yorg = struct.unpack('f', file:read(4))
+   H.zorg = struct.unpack('f', file:read(4))
 
    -- Image cmap (Another IMOD stamp?)
-   header.cmap = struct.unpack('c4', file:read(4))
+   H.cmap = struct.unpack('c4', file:read(4))
    
    -- Image Endianness
-   header.stamp = struct.unpack('c4', file:read(4))
+   H.stamp = struct.unpack('c4', file:read(4))
 
    -- The Root Mean Square deviation of densities from mean density
-   header.rms = struct.unpack('f', file:read(4))
+   H.rms = struct.unpack('f', file:read(4))
 
    -- The number of labels in the header
-   header.nlabl = struct.unpack('i4', file:read(4))
+   H.nlabl = struct.unpack('i4', file:read(4))
 
-   header.labels = {}
-   for i=1, header.nlabl do
+   H.labels = {}
+   for i=1, H.nlabl do
       local label = struct.unpack('c80', file:read(80))
-      table.insert(header.labels, label)
+      table.insert(H.labels, label)
    end
 	file:close(); file = nil
-	return header
+	return H
 end
 
 --[[===========================================================================#
@@ -187,15 +187,15 @@ end
 #            arg[2]: section of which to read <integer>                        #
 #===========================================================================--]]
 function MRCIOLib.getExtendedHeader(inputFile, section)
-   local extHeader   = {}
+   local eH   = {}
    local file        = assert(io.open(inputFile, 'rb'))
-   local header      = MRCIOLib.getHeader(inputFile)
-   local nz          = header.nz
-   local isImod      = header.imodStamp == 1146047817 and true or false
-   local nint        = header.nint
-   local nreal       = header.nreal
+   local H      = MRCIOLib.getHeader(inputFile)
+   local nz          = H.nz
+   local isImod      = H.imodStamp == 1146047817 and true or false
+   local nint        = H.nint
+   local nreal       = H.nreal
 
-   header = nil -- clear some space
+   H = nil -- clear some space
 
    -- Check that our section is reasonable
    assert(section >= 1, 'Error: Asking for section less than one!')
@@ -206,46 +206,46 @@ function MRCIOLib.getExtendedHeader(inputFile, section)
       jump = jump + (128 * (section - 1))
       file:seek('set', jump)
       -- alpha and beta tilt in degrees
-      extHeader.a_tilt  = struct.unpack('f', file:read(4))
-      extHeader.b_tilt  = struct.unpack('f', file:read(4))
+      eH.a_tilt  = struct.unpack('f', file:read(4))
+      eH.b_tilt  = struct.unpack('f', file:read(4))
 
       -- stage positions. Normally in SI units but maybe in micrometers
-      extHeader.x_stage = struct.unpack('f', file:read(4))
-      extHeader.y_stage = struct.unpack('f', file:read(4))
-      extHeader.z_stage = struct.unpack('f', file:read(4))
+      eH.x_stage = struct.unpack('f', file:read(4))
+      eH.y_stage = struct.unpack('f', file:read(4))
+      eH.z_stage = struct.unpack('f', file:read(4))
 
       -- image shift. In the same units as stage positions
-      extHeader.x_shift = struct.unpack('f', file:read(4))
-      extHeader.y_shift = struct.unpack('f', file:read(4))
+      eH.x_shift = struct.unpack('f', file:read(4))
+      eH.y_shift = struct.unpack('f', file:read(4))
 
       -- image defocus as read from scope. In same units as stage positions
-      extHeader.defocus = struct.unpack('f', file:read(4))
+      eH.defocus = struct.unpack('f', file:read(4))
 
       -- image exposure time in seconds
-      extHeader.exp_time = struct.unpack('f', file:read(4))
+      eH.exp_time = struct.unpack('f', file:read(4))
 
       -- mean value of image
-      extHeader.mean_int = struct.unpack('f', file:read(4))
+      eH.mean_int = struct.unpack('f', file:read(4))
 
       -- image tilt axis offset: The orientation of the tilt axis in the image
       -- in degrees. Vertical to the top is 0 Angstroms, the direction of 
       -- positive rotation is anti-clockwise.
-      extHeader.tilt_axis = struct.unpack('f', file:read(4))
+      eH.tilt_axis = struct.unpack('f', file:read(4))
 
       -- pixel size. Check units may be SI or micrometers 
-      extHeader.pixel_size = struct.unpack('f', file:read(4))
+      eH.pixel_size = struct.unpack('f', file:read(4))
 
       -- magnification used
-      extHeader.magnification = struct.unpack('f', file:read(4))
+      eH.magnification = struct.unpack('f', file:read(4))
 
       -- high-tension, in SI units (volts)
-      extHeader.ht = struct.unpack('f', file:read(4))
+      eH.ht = struct.unpack('f', file:read(4))
 
       -- binning of the CCD acquisition
-      extHeader.binning = struct.unpack('f', file:read(4))
+      eH.binning = struct.unpack('f', file:read(4))
 
       -- intended application defocus, should be in SI units (meters)
-      extHeader.appliedDefocus = struct.unpack('f', file:read(4))
+      eH.appliedDefocus = struct.unpack('f', file:read(4))
    else
       jump = jump + (nint * (section -1))
       file:seek('set', jump)
@@ -273,35 +273,66 @@ function MRCIOLib.getExtendedHeader(inputFile, section)
       end
       
       if isTlt then
-         extHeader.a_tilt = struct.unpack('h', file:read(2)) / 100
+         eH.a_tilt = struct.unpack('h', file:read(2)) / 100
       end
       
       if isMon then
-         extHeader.mon = {}
+         eH.mon = {}
          for i = 1, 3 do
             local monCoord = struct.unpack('h', file:read(2))
-            table.insert(extHeader.mon, monCoord)
+            table.insert(eH.mon, monCoord)
          end
       end
 
       if isStg then
-         extHeader.x_stage = struct.unpack('h', file:read(2)) / 25
-         extHeader.y_stage = struct.unpack('h', file:read(2)) / 25
+         eH.x_stage = struct.unpack('h', file:read(2)) / 25
+         eH.y_stage = struct.unpack('h', file:read(2)) / 25
       end
 
       if isMag then
-         extHeader.magnification = struct.unpack('h', file:read(2)) * 100
+         eH.magnification = struct.unpack('h', file:read(2)) * 100
       end
 
       if isInt then
-         extHeader.intensity = struct.unpack('h', file:read(2)) / 25000
+         eH.intensity = struct.unpack('h', file:read(2)) / 25000
       end
 
       if isExp then
-         extHeader.exposure = struct.unpack('f', file:read(4))
+         eH.exposure = struct.unpack('f', file:read(4))
       end
    end
-   return extHeader
+   file:close(); file = nil
+   return eH
+end
+
+function MRCIOLib.getReqdHeader(filename, fidNm)
+   local rqH = {}
+   local   H = MRCIOLib.getHeader(filename)
+   local  eH = MRCIOLib.getExtendedHeader(filename, 1)
+   
+   rqH.fType = string.sub(H.labels[1], 1, 3)
+   rqH.nx, rqH.ny, rqH.nz = H.nx, H.ny, H.nz
+
+   if rqH.fType == 'Fei' then
+      rqH.tilt_axis  = -1 * eH.tilt_axis
+      rqH.pixel_size = 1e9 * eH.pixel_size
+   elseif rqH.fType == 'TF3' then
+      rqH.tilt_axis  = eH.tilt_axis
+      rqH.pixel_size = eH.pixel_size / 10
+   elseif rqH.fType == 'Ser' then
+      for match in string.gmatch(H.labels[2], '[%-%d%.]+') do
+         rqH.tilt_axis = tonumber(match)
+         break
+      end
+      rqH.pixel_size = (H.xlen / H.mx) / 10
+   else
+      io.stderr:write('Error: I do no know how to handle this type of stack\n')
+      return false
+   end
+
+   rqH.fidPx = fidNm / rqH.pixel_size
+   H, eH = nil, nil
+   return rqH
 end
 
 return MRCIOLib
