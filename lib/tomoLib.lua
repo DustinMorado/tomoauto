@@ -147,7 +147,9 @@ end
 --[[==========================================================================#
 #                              readExtendedHeader                             #
 #-----------------------------------------------------------------------------#
-# A function that reads the image stack binary extended header 
+# A function that reads the image stack binary extended header this may or    #
+# may not exist depending on how or who collected the image.                  #
+#
 --[[==========================================================================#
 #                                   isFile                                    #
 #-----------------------------------------------------------------------------#

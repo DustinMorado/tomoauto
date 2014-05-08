@@ -1,0 +1,119 @@
+#!/usr/bin/env lua
+local tomoAutoDir = os.getenv('TOMOAUTOROOT')
+package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
+local MRCIOLib = assert(require 'MRCIOLib')
+local getOpt   = assert(require 'getOpt')
+local io = io
+
+local function printExtHeader(filename)
+   -- Handle options
+   local sString  = 'a, b, c, d, e, h, H, i, m, M, p, t, T, s, S'
+   local lString  = 'aDef, bin, coord, def, exp, help, ht, int, mean, '
+   lString        =  lString .. 'mag, pix, tlt, tltAx, stg, shft'
+   local arg, Opts = getOpt.parse(arg, sString, lString)
+   local filename = arg[1]
+   local section = arg[2]
+   local ref = ''
+   local refName = ''
+   if Opts.a then
+      ref      = 'appliedDefocus'
+      refName  = 'Applied Defocus'
+   elseif Opts.b then
+      ref      = 'binning'
+      refName  = 'Binning'
+   elseif Opts.c then
+      ref      = 'mon'
+      refName  = 'Montage Coordinates'
+   elseif Opts.d then
+      ref      = 'defocus'
+      refName  = 'Defocus'
+   elseif Opts.e then
+      ref      = 'exp_time'
+      refName  = 'Exposure Time'
+   elseif Opts.h then
+      io.stdout:write('\nI still need to write the help... it is looong\n\n')
+      return 0
+   elseif Opts.H then
+      ref      = 'ht'
+      refName  = 'High Tension'
+   elseif Opts.i then
+      ref      = 'int'
+      refName  = 'Intensity'
+   elseif Opts.m then
+      ref      = 'mean_int'
+      refName  = 'Mean integers'
+   elseif Opts.M then
+      ref      = 'magnification'
+      refName  = 'Magnification'
+   elseif Opts.p then
+      ref      = 'pixel_size'
+      refName  = 'Pixel Size'
+   elseif Opts.t then
+      ref      = 'a_tilt'
+      refName  = 'Tilt Angles'
+   elseif Opts.T then
+      ref      = 'tilt_axis'
+      refName  = 'Tilt Axis Offset'
+   elseif Opts.s then
+      ref      = 'x_stage'
+      refName  = 'Stage position'
+   elseif Opts.S then
+      ref      = 'x_shift'
+      refName  = 'Image Shift'
+   else
+      ref      = 'a_tilt'
+      refName  = 'Tilt Angles'
+   end
+   
+   -- Get the standard header
+   local  H = MRCIOLib.getHeader(filename)
+   io.stdout:write(string.format(
+      '\n\nInput Filename ....................\t%s\n\n', filename))
+   for i = 1, H.nz do
+      local eH = MRCIOLib.getExtendedHeader(filename, i)
+      if Opts.t and eH.b_tilt then
+         if eH[ref] then
+            io.stdout:write(string.format(
+               '%s : ....................\t%5.2f\t%5.2f\n',
+                refName, eH[ref], eH.b_tilt))
+         else
+            io.stderr:write(string.format(
+               'No %s found in the extended header.\n\n', refName))
+            return 1
+         end
+      elseif Opts.s then
+         if eH[ref] then
+            io.stdout:write(string.format(
+               '%s : ....................\t%5.2f\t%5.2f\t%5.2f\n',
+                refName, eH[ref], eH.y_stage, eH.z_stage))
+         else
+            io.stderr:write(string.format(
+               'No %s found in the extended header.\n\n', refName))
+            return 1
+         end
+      elseif Opts.S then
+         if eH[ref] then
+            io.stdout:write(string.format(
+               '%s : ....................\t%5.2f\t%5.2f\n',
+                refName, eH[ref], eH.y_shift))
+         else
+            io.stderr:write(string.format(
+               'No %s found in the extended header.\n\n', refName))
+            return 1
+         end
+      else
+         if eH[ref] then
+            io.stdout:write(string.format(
+               '%s : ....................\t%5.2f\n',
+                refName, eH[ref]))
+         else
+            io.stderr:write(string.format(
+               'No %s found in the extended header.\n\n', refName))
+            return 1
+         end
+      end
+   end
+   return 0
+end
+
+printExtHeader(filename)

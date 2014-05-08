@@ -1,54 +1,93 @@
 #!/usr/bin/env lua
 local tomoAutoDir = os.getenv('TOMOAUTOROOT')
-package.cpath = package.cpath .. ';' .. tomoAutoDir .. '/lib/?.so;'
 package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
-local struct = require 'struct'
-local tomoLib = require 'tomoLib'
+local MRCIOLib = require 'MRCIOLib'
 local filename = arg[1]
-local fidDiam = 50
 local io = io
 
-local headerTable = tomoLib.readHeader(filename, fidDiam)
-for k,v in pairs(headerTable) do print(k,v) end
-local nx          = headerTable.nx
-local ny          = headerTable.ny
-local nz          = headerTable.nz
-local mode        = headerTable.mode
-local xPixSpacing = headerTable.xPixSpacing
-local yPixSpacing = headerTable.yPixSpacing
-local zPixSpacing = headerTable.zPixSpacing
-local amin        = headerTable.amin
-local amax        = headerTable.amax
-local amean       = headerTable.amean
-if mode == 2 then
-   amin              = string.format('%.4f', amin)
-   amax              = string.format('%.4f', amax)
-   amean             = string.format('%.4f', amean)
-else
-   amin              = string.format('%d', amin)
-   amax              = string.format('%d', amax)
-   amean             = string.format('%d', amean)
-end
-local tiltAxis    = headerTable.tiltAxis
-tiltAxis          = string.format('%.1f', tostring(tiltAxis))
-local pixelSize   = headerTable.pixelSize
-pixelSize         = string.format('%.4f', tostring(pixelSize))
-local defocus     = headerTable.defocus
-defocus           = string.format('%.4f', tostring(defocus))
+local function printHeader(filename)
+   local H = MRCIOLib.getHeader(filename)
+   io.stdout:write('\n\n')
+   io.stdout:write(string.format('Image Filename:\t\t%s\n\n', filename))
+   io.stdout:write(string.format(
+      'Number of columns, rows, sections .............\t%d\t%d\t%d\n',
+       H.nx, H.ny, H.nz))
+   io.stdout:write(string.format(
+      'Map mode ......................................\t%d\n',
+       H.mode))
+   io.stdout:write(string.format(
+      'Image size lower bounds .......................\t%d\t%d\t%d\n',
+       H.nxstart, H.nystart, H.nzstart))
+   io.stdout:write(string.format(
+      'Cell Pixel Spacing (Angstroms) ................\t%6.4f\t%6.4f\t%6.4f\n',
+       H.xlen/H.mx, H.ylen/H.my, H.zlen/H.mz))
+   io.stdout:write(string.format(
+      'Cell Angles (degrees) .........................\t%5.2f\t%5.2f\t%5.2f\n',
+       H.alpha, H.beta, H.gamma))
+   local Axes = { 'X', 'Y', 'Z'}
+   io.stdout:write(string.format(
+      'Axis Mappings .................................\t%s\t%s\t%s\n',
+       Axes[H.mapc], Axes[H.mapr], Axes[H.maps]))
 
-io.stdout:write('\nNumber of columns, rows, sections .............\t'
-   .. nx .. '\t' .. ny .. '\t' .. nz)
-io.stdout:write('\nMap mode ......................................\t'
-   .. mode)
-io.stdout:write('\nMinimum density ...............................\t'
-   .. amin)
-io.stdout:write('\nMaximum density ...............................\t'
-   .. amax)
-io.stdout:write('\nMean density ..................................\t'
-   .. amean)
-io.stdout:write('\nTilt axis rotation angle ......................\t'
-   .. tiltAxis)
-io.stdout:write('\nPixel size in nanometers ......................\t'
-   .. pixelSize)
-io.stdout:write('\nApproximate Defocus in microns ................\t'
-   .. defocus .. '\n\n')
+	if H.mode ~= 2 then
+	  io.stdout:write(string.format(
+	     'Minimum density ...............................\t%d\n',
+	      H.amin))
+
+	  io.stdout:write(string.format(
+	     'Maximum density ...............................\t%d\n',
+	      H.amax))
+
+	  io.stdout:write(string.format(
+	     'Mean density ..................................\t%d\n',
+	      H.amean))
+	else
+	  io.stdout:write(string.format(
+	     'Minimum density ...............................\t%10.4f\n',
+	      H.amin))
+
+	  io.stdout:write(string.format(
+	     'Maximum density ...............................\t%10.4f\n',
+	      H.amax))
+
+	  io.stdout:write(string.format(
+	     'Mean density ..................................\t%10.4f\n',
+	      H.amean))
+	end
+
+	io.stdout:write(string.format(
+	  'Extra bytes after header until image data ....\t%d\n',
+	   H.Next))
+
+	io.stdout:write(string.format(
+	  'Image header fields nd1, nd2, vd1, vd2 .......\t%d\t%d\t%d\t%d\n',
+	   H.nd1, H.nd2, H.vd1, H.vd2))
+
+	io.stdout:write(string.format(
+	  'Image original tilt angles ...................\t%05.2f\t%05.2f\t%05.2f\n',
+	   H.tiltAngles[1], H.tiltAngles[2], H.tiltAngles[3]))
+
+	io.stdout:write(string.format(
+	  'Image current tilt angles ....................\t%05.2f\t%05.2f\t%05.2f\n',
+	   H.tiltAngles[4], H.tiltAngles[5], H.tiltAngles[6]))
+
+	io.stdout:write(string.format(
+	  'Origin of image ..............................\t%05.2f\t%05.2f\t%05.2f\n',
+	   H.xorg, H.yorg, H.zorg))
+
+	local mrcType = (H.imodStamp == 1146047817) and 'IMOD' or 'AGARD'
+	io.stdout:write(string.format(
+	  'MRC format ...................................\t%s\n',
+	   mrcType))
+
+	io.stdout:write(string.format(
+	  'Number of labels in header ...................\t%d\n\n',
+	   H.nlabl))
+
+	for i = 1, H.nlabl do
+	  io.stdout:write(string.format('Label %d: %s\n\n', i, H.labels[i]))
+	end
+   return 0
+end
+
+printHeader(filename)
