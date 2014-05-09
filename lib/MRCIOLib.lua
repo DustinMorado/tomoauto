@@ -1,7 +1,7 @@
 local tomoAutoDir = os.getenv('TOMOAUTOROOT')
 package.cpath = package.cpath .. ';' .. tomoAutoDir .. '/lib/?.so;'
 local struct = assert(require 'struct')
-local math, table = math, table
+local math, string, table = math, string, table
 
 local MRCIOLib = {}
 --[[==========================================================================#
@@ -330,7 +330,7 @@ function MRCIOLib.getReqdHeader(filename, fidNm)
       return false
    end
 
-   rqH.fidPx = fidNm / rqH.pixel_size
+   rqH.fidPx = math.floor((fidNm / rqH.pixel_size) + 0.5)
    H, eH = nil, nil
    return rqH
 end

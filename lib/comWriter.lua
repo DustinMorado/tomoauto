@@ -40,7 +40,7 @@ local function writeCcderaserCom(inputFile)
 	file:close()
 end
 
-local function writeTiltXCorrCom(inputFile, tiltAxis)
+local function writeTiltXCorrCom(inputFile, header)
 	local comName = 'tiltxcorr.com'
 	local filename = string.sub(inputFile, 1, -4)
 	local file = assert(io.open(comName, 'w'))
@@ -50,7 +50,7 @@ local function writeTiltXCorrCom(inputFile, tiltAxis)
 	file:write('InputFile ' .. inputFile .. '\n')
 	file:write('OutputFile ' .. filename .. '.prexf\n')
 	file:write('TiltFile ' .. filename .. '.rawtlt\n')
-	file:write('RotationAngle ' .. tiltAxis .. '\n')
+	file:write('RotationAngle ' .. header.tilt_axis .. '\n')
 	file:write('AngleOffset ' .. tiltxcorrAngleOffset .. '\n')
 	file:write('FilterRadius2 ' .. tiltxcorrFilterRadius2 .. '\n')
 	file:write('FilterSigma1 ' .. tiltxcorrFilterSigma1 .. '\n')
@@ -140,7 +140,7 @@ local function writeNewstackCom(inputFile)
 	file:close()
 end
 
-local function writeRaptorCom(inputFile, fidPix)
+local function writeRaptorCom(inputFile, header)
    local comName1 = 'raptor1.com'
    local comName2 = 'raptor2.com'
    local filename = string.sub(inputFile, 1,-4)
@@ -152,7 +152,7 @@ local function writeRaptorCom(inputFile, fidPix)
    file1:write('InputPath ' .. lfs.currentdir() .. '\n')
    file1:write('InputFile ' .. filename .. '.preali\n')
    file1:write('OutputPath ' .. lfs.currentdir() .. '/raptor1\n')
-   file1:write('Diameter ' .. fidPix .. '\n')
+   file1:write('Diameter ' .. header.fidPx .. '\n')
    file1:write('MarkersPerImage ' .. raptorMarkers .. '\n')
    if raptorAnglesInHeader_use then
       file1:write('AnglesInHeader\n')
@@ -171,7 +171,7 @@ local function writeRaptorCom(inputFile, fidPix)
    file2:write('InputPath ' .. lfs.currentdir() .. '\n')
    file2:write('InputFile ' .. filename .. '.ali\n')
    file2:write('OutputPath ' .. lfs.currentdir() .. '/raptor2\n')
-   file2:write('Diameter ' .. fidPix .. '\n')
+   file2:write('Diameter ' .. header.fidPx .. '\n')
    file2:write('MarkersPerImage ' .. raptorMarkers .. '\n')
    if raptorAnglesInHeader_us then
       file2:write('AnglesInHeader\n')
@@ -264,7 +264,7 @@ local function writeGoldCom(inputFile)
 	file:close()
 end
 
-local function writeTiltCom(inputFile, nx, ny)
+local function writeTiltCom(inputFile, header, Opts)
 	local comName = 'tilt.com'
 	local filename = string.sub(inputFile, 1, -4)
 	local file = assert(io.open(comName, 'w'))
@@ -277,7 +277,7 @@ local function writeTiltCom(inputFile, nx, ny)
 
 	if tiltAdjustOrigin_use then file:write('AdjustOrigin \n') end
 
-	file:write('FULLIMAGE ' .. nx .. ' ' .. ny .. '\n')
+	file:write('FULLIMAGE ' .. header.nx .. ' ' .. header.ny .. '\n')
 	file:write('IMAGEBINNED 1\n')
 
 	if tiltLOG_use then file:write('LOG ' .. tiltLOG .. '\n') end
@@ -298,11 +298,25 @@ local function writeTiltCom(inputFile, nx, ny)
 
 	if tiltSLICE_use then file:write('SLICE ' .. tiltSLICE .. '\n') end
 
-	if tiltSUBSETSTART_use then
-      file:write('SUBSETSTART ' .. tiltSUBSETSTART .. '\n') end
+   if Opts.s then
+      tiltSUBSETSTART_use, tiltSUBSETSTART = true, '0 0'
+   end
 
-	file:write('THICKNESS ' .. tiltTHICKNESS .. '\n')
-	file:write('TILTFILE ' .. filename .. '.tlt\n')
+   if tiltSUBSETSTART_use then
+      file:write('SUBSETSTART ' .. tiltSUBSETSTART .. '\n') 
+   end
+
+   if Opts.z_ then
+      tiltTHICKNESS = Opts.z_
+   end
+	
+   file:write('THICKNESS ' .. tiltTHICKNESS .. '\n')
+   
+   file:write('TILTFILE ' .. filename .. '.tlt\n')
+
+   if Opts.g then
+      tiltUseGPU_use, tiltUseGPU = true, 0
+   end
 
 	if tiltUseGPU_use then file:write('UseGPU ' .. tiltUseGPU .. '\n') end
 
@@ -317,7 +331,7 @@ local function writeTiltCom(inputFile, nx, ny)
 	file:close()
 end
 
-local function writeCTFPlotterCom(inputFile, tiltAxis, pixelSize, defocus)
+local function writeCTFPlotterCom(inputFile, header, Opts)
 	local comName = 'ctfplotter.com'
 	local filename = string.sub(inputFile, 1, -4)
 	local file = assert(io.open(comName, 'w'))
@@ -332,10 +346,10 @@ local function writeCTFPlotterCom(inputFile, tiltAxis, pixelSize, defocus)
 
    file:write('OffsetToAdd ' .. ctfOffsetToAdd .. '\n')
 	file:write('DefocusFile ' .. filename .. '.defocus\n')
-	file:write('AxisAngle ' .. tiltAxis .. '\n')
-	file:write('PixelSize ' .. pixelSize .. '\n')
-	defocus = defocus * 1000
-	file:write('ExpectedDefocus ' .. defocus .. '\n')
+	file:write('AxisAngle ' .. header.tilt_axis .. '\n')
+	file:write('PixelSize ' .. header.pixel_size .. '\n')
+	header.defocus = header.defocus * 1000
+	file:write('ExpectedDefocus ' .. header.defocus .. '\n')
 	file:write('AngleRange ' .. ctfAngleRange .. '\n')
    file:write('AutoFitRangeAndStep ' .. ctfAutoFitRangeAndStep .. '\n')
 	file:write('Voltage ' .. ctfVoltage .. '\n')
@@ -346,6 +360,11 @@ local function writeCTFPlotterCom(inputFile, tiltAxis, pixelSize, defocus)
 	file:write('TileSize ' .. ctfTileSize .. '\n')
 	file:write('LeftDefTol ' .. ctfLeftDefTol .. '\n')
 	file:write('RightDefTol ' .. ctfRightDefTol .. '\n')
+   if header.fType == 'Fei' then
+      ctfConfigFile = '/usr/local/ImodCalib/CTFnoise'
+      ctfConfigFile = ctfConfigFile .. '/CCDbackground/polara-CCD-2012.ctg'
+      ctfFrequencyRangeToFit = '0.1 0.225'
+   end
 	file:write('ConfigFile ' .. ctfConfigFile .. '\n')
 	file:write('FrequencyRangeToFit ' .. ctfFrequencyRangeToFit .. '\n')
 
@@ -355,7 +374,7 @@ local function writeCTFPlotterCom(inputFile, tiltAxis, pixelSize, defocus)
 	file:close()
 end
 
-local function writeCTFCorrectCom(inputFile,pixelSize)
+local function writeCTFCorrectCom(inputFile, header)
 	local comName = 'ctfcorrection.com'
 	local filename = string.sub(inputFile,1, -4)
 	local file = assert(io.open(comName, 'w'))
@@ -373,38 +392,28 @@ local function writeCTFCorrectCom(inputFile,pixelSize)
 	file:write('Voltage ' .. ctfVoltage .. '\n')
 	file:write('SphericalAberration ' .. ctfSphericalAberration .. '\n')
 	file:write('DefocusTol ' .. ctfDefocusTol .. '\n')
-	file:write('PixelSize ' .. pixelSize .. '\n')
+	file:write('PixelSize ' .. header.pixel_size .. '\n')
 	file:write('AmplitudeContrast ' .. ctfAmplitudeContrast .. '\n')
 	file:write('InterpolationWidth ' .. ctfInterpolationWidth .. '\n')
 	file:close()
 end
 
-local function writeNADEED3DCom()
-   local comName = 'nad_eed_3d.com'
-   local file = assert(io.open(comName, 'w'))
-   file:write('# Command file to run nad_eed_3d\n')
-   file:write('####CreatedVersion#### 3.12.20\n')
-   file:write('$nad_eed_3d -k 2.56 -n 15 INPUTFILE OUTPUTFILE\n')
-   file:close()
-end
-
-function comWriter.write(inputFile, header, configFile)
-   if configFile then
-      localConfig = loadfile(configFile)
+function comWriter.write(inputFile, header, Opts)
+   if Opts.L_ then
+      localConfig = loadfile(Opts.L_)
       if localConfig then localConfig() end
    end
 
    writeCcderaserCom(inputFile)
-   writeTiltXCorrCom(inputFile, header.tilt_axis)
+   writeTiltXCorrCom(inputFile, header)
    writeXfToXgCom(inputFile)
    writeNewstackCom(inputFile)
-   writeRaptorCom(inputFile, header.fidPx)
+   writeRaptorCom(inputFile, header)
    writeOpen2ScatterCom(inputFile)
    writeGoldCom(inputFile)
-   writeTiltCom(inputFile, header.nx, header.ny)
-   writeCTFPlotterCom(inputFile, header.tilt_axis, header.pixel_size,
-                      header.defocus)
-   writeCTFCorrectCom(inputFile, header.pixel_size)
-   writeNADEED3DCom()
+   writeTiltCom(inputFile, header, Opts)
+   writeCTFPlotterCom(inputFile, header, Opts)
+   writeCTFCorrectCom(inputFile, header)
 end
+
 return comWriter
