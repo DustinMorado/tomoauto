@@ -229,6 +229,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
       else
          t3Str   = string.format('%s -o %s', t3Str, recFile)
       end
+
       tomoLib.runCheck(t3Str)
    end
    assert(tomoLib.isFile(recFile),
