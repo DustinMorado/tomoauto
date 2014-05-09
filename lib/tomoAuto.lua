@@ -229,7 +229,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
       else
          t3Str   = string.format('%s -o %s', t3Str, recFile)
       end
-      tomoLib.runCheck(tomo3dString)
+      tomoLib.runCheck(t3dStr)
    end
    assert(tomoLib.isFile(recFile),
       '\n\nError running tilt reconstruction see log.\n')
