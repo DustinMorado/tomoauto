@@ -213,6 +213,9 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
          'tomo3d -a %s -H -i %s -z %d', tltFile, aliFile, z)
       if Opts.s then 
          recFile = filename .. '_sirt.rec'
+         if Opts.i_ then
+            tomo3dString = tomo3dString .. ' -i ' .. Opts.i_
+         end
          tomo3dString = tomo3dString .. ' -S -o ' .. recFile
       else
          recFile = filename .. '_tomo3d.rec'
