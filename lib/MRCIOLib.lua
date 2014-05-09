@@ -194,6 +194,7 @@ function MRCIOLib.getExtendedHeader(inputFile, section)
    local isImod      = H.imodStamp == 1146047817 and true or false
    local nint        = H.nint
    local nreal       = H.nreal
+   local Next        = H.Next
 
    H = nil -- clear some space
 
@@ -202,7 +203,7 @@ function MRCIOLib.getExtendedHeader(inputFile, section)
    assert(section <= nz, 'Error: Asking for section that does not exist!')
    
    local jump = 1024
-   if not isImod then
+   if not isImod or Next == 131072 then
       jump = jump + (128 * (section - 1))
       file:seek('set', jump)
       -- alpha and beta tilt in degrees
