@@ -59,6 +59,10 @@ local function printHeader(filename)
 	  'Extra bytes after header until image data ....\t%d\n',
 	   H.Next))
 
+   io.stdout:write(string.format(
+      'Extended Header Information (nint, nreal) ...\t%d\t%d\n',
+       H.nint, H.nreal))
+
 	io.stdout:write(string.format(
 	  'Image header fields nd1, nd2, vd1, vd2 .......\t%d\t%d\t%d\t%d\n',
 	   H.nd1, H.nd2, H.vd1, H.vd2))

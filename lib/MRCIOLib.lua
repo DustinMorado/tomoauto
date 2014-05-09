@@ -179,6 +179,54 @@ local function imodShortToReal(s1, s2)
 end
 
 --[[===========================================================================#
+#                                  checkIMOD                                   #
+#------------------------------------------------------------------------------#
+# A function that reads the nint and the nreal in the header and checks to see #
+# if the file comes from IMOD                                                  #
+#------------------------------------------------------------------------------#
+# Arguments: arg[1]: nint  <integer>                                           #
+#            arg[2]: nreal <integer>                                           #
+#===========================================================================--]]
+local function checkIMOD(nint, nreal)
+   local sum = 0
+   local bitTable = {}
+   bitTable[32]   = 4 -- Exposure dose in e-/A2 (float)
+   bitTable[16]   = 2 -- Intensity * 25000
+   bitTable[8]    = 2 -- Magnification / 100
+   bitTable[4]    = 4 -- Stage Position
+   bitTable[2]    = 6 -- Piece coords for montage
+   bitTable[1]    = 2 -- Tilt angles
+   if (nreal - 32) >= 0 then
+      sum = sum + bitTable[32]
+      nreal = nreal - 32
+   end
+   if (nreal - 16) >= 0 then
+      sum = sum + bitTable[16]
+      nreal = nreal - 16
+   end
+   if (nreal - 8) >= 0 then
+      sum = sum + bitTable[8]
+      nreal = nreal - 8
+   end
+   if (nreal - 4) >= 0 then
+      sum = sum + bitTable[4]
+      nreal = nreal - 4
+   end
+   if (nreal - 2) >= 0 then
+      sum = sum + bitTable[2]
+      nreal = nreal - 2
+   end
+   if (nreal - 1) >=0 then
+      sum = sum + bitTable[1]
+      nreal = nreal -1
+   end
+   if sum == nint then -- This is an IMOD extended header
+      return true
+   else                -- This is an AGARD extended header
+      return false
+   end
+end
+--[[===========================================================================#
 #                              getExtendedHeader                               #
 #------------------------------------------------------------------------------#
 # A function that reads the extended header for a given section                #
@@ -191,10 +239,9 @@ function MRCIOLib.getExtendedHeader(inputFile, section)
    local file        = assert(io.open(inputFile, 'rb'))
    local H      = MRCIOLib.getHeader(inputFile)
    local nz          = H.nz
-   local isImod      = H.imodStamp == 1146047817 and true or false
    local nint        = H.nint
    local nreal       = H.nreal
-   local Next        = H.Next
+   local isIMOD      = checkIMOD(nint, nreal)
 
    H = nil -- clear some space
 
@@ -203,7 +250,7 @@ function MRCIOLib.getExtendedHeader(inputFile, section)
    assert(section <= nz, 'Error: Asking for section that does not exist!')
    
    local jump = 1024
-   if not isImod or Next == 131072 then
+   if not isImod then
       jump = jump + (128 * (section - 1))
       file:seek('set', jump)
       -- alpha and beta tilt in degrees
