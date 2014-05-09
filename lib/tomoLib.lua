@@ -14,15 +14,19 @@ local tomoLib = {}
 function tomoLib.dispHelp()
    io.write(
    [[\nUsage: \n\z
-   tomoAuto [-c -d <int> -g -h -L <file> -p <int> -z <int>] <file.st> <fid>\n\z
+   tomoAuto [-c -d <int> -g -h -i -l <file> -p <int> -s -t -z <int>] \z
+   <file> <fidNm>\n\z
    Automates the alignment of tilt series and the reconstruction of\z
    these series into 3D tomograms.\n\n\z
    -c, --CTF \t Applies CTF correction to the aligned stack\n\z
    -d, --defocus \t Uses this as estimated defocus for ctfplotter\n\z
    -g, --GPU \t Uses GPGPU methods to speed up the reconstruction\n\z
    -h, --help \t Prints this information and exits\n\z
-   -L, --config \t Sources a local config file\n\z
-   -p, --parallel \t Uses <int> processors to speed up tilt\n\z
+   -i, --iter \t The number of SIRT iterations to run [default 30]\n\z
+   -l, --config \t Sources a local config file\n\z
+   -p, --procnum \t Uses <int> processors to speed up tilt\n\z
+   -s, --SIRT \t Use SIRT to reconstruct [default WBP]\n\z
+   -t, --tomo3d \t Use the TOMO3D to compute reconstruction [default IMOD]\n\z
    -z, --thickness \t Create a tomogram with <int> thickness\n]])
    return
 end

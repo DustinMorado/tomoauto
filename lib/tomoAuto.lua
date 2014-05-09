@@ -199,27 +199,31 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
             tomoLib.writeLog(filename)
          end
       else                 -- Using S.I.R.T method
-         local thds = Opts.p_ or "1"
+         local thds = Opts.p_ or '1'
          tomoLib.runCheck(string.format(
             'sirtsetup -n %d -i 15 tilt.com', thds))
          tomoLib.runCheck(string.format(
             'processchunks -g -C 0,0,0 -T 600,0 %d tilt_sirt', thds))
       end
    else                    -- Using TOMO3D to handle the reconstruction
+      local recFile  = filename .. '_tomo3d.rec'
+      local z        = Opts.z_ or '1200'
+      local iter     = Opts.i_ or '30'
+      local thds     = Opts.p_ or '1'
+      local t3Str    = string.format(
+         ' -a %s -i %s -t %d -z %d', tltFile, aliFile, thds, z)
       assert(tomoLib.runCheck(string.format(
          'newstack -mo 1 %s %s', aliFile, aliFile)))
-      local z = Opts.z_ or '1200'
-      local tomo3dString = string.format(
-         'tomo3d -a %s -H -i %s -z %d', tltFile, aliFile, z)
+      if Opts.g then
+         t3Str = 'tomo3dhybrid -g 0 ' .. t3Str
+      else
+         t3Str = 'tomo3d' .. t3Str
+      end
       if Opts.s then 
          recFile = filename .. '_sirt.rec'
-         if Opts.i_ then
-            tomo3dString = tomo3dString .. ' -i ' .. Opts.i_
-         end
-         tomo3dString = tomo3dString .. ' -S -o ' .. recFile
+         t3Str   = string.format('%s -l %d -S -o %s', t3Str, iter, recFile)
       else
-         recFile = filename .. '_tomo3d.rec'
-         tomo3dString = tomo3dString .. ' -o ' .. recFile
+         t3Str   = string.format('%s -o %s', t3Str, recFile)
       end
       tomoLib.runCheck(tomo3dString)
    end
