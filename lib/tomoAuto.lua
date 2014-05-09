@@ -22,6 +22,10 @@ local lfs, os, string = lfs, os, string
 local tomoAuto = {}
 
 function tomoAuto.reconstruct(stackFile, fidNm, Opts)
+   if Opts.h then
+      tomoLib.dispHelp()
+      return 0
+   end
    -- Environment setup, make folder with file basename
    local filename = string.sub(stackFile, 1, -4)
    assert(lfs.mkdir(filename),'\n\nCould not make root directory\n')
