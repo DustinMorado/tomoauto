@@ -210,7 +210,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
             'processchunks -g -C 0,0,0 -T 600,0 %d tilt_sirt', thds))
       end
    else                    -- Using TOMO3D to handle the reconstruction
-      local recFile  = filename .. '_tomo3d.rec'
+      recFile  = filename .. '_tomo3d.rec'
       local z        = Opts.z_ or '1200'
       local iter     = Opts.i_ or '30'
       local thds     = Opts.p_ or '1'
