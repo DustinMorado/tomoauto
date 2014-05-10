@@ -187,39 +187,33 @@ end
 # Arguments: arg[1]: nint  <integer>                                           #
 #            arg[2]: nreal <integer>                                           #
 #===========================================================================--]]
-local function checkIMOD(nint, nreal)
+function MRCIOLib.checkIMOD(nint, nreal)
    local sum = 0
-   local bitTable = {}
-   bitTable[32]   = 4 -- Exposure dose in e-/A2 (float)
-   bitTable[16]   = 2 -- Intensity * 25000
-   bitTable[8]    = 2 -- Magnification / 100
-   bitTable[4]    = 4 -- Stage Position
-   bitTable[2]    = 6 -- Piece coords for montage
-   bitTable[1]    = 2 -- Tilt angles
-   if (nreal - 32) >= 0 then
-      sum = sum + bitTable[32]
-      nreal = nreal - 32
+
+   if bit32.btest(nreal, 1) then
+      sum = sum + 2
    end
-   if (nreal - 16) >= 0 then
-      sum = sum + bitTable[16]
-      nreal = nreal - 16
+
+   if bit32.btest(nreal, 2) then
+      sum = sum + 6
    end
-   if (nreal - 8) >= 0 then
-      sum = sum + bitTable[8]
-      nreal = nreal - 8
+
+   if bit32.btest(nreal, 4) then
+      sum = sum + 4
    end
-   if (nreal - 4) >= 0 then
-      sum = sum + bitTable[4]
-      nreal = nreal - 4
+
+   if bit32.btest(nreal, 8) then
+      sum = sum + 2
    end
-   if (nreal - 2) >= 0 then
-      sum = sum + bitTable[2]
-      nreal = nreal - 2
+
+   if bit32.btest(nreal, 16) then
+      sum = sum + 2
    end
-   if (nreal - 1) >=0 then
-      sum = sum + bitTable[1]
-      nreal = nreal -1
+
+   if bit32.btest(nreal, 32) then
+      sum = sum + 4
    end
+
    if sum == nint then -- This is an IMOD extended header
       return true
    else                -- This is an AGARD extended header
@@ -241,18 +235,18 @@ function MRCIOLib.getExtendedHeader(inputFile, section)
    local nz          = H.nz
    local nint        = H.nint
    local nreal       = H.nreal
-   local isIMOD      = checkIMOD(nint, nreal)
+   local isIMOD      = MRCIOLib.checkIMOD(nint, nreal)
 
    H = nil -- clear some space
+   file:seek('set', 1024) -- jump to the end of the header
 
    -- Check that our section is reasonable
    assert(section >= 1, 'Error: Asking for section less than one!')
    assert(section <= nz, 'Error: Asking for section that does not exist!')
    
-   local jump = 1024
-   if not isImod then
-      jump = jump + (128 * (section - 1))
-      file:seek('set', jump)
+   if not isIMOD then
+      local jump = 128 * (section - 1)
+      file:seek('cur', jump)
       -- alpha and beta tilt in degrees
       eH.a_tilt  = struct.unpack('f', file:read(4))
       eH.b_tilt  = struct.unpack('f', file:read(4))
@@ -294,60 +288,43 @@ function MRCIOLib.getExtendedHeader(inputFile, section)
 
       -- intended application defocus, should be in SI units (meters)
       eH.appliedDefocus = struct.unpack('f', file:read(4))
-   else
-      jump = jump + (nint * (section -1))
-      file:seek('set', jump)
-      local isExp = (nreal - 32) >= 0 and true or false
-      if isExp then nreal = nreal - 32 end
-
-      local isInt = (nreal - 16) >= 0 and true or false
-      if isInt then nreal = nreal - 16 end
-
-      local isMag = (nreal - 8) >= 0 and true or false
-      if isMag then nreal = nreal - 8 end
-
-      local isStg = (nreal - 4) >= 0 and true or false
-      if isStg then nreal = nreal - 4 end
-
-      local isMon = (nreal - 2) >= 0 and true or false
-      if isMon then nreal = nreal - 2 end
-
-      local isTlt = (nreal - 1) >= 0 and true or false
-      if isTlt then nreal = nreal - 1 end
-
-      if nreal ~= 0 then
-         io.stderr:write('I have not seen this kind of IMOD extended header \
-         please contact the developer!')
+   
+   elseif isIMOD then
+      local jump = nint * (section - 1)
+      file:seek('cur', jump)
+      
+      if bit32.btest(nreal, 1) then
+         eH.a_tilt = struct.unpack('i2', file:read(2)) / 100
       end
       
-      if isTlt then
-         eH.a_tilt = struct.unpack('h', file:read(2)) / 100
-      end
-      
-      if isMon then
+      if bit32.btest(nreal, 2) then
          eH.mon = {}
          for i = 1, 3 do
-            local monCoord = struct.unpack('h', file:read(2))
+            local monCoord = struct.unpack('i2', file:read(2))
             table.insert(eH.mon, monCoord)
          end
       end
 
-      if isStg then
-         eH.x_stage = struct.unpack('h', file:read(2)) / 25
-         eH.y_stage = struct.unpack('h', file:read(2)) / 25
+      if bit32.btest(nreal, 4) then
+         eH.x_stage = struct.unpack('i2', file:read(2)) / 25
+         eH.y_stage = struct.unpack('i2', file:read(2)) / 25
       end
 
-      if isMag then
-         eH.magnification = struct.unpack('h', file:read(2)) * 100
+      if bit32.btest(nreal, 8) then
+         eH.magnification = struct.unpack('i2', file:read(2)) * 100
       end
 
-      if isInt then
-         eH.intensity = struct.unpack('h', file:read(2)) / 25000
+      if bit32.btest(nreal, 16) then
+         eH.intensity = struct.unpack('i2', file:read(2)) / 25000
       end
 
-      if isExp then
+      if bit32.btest(nreal, 32) then
          eH.exposure = struct.unpack('f', file:read(4))
       end
+      
+   else
+      io.stderr:write('Error: I do not know this type of file.')
+      return 1
    end
    file:close(); file = nil
    return eH

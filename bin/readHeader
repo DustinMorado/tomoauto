@@ -79,7 +79,8 @@ local function printHeader(filename)
 	  'Origin of image ..............................\t%05.2f\t%05.2f\t%05.2f\n',
 	   H.xorg, H.yorg, H.zorg))
 
-	local mrcType = (H.imodStamp == 1146047817) and 'IMOD' or 'AGARD'
+   local isIMOD = MRCIOLib.checkIMOD(H.nint, H.nreal)
+	local mrcType = isIMOD and 'IMOD' or 'AGARD'
 	io.stdout:write(string.format(
 	  'MRC format ...................................\t%s\n',
 	   mrcType))
