@@ -22,21 +22,39 @@ local function writeCcderaserCom(inputFile)
 	file:write('# THIS IS A COMMAND FILE TO RUN CCDERASER\n')
 	file:write('####CreatedVersion#### 3.7.2\n')
 	file:write('$ccderaser -StandardInput\n')
-	file:write('InputFile ' .. inputFile .. '\n')
-	file:write('OutputFile ' .. filename .. '_fixed.st\n')
-	file:write('PointModel ' .. filename .. '_peak.mod\n')
+	file:write(string.format(
+      'InputFile %s\n', inputFile)) 
+	file:write(string.format(
+      'OutputFile %s_fixed.st\n', filename)) 
 	file:write('FindPeaks\n')
-	file:write('PeakCriterion ' .. ccderaserPeakCriterion .. '\n')
-	file:write('DiffCriterion ' .. ccderaserDiffCriterion .. '\n')
-	file:write('GrowCriterion ' .. ccderaserGrowCriterion .. '\n')
-
-	file:write('ScanCriterion ' .. ccderaserScanCriterion .. '\n')
-	file:write('MaximumRadius ' .. ccderaserMaximumRadius .. '\n')
-	file:write('AnnulusWidth ' .. ccderaserAnnulusWidth .. '\n')
-	file:write('XYScanSize ' .. ccderaserXYScanSize .. '\n')
-	file:write('EdgeExclusionWidth ' .. ccderaserEdgeExclusionWidth .. '\n')
-	file:write('BorderSize ' .. ccderaserBorderSize .. '\n')
-	file:write('PolynomialOrder ' .. ccderaserPolynomialOrder .. '\n')
+	file:write(string.format(
+      'PeakCriterion %s\n',         ccderaserPeakCriterion))
+	file:write(string.format(
+      'DiffCriterion %s\n',         ccderaserDiffCriterion))
+   file:write(string.format(
+      'BigDiffCriterion %s\n',      ccderaserBigDiffCriterion))
+   file:write(string.format(
+      'GiantCriterion %s\n',        ccderaserGiantCriterion))
+   file:write(string.format(
+      'ExtraLargeRadius %s\n',      ccderaserExtraLargeRadius))
+	file:write(string.format(
+      'GrowCriterion %s\n',         ccderaserGrowCriterion))
+	file:write(string.format(
+      'EdgeExclusionWidth %s\n',    ccderaserEdgeExclusionWidth))
+	file:write(string.format(
+      'PointModel %s_peak.mod\n',   filename))
+	file:write(string.format(
+      'MaximumRadius %s\n',         ccderaserMaximumRadius)) 
+	file:write(string.format(
+      'AnnulusWidth %s\n',          ccderaserAnnulusWidth)) 
+	file:write(string.format(
+      'XYScanSize %s\n',            ccderaserXYScanSize)) 
+	file:write(string.format(
+      'ScanCriterion %s\n',         ccderaserScanCriterion))
+	file:write(string.format(
+      'BorderSize %s\n',            ccderaserBorderSize)) 
+	file:write(string.format(
+      'PolynomialOrder %s\n',       ccderaserPolynomialOrder)) 
 	file:close()
 end
 
@@ -47,44 +65,77 @@ local function writeTiltXCorrCom(inputFile, header)
 	file:write('# THIS IS A COMMAND FILE TO RUN TILTXCORR\n')
 	file:write('####CreatedVersion#### 3.4.4\n')
 	file:write('$tiltxcorr -StandardInput\n')
-	file:write('InputFile ' .. inputFile .. '\n')
-	file:write('OutputFile ' .. filename .. '.prexf\n')
-	file:write('TiltFile ' .. filename .. '.rawtlt\n')
-	file:write('RotationAngle ' .. header.tilt_axis .. '\n')
-	file:write('AngleOffset ' .. tiltxcorrAngleOffset .. '\n')
-	file:write('FilterRadius2 ' .. tiltxcorrFilterRadius2 .. '\n')
-	file:write('FilterSigma1 ' .. tiltxcorrFilterSigma1 .. '\n')
-	file:write('FilterSigma2 ' .. tiltxcorrFilterSigma2 .. '\n')
+	file:write(string.format(
+      'InputFile %s\n', inputFile)) 
+	file:write(string.format(
+      'OutputFile %s.prexf\n',         filename)) 
+	file:write(string.format(
+      'TiltFile %s.rawtlt\n',          filename)) 
+	file:write(string.format(
+      'RotationAngle %s\n',            header.tilt_axis)) 
+	file:write(string.format(
+      'AngleOffset %s\n',              tiltxcorrAngleOffset)) 
+	file:write(string.format(
+      'FilterRadius2 %s\n',            tiltxcorrFilterRadius2)) 
+	file:write(string.format(
+      'FilterSigma1 %s\n',             tiltxcorrFilterSigma1)) 
+	file:write(string.format(
+      'FilterSigma2 %s\n',             tiltxcorrFilterSigma2)) 
 
-	if tiltxcorrExcludeCentralPeak then file:write('ExcludeCentralPeak\n') end
+	if tiltxcorrExcludeCentralPeak then
+      file:write(string.format(
+         'ExcludeCentralPeak\n'))
+   end
 
 	if tiltxcorrBordersInXandY_use then
-      file:write('BordersInXandY $tiltxcorrBordersInXandY\n') end
+      file:write(string.format(
+         'BordersInXandY %s\n',        tiltxcorrBordersInXandY))
+   end
 
 	if tiltxcorrXMinAndMax_use then
-      file:write('XMinAndMax $tiltxcorrXMinAndMax\n') end
+      file:write(string.format(
+         'XMinAndMax %s\n',            tiltxcorrXMinAndMax))
+   end
 
 	if tiltxcorrYMinAndMax_use then
-      file:write('YMinAndMax $tiltxcorrYMinAndMax\n') end
+      file:write(string.format(
+         'YMinAndMax %s\n',            tiltxcorrYMinAndMax))
+   end
 
 	if tiltxcorrPadsInXandY_use then
-      file:write('PadsInXandY $tiltxcorrPadsInXandY\n') end
+      file:write(string.format(
+         'PadsInXandY %s\n',           tiltxcorrPadsInXandY))
+   end
 
 	if tiltxcorrTapersInXandY_use then
-      file:write('TapersInXandY $tiltxcorrTapersInXandY\n') end
+      file:write(string.format(
+         'TapersInXandY %s\n',         tiltxcorrTapersInXandY))
+   end
 
 	if tiltxcorrStartingEndingViews_use then
-      file:write('StartingEndingViews $tiltxcorrStartingEndingViews\n') end
+      file:write(string.format(
+         'StartingEndingViews %s\n',   tiltxcorrStartingEndingViews))
+   end
 
 	if tiltxcorrCumulativeCorrelation then
-      file:write('CumulativeCorrelation\n') end
+      file:write(string.format(
+         'CumulativeCorrelation\n'))
+   end
 
 	if tiltxcorrAbsoluteCosineStretch then
-      file:write('AbsoluteCosineStretch\n') end
+      file:write(string.format(
+         'AbsoluteCosineStretch\n'))
+   end
 
-	if tiltxcorrNoCosineStretch then file:write('NoCosineStretch\n') end
+	if tiltxcorrNoCosineStretch then
+      file:write(string.format(
+         'NoCosineStretch\n'))
+   end
 
-	if tiltxcorrTestOutput then file:write('TestOutput ${base}_test.img\n') end
+	if tiltxcorrTestOutput then
+      file:write(string.format(
+         'TestOutput %s_test.img\n', filename))
+   end
 
 	file:close()
 end
@@ -96,46 +147,74 @@ local function writeXfToXgCom(inputFile)
 	file:write('# THIS IS A COMMAND FILE TO RUN XFTOXG\n')
 	file:write('####CreatedVersion#### 1.0.0\n')
 	file:write('$xftoxg -StandardInput\n')
-	file:write('InputFile ' .. filename .. '.prexf\n')
-	file:write('GOutputFile ' .. filename .. '.prexg\n')
-	file:write('NumberToFit ' .. xftoxgNumberToFit .. '\n')
+	file:write(string.format(
+		'InputFile %s.prexf\n',          filename)) 
+	file:write(string.format(
+		'GOutputFile %s.prexg\n',        filename))
+	file:write(string.format(
+		'NumberToFit %s\n',              xftoxgNumberToFit)) 
 
 	if xftoxgReferenceSection_use then
-      file:write('ReferenceSection ' .. xftoxgReferenceSection .. '\n') end
+      file:write(string.format(
+		   'ReferenceSection %s\n',      xftoxgReferenceSection)) 
+   end
 
-	if xftoxgOrderOfPolynomialFit_use
-      then file:write('PolynomialFit ' .. xftoxgPolynomialFit .. '\n') end
+	if xftoxgOrderOfPolynomialFit_use then
+      file:write(string.format(
+		   'PolynomialFit %s\n',         xftoxgPolynomialFit)) 
+   end
 
 	if xftoxgHybridFits_use then
-      file:write('HybridFits ' .. xftoxgHybridFits .. '\n') end
+      file:write(string.format(
+		   'HybridFits %s\n',            xftoxgHybridFits)) 
+   end
 
 	if xftoxgRangeOfAnglesInAverage_use then
-      file:write('RangeOfAnglesInAvg ' .. xftoxgRangeOfAnglesInAvg .. '\n') end
+      file:write(string.format(
+   		'RangeOfAnglesInAvg %s\n',    xftoxgRangeOfAnglesInAvg)) 
+   end
 
 	file:close()
 end
 
 local function writeNewstackCom(inputFile)
-	local comName = 'newstack.com'
+	local comName = 'prenewstack.com'
 	local filename = string.sub(inputFile, 1, -4)
 	local file = assert(io.open(comName, 'w'))
 	file:write('# THIS IS A COMMAND FILE TO PRODUCE A PRE-ALIGNED STACK\n')
 	file:write('####CreatedVersion#### 1.0.0\n')
 	file:write('$newstack -StandardInput\n')
-	file:write('InputFile ' .. inputFile .. '\n')
-	file:write('OutputFile ' .. filename .. '.preali\n')
-	file:write('TransformFile ' .. filename .. '.prexg\n')
-   if newstackModeToOutput_use then
-	   file:write('ModeToOutput ' .. newstackModeToOutput .. '\n')
-   end
-	file:write('FloatDensities ' .. newstackFloatDensities .. '\n')
+	file:write(string.format(
+		'InputFile %s\n',                inputFile))
+	file:write(string.format(
+		'OutputFile %s.preali\n',        filename))
+	file:write(string.format(
+		'TransformFile %s.prexg\n',      filename))
 
-	if newstackContrastBlackWhite_use then
-      file:write('ContrastBlackWhite ' .. newstackContrastBlackWhite .. '\n')
+   if prenewstackModeToOutput_use then
+	   file:write(string.format(
+		   'ModeToOutput %s\n',          prenewstackModeToOutput))
    end
 
-	if newstackScaleMinAndMax_use then
-      file:write('ScaleMinAndMax ' .. newstackScaleMinAndMax .. '\n') end
+   file:write(string.format(
+      'BinByFactor %s\n',              prenewstackBinByFactor))
+   file:write(string.format(
+      'ImagesAreBinned %s\n',          prenewstackImagesAreBinned))
+
+   if prenewstackFloatDensities_use then
+	   file:write(string.format(
+		   'FloatDensities %s\n',        prenewstackFloatDensities)) 
+   end
+
+	if prenewstackContrastBlackWhite_use then
+      file:write(string.format(
+		   'ContrastBlackWhite %s\n',    prenewstackContrastBlackWhite)) 
+   end
+
+	if prenewstackScaleMinAndMax_use then
+      file:write(string.format(
+   		'ScaleMinAndMax %s\n',        prenewstackScaleMinAndMax))
+   end
 
 	file:close()
 end
@@ -186,6 +265,163 @@ local function writeRaptorCom(inputFile, header)
    file2:close()
 end
 
+local function writeTiltAlignCom(inputFile, header)
+   local comName = 'tiltalign.com'
+   local filename = string.sub(inputFile, 1, -4)
+   local file = assert(io.open(comName, 'w'))
+   file:write('# THIS IS A COMMAND FILE TO RUN TILTALIGN\n')
+   file:write('####CreatedVersion#### 3.10.4\n')
+   file:write('$tiltalign -StandardInput\n')
+   file:write(string.format(
+      'ModelFile %s.fid\n', filename))
+   file:write(string.format(
+      'ImageFile %s.preali\n', filename))
+   file:write(string.format(
+      'ImagesAreBinned %d\n', tiltAlignImagesAreBinned))
+   file:write(string.format(
+      'OutputModelFile %s.3dmod\n', filename))
+   file:write(string.format(
+      'OutputResidualFile %s.resid\n', filename))
+   file:write(string.format(
+      'OutputFidXYZFile %sfid.xyz\n', filename))
+   file:write(string.format(
+      'OutputTiltFile %s.tlt\n', filename))
+   file:write(string.format(
+      'OutputXAxisTiltFile %s.xtilt\n', filename))
+   file:write(string.format(
+      'OutputTransformFile %s.tltxf\n', filename))
+   file:write(string.format(
+      'RotationAngle %4.2f\n', header.tilt_axis))
+   file:write(string.format(
+      'SeparateGroup %d-%d\n', 1, header.split_angle))
+   file:write(string.format(
+      'TiltFile %s.rawtlt\n', filename))
+   
+   if tiltAlignAngleOffset_use then
+      file:write(string.format(
+         'AngleOffset %4.2f\n', tiltAlignAngleOffset))
+   end
+   if tiltAlignRotOption_use then
+      file:write(string.format(
+         'RotOption %d\n', tiltAlignRotOption))
+   end
+   if tiltAlignRotDefaultGrouping_use then
+      file:write(string.format(
+         'RotDefaultGrouping %d\n', tiltAlignRotDefaultGrouping))
+   end
+
+   if tiltAlignTiltOption_use then
+      file:write(string.format(
+         'TiltOption %d\n', tiltAlignTiltOption))
+   end
+   if tiltAlignTiltDefaultGrouping_use then
+      file:write(string.format(
+         'TiltDefaultGrouping %d\n', tiltAlignTiltDefaultGrouping))
+   end
+   if tiltAlignMagReferenceView_use then
+      file:write(string.format(
+         'MagReferenceView %d\n', tiltAlignMagReferenceView))
+   end
+   if tiltAlignMagOption_use then
+      file:write(string.format(
+         'MagOption %d\n', tiltAlignMagOption))
+   end
+   if tiltAlignMagDefaultGrouping_use then
+      file:write(string.format(
+         'MagDefaultGrouping %d\n', tiltAlignMagDefaultGrouping))
+   end
+
+   if tiltAlignXStretchOption_use then
+      file:write(string.format(
+         'XStretchOption %d\n', tiltAlignXStretchOption))
+   end
+   if tiltAlignSkewOption_use then
+      file:write(string.format(
+         'SkewOption %d\n', tiltAlignSkewOption))
+   end
+   if tiltAlignXStretchDefaultGrouping_use then
+      file:write(string.format(
+         'XStretchDefaultGrouping %d\n', tiltAlignXStretchDefaultGrouping))
+   end
+   if tiltAlignSkewDefaultGrouping_use then
+      file:write(string.format(
+         'SkewDefaultGrouping %d\n', tiltAlignSkewDefaultGrouping))
+   end
+   if tiltAlignBeamTiltOption_use then
+      file:write(string.format(
+         'BeamTiltOption %d\n', tiltAlignBeamTiltOption))
+   end
+
+   if tiltAlignResidualReportCriterion_use then
+      file:write(string.format(
+         'ResidualReportCriterion %4.2f\n', tiltAlignResidualReportCriterion))
+   end
+   file:write(string.format(
+      'SurfacesToAnalyze %d\n', tiltAlignSurfacesToAnalyze))
+   file:write(string.format(
+      'MetroFactor %4.2f\n', tiltAlignMetroFactor))
+   file:write(string.format(
+      'MaximumCycles %d\n', tiltAlignMaximumCycles))
+   file:write(string.format(
+      'KFactorScaling %4.2f\n', tiltAlignKFactorScaling))
+
+   if tiltAlignAxisZShift_use then
+      file:write(string.format(
+         'AxisZShift %4.2f\n', tiltAlignAxisZShift))
+   end
+   if tiltAlignShiftZFromOriginal_use then
+      file:write(string.format(
+         'ShiftZFromOriginal %d\n', tiltAlignShiftZFromOriginal))
+   end
+
+   if tiltAlignLocalAlignments_use then
+      file:write(string.format(
+         'LocalAlignments %d\n', tiltAlignLocalAlignments))
+      file:write(string.format(
+         'OutputLocalFile %slocal.xf\n', filename))
+      file:write(string.format(
+         'MinSizeOrOverlapXandY %s\n', tiltAlignMinSizeOrOverlapXandY))
+      
+      file:write(string.format(
+         'MinFidsTotalAndEachSurface %s\n', 
+         tiltAlignMinFidsTotalAndEachSurface))
+      file:write(string.format(
+         'FixXYZCoordinates %d\n', tiltAlignFixXYZCoordinates))
+      file:write(string.format(
+         'LocalOutputOptions %s\n', tiltAlignLocalOutputOptions))
+      file:write(string.format(
+         'LocalRotOption %d\n', tiltAlignLocalRotOption))
+      file:write(string.format(
+         'LocalRotDefaultGrouping %d\n', tiltAlignLocalRotDefaultGrouping))
+      file:write(string.format(
+         'LocalTiltOption %d\n', tiltAlignLocalTiltOption))
+      file:write(string.format(
+         'LocalTiltDefaultGrouping %d\n', tiltAlignLocalTiltDefaultGrouping))
+      file:write(string.format(
+         'LocalMagReferenceView %d\n', tiltAlignLocalMagReferenceView))
+      file:write(string.format(
+         'LocalMagOption %d\n', tiltAlignLocalMagOption))
+      file:write(string.format(
+         'LocalMagDefaultGrouping %d\n', tiltAlignLocalMagDefaultGrouping))
+      file:write(string.format(
+         'LocalXStretchOption %d\n', tiltAlignLocalXStretchOption))
+      file:write(string.format(
+         'LocalXStretchDefaulGrouping %d\n',
+         tiltAlignLocalXStretchDefaultGrouping))
+      file:write(string.format(
+         'LocalSkewOption %d\n', tiltAlignLocalSkewOption))
+      file:write(string.format(
+         'LocalSkewDefaultGrouping %d\n', tiltAlignLocalSkewDefaultGrouping))
+      file:write(string.format(
+         'NumberOfLocalPatchesXandY %s\n', tiltAlignNumberOfLocalPatchesXandY))
+      file:write(string.format(
+         'OutputZFactorFile %s.zfac\n', filename))
+      file:write(string.format(
+         'RobustFitting\n'))
+   end
+   file:close()
+end
+   
 local function writeOpen2ScatterCom(inputFile)
 	local comName1 = 'model2point.com'
 	local comName2 = 'point2model.com'

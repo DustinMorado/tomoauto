@@ -37,7 +37,7 @@ ccderaserScanCriterion  =  3.0
 
 -- MaximumRadius:
 -- Maximum radius of peak area to erase.
-ccderaserMaximumRadius = 3.6
+ccderaserMaximumRadius = 4.2
 
 -- AnnulusWidth:
 -- Difference between outer and inner radius of the annulus around a peak in
@@ -62,6 +62,23 @@ ccderaserBorderSize = 2
 -- where 0 will simply replace the pixels with the mean of the border points
 -- instead of fitting to them.
 ccderaserPolynomialOrder = 2
+
+-- BigDiffCriterion:
+-- An extra-large peak will be erased only if the value for the maximum
+-- difference between adjacent pixels, averaged over the most extreme one-fourth
+-- of the pixels in the patch, exceeds this criterion, evaluated as the number
+-- of SDs above the mean absolute difference between adjacent pixels in the scan
+-- area.
+ccderaserBigDiffCriterion = 19.0
+
+-- GiantCriterion:
+-- Criterion # of SDs above local mean for erasing extra-large peak based on
+-- intensity. 
+ccderaserGiantCriterion = 12.0
+
+-- ExtraLargeRadius:
+-- Maximum radius of extra-large peak area to erase.
+ccderaserExtraLargeRadius = 8.0
 
 --[[==========================================================================#
 # Step 2: Coarse Alignment                                                    #
@@ -198,14 +215,24 @@ xftoxgRangeofAnglesInAverage = 20.0
 -- The storage mode of the output file; 0 for byte, 1 for 16-bit signed integer,
 -- 6 for 16-bit unsigned integer, or 2 for 32-bit floating point. The default is
 -- the mode of the first input file.
-newstackModeToOutput_use = nil
-newstackModeToOutput = 6
+prenewstackModeToOutput_use = nil
+prenewstackModeToOutput = 6
+
+-- BinByFactor: 
+-- Use oridinary binning to reduce images in size by the given factor, or use
+-- antialias filtering to reduce images by this factor.
+prenewstackBinByFactor = 1
+
+-- ImagesAreBinned:
+-- The current binning of the images, so that the distortion field can be
+-- applied correctly.
+prenewstackImagesAreBinned = 1
 
 -- LinearInterpolation:
 -- Use linear instead of cubic interpolation to transform images. Linear
 -- interpolation is more suitable when images are very noisy, but cubic
 -- interpolation will preserve fine detail better when noise is not an issue.
-newstackLinearInterpolation_use = nil
+prenewstackLinearInterpolation_use = nil
 
 -- FloatDensities:
 -- Adjust densities of sections individually.  Enter 1 for each section to fill
@@ -213,22 +240,23 @@ newstackLinearInterpolation_use = nil
 -- to shift sections to a common mean without scaling, or 4 to shift sections to
 -- a common mean then rescale the minimum and maximum densities to the Min and
 -- Max values specified with the -scale option.
-newstackFloatDensities = 2
+prenewstackFloatDensities_use = nil
+prenewstackFloatDensities = 2
 
 -- ContrastBlackWhite:
 -- Rescale densities to match the contrast seen in 3dmod with the given black
 -- and white values. This works properly only when the output file will be
 -- bytes. It will not work if the data were loaded into 3dmod with intensity
 -- scaling; use mrcbyte in that case.
-newstackContrastBlackWhite_use = nil
-newstackContrastBlackWhite = "0 255"
+prenewstackContrastBlackWhite_use = nil
+prenewstackContrastBlackWhite = "0 255"
 
 -- ScaleMinAndMax:
 -- Rescale the densities of all sections by the same factors so that the
 -- original minimum and maximum density will be mapped to the Min and Max values
 -- that are entered.
-newstackScaleMinAndMax_use = nil
-newstackScaleMinAndMax = "0 255"
+prenewstackScaleMinAndMax_use = nil
+prenewstackScaleMinAndMax = "0 255"
 
 --[[==========================================================================#
 # Step 4: RAPTOR automated alignment algorithm                                #
