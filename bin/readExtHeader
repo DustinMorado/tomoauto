@@ -74,8 +74,8 @@ local function printExtHeader(filename)
       if Opts.p then
          if eH[ref] then
             io.stdout:write(string.format(
-               '%s : ....................\t%5.4e\n',
-                refName, eH[ref]))
+               '%03d %s : ....................\t%5.4e\n',
+                i, refName, eH[ref]))
          else
             io.stderr:write(string.format(
                'No %s found in the extended header.\n\n', refName))
@@ -84,8 +84,8 @@ local function printExtHeader(filename)
       elseif Opts.t and eH.b_tilt then
          if eH[ref] then
             io.stdout:write(string.format(
-               '%s : ....................\t%5.2f\t%5.2f\n',
-                refName, eH[ref], eH.b_tilt))
+               '%03d %s : ....................\t%05.2f\t%05.2f\n',
+                i, refName, eH[ref], eH.b_tilt))
          else
             io.stderr:write(string.format(
                'No %s found in the extended header.\n\n', refName))
@@ -94,8 +94,9 @@ local function printExtHeader(filename)
       elseif Opts.s then
          if eH[ref] then
             io.stdout:write(string.format(
-               '%s : ....................\t%5.2f\t%5.2f\t%5.2f\n',
-                refName, eH[ref], eH.y_stage, eH.z_stage))
+               '%03d %s section %d : \z
+               ....................\t%05.2f\t%05.2f\t%05.2f\n',
+                i, refName, eH[ref], eH.y_stage, eH.z_stage))
          else
             io.stderr:write(string.format(
                'No %s found in the extended header.\n\n', refName))
@@ -104,8 +105,8 @@ local function printExtHeader(filename)
       elseif Opts.S then
          if eH[ref] then
             io.stdout:write(string.format(
-               '%s : ....................\t%5.2f\t%5.2f\n',
-                refName, eH[ref], eH.y_shift))
+               '%03d %s : ....................\t%05.2f\t%05.2f\n',
+                i, refName, eH[ref], eH.y_shift))
          else
             io.stderr:write(string.format(
                'No %s found in the extended header.\n\n', refName))
@@ -114,8 +115,8 @@ local function printExtHeader(filename)
       else
          if eH[ref] then
             io.stdout:write(string.format(
-               '%s : ....................\t%5.2f\n',
-                refName, eH[ref]))
+               '%03d %s : ....................\t% 06.2f\n',
+                i, refName, eH[ref]))
          else
             io.stderr:write(string.format(
                'No %s found in the extended header.\n\n', refName))

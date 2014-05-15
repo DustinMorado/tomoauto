@@ -177,7 +177,7 @@ local function writeXfToXgCom(inputFile)
 	file:close()
 end
 
-local function writeNewstackCom(inputFile)
+local function writePreNewstackCom(inputFile)
 	local comName = 'prenewstack.com'
 	local filename = string.sub(inputFile, 1, -4)
 	local file = assert(io.open(comName, 'w'))
@@ -220,49 +220,30 @@ local function writeNewstackCom(inputFile)
 end
 
 local function writeRaptorCom(inputFile, header)
-   local comName1 = 'raptor1.com'
-   local comName2 = 'raptor2.com'
+   local comName = 'raptor1.com'
    local filename = string.sub(inputFile, 1,-4)
-   local file1 = assert(io.open(comName1, 'w'))
-   local file2 = assert(io.open(comName2, 'w'))
-   file1:write('# THIS IS A COMMAND FILE TO RUN RAPTOR\n')
-   file1:write('$RAPTOR -StandardInput\n')
-   file1:write('RaptorExecPath ' .. raptorExecPath .. '\n')
-   file1:write('InputPath ' .. lfs.currentdir() .. '\n')
-   file1:write('InputFile ' .. filename .. '.preali\n')
-   file1:write('OutputPath ' .. lfs.currentdir() .. '/raptor1\n')
-   file1:write('Diameter ' .. header.fidPx .. '\n')
-   file1:write('MarkersPerImage ' .. raptorMarkers .. '\n')
+   local file = assert(io.open(comName, 'w'))
+   file:write('# THIS IS A COMMAND FILE TO RUN RAPTOR\n')
+   file:write('$RAPTOR -StandardInput\n')
+   file:write('RaptorExecPath ' .. raptorExecPath .. '\n')
+   file:write('InputPath ' .. lfs.currentdir() .. '\n')
+   file:write('InputFile ' .. filename .. '.preali\n')
+   file:write('OutputPath ' .. lfs.currentdir() .. '/raptor1\n')
+   file:write('Diameter ' .. header.fidPx .. '\n')
+   if raptorMarkersPerImage_use then
+      file:write('MarkersPerImage ' .. raptorMarkersPerImage .. '\n')
+   end
+   file:write('TrackingOnly\n')
    if raptorAnglesInHeader_use then
-      file1:write('AnglesInHeader\n')
+      file:write('AnglesInHeader\n')
    end
    if raptorBinning_use then
-      file1:write('Binning ' .. raptorBinning .. '\n')
+      file:write('Binning ' .. raptorBinning .. '\n')
    end
    if raptorxRay_use then
-      file1:write('xRay\n')
+      file:write('xRay\n')
    end
-   file1:close()
-
-   file2:write('# THIS IS A COMMAND FILE TO RUN RAPTOR\n')
-   file2:write('$RAPTOR -StandardInput\n')
-   file2:write('RaptorExecPath ' .. raptorExecPath .. '\n')
-   file2:write('InputPath ' .. lfs.currentdir() .. '\n')
-   file2:write('InputFile ' .. filename .. '.ali\n')
-   file2:write('OutputPath ' .. lfs.currentdir() .. '/raptor2\n')
-   file2:write('Diameter ' .. header.fidPx .. '\n')
-   file2:write('MarkersPerImage ' .. raptorMarkers .. '\n')
-   if raptorAnglesInHeader_us then
-      file2:write('AnglesInHeader\n')
-   end
-   if raptorBinning_use then
-      file2:write('Binning ' .. raptorBinning .. '\n')
-   end
-   file2:write('TrackingOnly\n')
-   if raptorxRay_use then
-      file2:write('xRay\n')
-   end
-   file2:close()
+   file:close()
 end
 
 local function writeTiltAlignCom(inputFile, header)
@@ -370,13 +351,11 @@ local function writeTiltAlignCom(inputFile, header)
          'AxisZShift %4.2f\n', tiltAlignAxisZShift))
    end
    if tiltAlignShiftZFromOriginal_use then
-      file:write(string.format(
-         'ShiftZFromOriginal %d\n', tiltAlignShiftZFromOriginal))
+      file:write(string.format('ShiftZFromOriginal \n'))
    end
 
    if tiltAlignLocalAlignments_use then
-      file:write(string.format(
-         'LocalAlignments %d\n', tiltAlignLocalAlignments))
+      file:write(string.format('LocalAlignments\n'))
       file:write(string.format(
          'OutputLocalFile %slocal.xf\n', filename))
       file:write(string.format(
@@ -385,8 +364,9 @@ local function writeTiltAlignCom(inputFile, header)
       file:write(string.format(
          'MinFidsTotalAndEachSurface %s\n', 
          tiltAlignMinFidsTotalAndEachSurface))
-      file:write(string.format(
-         'FixXYZCoordinates %d\n', tiltAlignFixXYZCoordinates))
+      if tiltAlignFixXYZCoordinates_use then
+         file:write(string.format('FixXYZCoordinates\n'))
+      end
       file:write(string.format(
          'LocalOutputOptions %s\n', tiltAlignLocalOutputOptions))
       file:write(string.format(
@@ -406,7 +386,7 @@ local function writeTiltAlignCom(inputFile, header)
       file:write(string.format(
          'LocalXStretchOption %d\n', tiltAlignLocalXStretchOption))
       file:write(string.format(
-         'LocalXStretchDefaulGrouping %d\n',
+         'LocalXStretchDefaultGrouping %d\n',
          tiltAlignLocalXStretchDefaultGrouping))
       file:write(string.format(
          'LocalSkewOption %d\n', tiltAlignLocalSkewOption))
@@ -416,66 +396,46 @@ local function writeTiltAlignCom(inputFile, header)
          'NumberOfLocalPatchesXandY %s\n', tiltAlignNumberOfLocalPatchesXandY))
       file:write(string.format(
          'OutputZFactorFile %s.zfac\n', filename))
-      file:write(string.format(
-         'RobustFitting\n'))
+      if tiltAlignRobustFitting_use then
+         file:write(string.format('RobustFitting\n'))
+      end
    end
    file:close()
 end
    
-local function writeOpen2ScatterCom(inputFile)
-	local comName1 = 'model2point.com'
-	local comName2 = 'point2model.com'
-	local filename = string.sub(inputFile, 1, -4)
-	local file1 = assert(io.open(comName1, 'w'))
-	local file2 = assert(io.open(comName2, 'w'))
-	file1:write('# THIS IS A COMMAND FILE TO RUN MODEL2POINT\n')
-	file1:write('$model2point -StandardInput\n')
-	file1:write('InputFile ' .. filename .. '_erase.fid\n')
-	file1:write('OutputFile ' .. filename .. '_erase.fid.txt\n')
+local function writeXfProductCom(inputFile)
+   local comName = 'xfproduct.com'
+   local filename = string.sub(inputFile, 1, -4)
+   local file = assert(io.open(comName, 'w'))
+   file:write('# THIS IS A COMMAND FILE TO RUN XFPRODUCT\n')
+   file:write('$xfproduct -StandardInput\n')
+   file:write(string.format('InputFile1 %s.prexg\n', filename))
+   file:write(string.format('InputFile2 %s.tltxf\n', filename))
+   file:write(string.format('OutputFile %s_fid.xf\n', filename))
+end
 
-	if model2pointFloatingPoint_use then file1:write('FloatingPoint\n') end
-
-	if model2pointScaledCoordinates_use then
-      file1:write('ScaledCoordinates\n') 
+local function writeNewstackCom(inputFile)
+   local comName = 'newstack.com'
+   local filename = string.sub(inputFile, 1, -4)
+   local file = assert(io.open(comName, 'w'))
+   file:write('# THIS IS A COMMAND FILE TO RUN NEWSTACK\n')
+   file:write('$newstack -StandardInput\n')
+   file:write(string.format('InputFile %s\n', inputFile))
+   file:write(string.format('OutputFile %s.ali\n', filename))
+   file:write(string.format('TransformFile %s.xf\n', filename))
+   file:write(string.format('TaperAtFill %s\n', newstackTaperAtFill))
+   if newstackAdjustOrigin_use then
+      file:write(string.format('AdjustOrigin\n'))
    end
-
-	if model2pointObjectAndContour_use then
-      file1:write('ObjectAndContour\n') 
+   file:write(string.format('OffsetsInXandY %s\n', newstackOffsetsInXandY))
+   if newstackDistortionField_use then
+      file:write(string.format('DistortionField %s.idf\n', filename))
    end
-
-	if model2pointContour_use then file1:write('Contour\n') end
-
-	if model2pointNumberedFromZero_use then
-      file1:write('NumberedFromZero\n') 
+   file:write(string.format('ImagesAreBinned %d\n', newstackImagesAreBinned))
+   file:write(string.format('BinByFactor %d\n', newstackBinByFactor))
+   if newstackGradientFile_use then
+      file:write(string.format('GradientFile %s.maggrad\n', filename))
    end
-
-	file1:close()
-	file2:write('# THIS IS A COMMAND FILE TO RUN POINT2MODEL\n')
-	file2:write('$point2model -StandardInput\n')
-	file2:write('InputFile ' .. filename .. '_erase.fid.txt\n')
-	file2:write('OutputFile ' .. filename .. '_erase.scatter.fid\n')
-	if point2modelOpenContours_use then file2:write('OpenContours\n') end
-
-	if point2modelScatteredPoints_use then file2:write('ScatteredPoints\n') end
-
-	if point2modelPointsPerContour_use then
-      file2:write('PointsPerContour ' .. point2modelPointsPerContour .. '\n')
-   end
-
-	if point2modelPlanarContours_use then file2:write('PlanarContours\n') end
-
-	if point2modelNumberedFromZero_use then
-      file2:write('NumberedFromZero\n')
-   end
-
-	file2:write('CircleSize ' .. point2modelCircleSize .. '\n')
-
-	if point2modelSphereRadius_use then
-      file2:write('SphereRadius ' .. point2modelSphereRadius .. '\n') end
-
-	file2:write('ColorOfObject ' .. point2modelColorOfObject .. '\n')
-	file2:write('ImageForCoordinates ' .. filename .. '.ali\n')
-	file2:close()
 end
 
 local function writeGoldCom(inputFile)
@@ -635,21 +595,28 @@ local function writeCTFCorrectCom(inputFile, header)
 end
 
 function comWriter.write(inputFile, header, Opts)
-   if Opts.L_ then
-      localConfig = loadfile(Opts.L_)
+   if Opts.l_ then
+      localConfig = loadfile(Opts.l_)
       if localConfig then localConfig() end
    end
 
    writeCcderaserCom(inputFile)
    writeTiltXCorrCom(inputFile, header)
    writeXfToXgCom(inputFile)
-   writeNewstackCom(inputFile)
+   writePreNewstackCom(inputFile)
    writeRaptorCom(inputFile, header)
-   writeOpen2ScatterCom(inputFile)
+   writeTiltAlignCom(inputFile, header)
+   writeXfProductCom(inputFile)
+   writeNewstackCom(inputFile)
+   --writeOpen2ScatterCom(inputFile)
    writeGoldCom(inputFile)
-   writeTiltCom(inputFile, header, Opts)
-   writeCTFPlotterCom(inputFile, header, Opts)
-   writeCTFCorrectCom(inputFile, header)
+   if Opts.c then
+      writeCTFPlotterCom(inputFile, header, Opts)
+      writeCTFCorrectCom(inputFile, header)
+   end
+   if not Opts.t then
+      writeTiltCom(inputFile, header, Opts)
+   end
 end
 
 return comWriter

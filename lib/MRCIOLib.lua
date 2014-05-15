@@ -330,6 +330,46 @@ function MRCIOLib.getExtendedHeader(inputFile, section)
    return eH
 end
 
+--[[===========================================================================#
+#                                   getTilts                                   #
+#------------------------------------------------------------------------------#
+# This function writes the tilt angles out to stdout or a file, and this file  #
+# is used by many IMOD commands.                                               #
+#------------------------------------------------------------------------------#
+# Arguments: arg[1]: Image stack filename <filename.st>                        #
+#            arg[2]: [optional] Output file <filename.rawtlt>                  #
+#===========================================================================--]]
+function MRCIOLib.getTilts(inputFile, outputFile)
+   local H = MRCIOLib.getHeader(inputFile)
+   local nz = H.nz
+   H = nil
+   local file = io.stdout
+
+   if outputFile then
+      file = io.open(outputFile, 'w')
+   end
+   
+   for i = 1, nz do
+      local eH = MRCIOLib.getExtendedHeader(inputFile, i)
+      if not eH.a_tilt then
+         error('Error: No tilt angles found in header.\n', 0)
+      else
+         file:write(string.format('% 6.2f\n', eH.a_tilt))
+      end
+   end
+
+   file:close()
+end
+
+--[[===========================================================================#
+#                                getReqdHeader                                 #
+#------------------------------------------------------------------------------#
+# This function returns a table with a mix of data from the standard and the   #
+# extended MRC header as is required for reconstruction.                       #
+#------------------------------------------------------------------------------#
+# Arguments: arg[1]: Image stack file <filename:string>                        #
+#            arg[2]: Fiducial size in nanometers <integer>                     #
+#===========================================================================--]]
 function MRCIOLib.getReqdHeader(filename, fidNm)
    local rqH = {}
    local   H = MRCIOLib.getHeader(filename)
@@ -337,6 +377,7 @@ function MRCIOLib.getReqdHeader(filename, fidNm)
    
    rqH.fType = string.sub(H.labels[1], 1, 3)
    rqH.nx, rqH.ny, rqH.nz = H.nx, H.ny, H.nz
+   rqH.mode = H.mode
 
    if rqH.fType == 'Fei' then
       rqH.tilt_axis  = -1 * eH.tilt_axis
@@ -355,8 +396,24 @@ function MRCIOLib.getReqdHeader(filename, fidNm)
       return false
    end
 
+   -- Get pixel spacing
+   rqH.xPx = H.xlen / H.mx
+   rqH.yPx = H.ylen / H.my
+   rqH.zPx = H.zlen / H.mz
+
+   -- Calculate the Fiducial size in pixels
    rqH.fidPx = math.floor((fidNm / rqH.pixel_size) + 0.5)
-   H, eH = nil, nil
+
+   -- Find the section at 0 degrees to split alignments
+   for i = 1, rqH.nz do
+      local tiltH = MRCIOLib.getExtendedHeader(filename, i)
+      if math.floor(tiltH.a_tilt) == 0 then
+         rqH.split_angle = i
+      end
+   end
+   if not rqH.split_angle then
+      error('Error: Could not find a zero degree tilt\n')
+   end
    return rqH
 end
 

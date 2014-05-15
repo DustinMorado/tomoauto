@@ -259,7 +259,7 @@ prenewstackScaleMinAndMax_use = nil
 prenewstackScaleMinAndMax = "0 255"
 
 --[[==========================================================================#
-# Step 4: RAPTOR automated alignment algorithm                                #
+# Step 3: RAPTOR automated fiducial model algorithm                           #
 #-----------------------------------------------------------------------------#
 # Commands: RAPTOR                                                            #
 #==========================================================================--]]
@@ -279,7 +279,8 @@ raptorAnglesInHeader_use = true
 -- This is the most critical parameter. Here it is set incredibly high, which
 -- makes it run very slowly, you can try lowering it to see how fast you can
 -- get it without many of the alignments failing.
-raptorMarkers = 100
+raptorMarkersPerImage_use = nil
+raptorMarkersPerImage = 50
 
 -- Binning:
 -- This option causes RAPTOR to bin the image stack before computing the
@@ -291,6 +292,209 @@ raptorBinning = 2
 -- if this option is specified long, straight line features will be attempted to
 -- be removed to help the marker identification process.
 raptorxRay_use = nil
+
+--[[==========================================================================#
+# Step 4: Alignment by use of fiducial model                                  #
+#-----------------------------------------------------------------------------#
+# Commands: tiltalign                                                         #
+#==========================================================================--]]
+-- These are the options for the tiltalign command that solves for the
+-- displacements, rotations, tilts and magnification differences of a tilt 
+-- series. 
+
+-- ImagesAreBinned:
+-- The current binning of the images relative to the original data.
+tiltAlignImagesAreBinned = 1
+
+-- AngleOffset:
+-- Amount to add to all entered tilt angles.
+tiltAlignAngleOffset_use = nil
+tiltAlignAngleOffset = 0.0
+
+-- RotOption:
+-- Type of rotation solution: 0 for all rots fixed at initial angle
+-- 1 for each view having an independent rotation; 2 to enter general mapping of
+-- rotation variables; 3 or 4 for automapping; -1 single rotation variable
+tiltAlignRotOption_use = true
+tiltAlignRotOption = 1
+
+-- RotDefaultGrouping:
+-- Default group size when automapping rotation variables
+tiltAlignRotDefaultGrouping_use = true
+tiltAlignRotDefaultGrouping = 5
+
+-- TiltOption:
+-- Type of tilt angle solution. See tiltalign manual page.
+tiltAlignTiltOption_use = true
+tiltAlignTiltOption = 5
+
+-- TiltDefaultGrouping:
+-- Average default group size when automapping tilt variables
+tiltAlignTiltDefaultGrouping_use = true
+tiltAlignTiltDefaultGrouping =  5
+
+-- MagReferenceView:
+-- Number of reference view whose magnification whos magnification will be fixed
+-- at 1.0
+tiltAlignMagReferenceView_use = true
+tiltAlignMagReferenceView = 1
+
+-- MagOption:
+-- Type of magnification solution. See tiltalign manual page.
+tiltAlignMagOption_use = true
+tiltAlignMagOption = 1
+
+-- MagDefaultGrouping:
+-- Default group size when automapping magnification
+tiltAlignMagDefaultGrouping_use = true
+tiltAlignMagDefaultGrouping = 4
+
+-- XStretchOption: 
+-- Type of X-stretch solution. See tiltalign manual page.
+tiltAlignXStretchOption_use = true
+tiltAlignXStretchOption = 3
+
+-- SkewOption:
+-- Type of skew solution. See tiltalign manual.
+tiltAlignSkewOption_use = true
+tiltAlignSkewOption = 3
+
+-- XStretchDefaultGrouping: 
+-- Default average group size when automapping X stretch variables.
+tiltAlignXStretchDefaultGrouping_use = true
+tiltAlignXStretchDefaultGrouping = 7
+
+-- SkewDefaultGrouping:
+-- Default group size when automapping skew variables
+tiltAlignSkewDefaultGrouping_use = true
+tiltAlignSkewDefaultGrouping = 11
+
+-- BeamTiltOption:
+-- Type of solution for non-perpendicularity between tilt axis and beam axis.
+-- See tiltalign manual page.
+tiltAlignBeamTiltOption_use = true
+tiltAlignBeamTiltOption = 0
+
+-- ResidualReportCriterion:
+-- Criterion number of standard deviations above mean residual error that should
+-- be reported.
+tiltAlignResidualReportCriterion_use = true
+tiltAlignResidualReportCriterion = 3.0
+
+-- SurfacesToAnalyze:
+-- 0, 1, or 2 to fit points to none, one or two surfaces. This entry has no
+-- effect on the global alignment solution.
+tiltAlignSurfacesToAnalyze = 2
+
+-- MetroFactor:
+-- How large the variable metric minimization step 
+tiltAlignMetroFactor = 0.25
+
+-- MaximumCycles:
+-- Limit on the number of cycles for METRO
+tiltAlignMaximumCycles = 1000
+
+-- KFactorScaling:
+-- Amount to scale the K factor that controls how many points are down-weighted
+-- in the robust fitting.
+tiltAlignKFactorScaling = 1.0
+
+-- AxisZShift:
+-- Amount to shift the tilt axis in Z, relative to the centroid in Z of the
+-- fiducial points or relative to the original Z axis.
+tiltAlignAxisZShift_use = true
+tiltAlignAxisZShift = 0.0
+
+-- ShiftZFromOriginal:
+-- Apply Z shift relative to the original tilt axis location.
+tiltAlignShiftZFromOriginal_use = true
+
+-- LocalAlignments:
+-- Do alignments with subsets of points in local areas.
+tiltAlignLocalAlignments_use = true
+
+-- MinSizeOrOverlapXandY:
+-- Either the minimum size of each patch in X and Y or the minimum fractional
+-- overlap between patches.
+tiltAlignMinSizeOrOverlapXandY = '0.5,0.5'
+
+-- MinFidsTotalAndEachSurface:
+-- Minimum total number of fiducials, and minimum present on each surface if two
+-- surfaces are assumed.
+tiltAlignMinFidsTotalAndEachSurface = '8,3'
+
+-- FixXYZCoordinates:
+-- Fix the coordinates of the fiducials at their values from the global
+-- solution.
+tiltAlignFixXYZCoordinates_use = nil
+
+-- LocalOutputOptions:
+-- These three entries control the output of results for each local alignment.
+-- See tilt align manual page.
+tiltAlignLocalOutputOptions = '1,0,1'
+
+-- LocalRotOption:
+-- Type of local rotation solution.
+tiltAlignLocalRotOption = 3
+
+-- LocalRotDefaultGrouping:
+-- Default group size when automapping local rotation variables
+tiltAlignLocalRotDefaultGrouping = 6
+
+-- LocalTiltOption:
+-- Type of local tilt angle solution; have same meanings as for global solution.
+tiltAlignLocalTiltOption = 5
+
+-- LocalTiltDefaultGrouping:
+-- Average default group size when automapping local tilt variables.
+tiltAlignLocalTiltDefaultGrouping = 6
+
+-- LocalMagReferenceView:
+-- Number of reference view whose local mag will be fixed at 1.0.
+tiltAlignLocalMagReferenceView = 1
+
+-- LocalMagOption:
+-- Type of local magnification solution. Same as for global solution.
+tiltAlignLocalMagOption = 3
+
+-- LocalMagDefaultGrouping:
+-- Default group size when automapping local magnification variables.
+tiltAlignLocalMagDefaultGrouping = 7
+
+-- LocalXStretchOption:
+-- Type of local X-stretch solution. Same as for global solution.
+tiltAlignLocalXStretchOption = 3
+
+-- LocalXStretchDefaultGrouping:
+-- Default average group size when automapping local X stretch variables.
+tiltAlignLocalXStretchDefaultGrouping = 11
+
+-- LocalSkewOption:
+-- Type of local skew solution. Same as for global solution.
+tiltAlignLocalSkewOption = 3
+
+-- LocalSkewDefaultGrouping:
+tiltAlignLocalSkewDefaultGrouping = 11
+
+-- NumberOfLocalPatchesXandY:
+-- Number of local patches in X and in Y in which to obtain a solution from the
+-- fiducials located in that patch.
+tiltAlignNumberOfLocalPatchesXandY = '5,5'
+
+-- RobustFitting
+-- Use a robust fitting method that gives less weight to points with residuals
+-- higher than the median residuals, and no weight to the most extreme points.
+tiltAlignRobustFitting_use = true
+
+-- TODO: I need to fill these in before I push a release version
+
+newstackTaperAtFill = '1,0'
+newstackAdjustOrigin_use = true
+newstackOffsetsInXandY = '0.0,0.0'
+newstackDistortionField_use = nil
+newstackImagesAreBinned = 1
+newstackBinByFactor = 1
+newstackGradientFile_use = nil
 
 --[[==========================================================================#
 # Step 4: CTF Correction                                                      #
@@ -528,7 +732,7 @@ gccderaserPolynomialOrder = 0
 gccderaserExcludeAdjacent = 1
 
 --[[==========================================================================#
-# Step 5: Tomogram Generation                                                 #
+# Step 6: Tomogram Generation                                                 #
 #-----------------------------------------------------------------------------# 
 # Commands: tilt                                                              #
 #==========================================================================--]]
