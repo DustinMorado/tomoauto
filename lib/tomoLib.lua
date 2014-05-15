@@ -114,17 +114,13 @@ function tomoLib.checkAlign(inputFile, nz)
       local aliNz = H.nz
       H = nil
       local cut = nz - aliNz
-      io.stdout:write('\nThe number of intial sections is:\t' .. nz)
-      io.stdout:write('\nThe number of sections cut was:\t' .. cut, '\n\n')
       if (aliNz / nz) >= 0.9 then
          return true
       else 
          error('\nError: RAPTOR has cut too many sections.\n\n')
       end
    end)
-   if not status then
-      io.stderr:write(err)
-   end
+   return status, err
 end
 --[[==========================================================================#
 #                                  writeLog                                   #

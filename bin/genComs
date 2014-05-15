@@ -1,0 +1,67 @@
+#!/usr/bin/env lua
+--[[===========================================================================#
+#                                   genComs                                    #
+#------------------------------------------------------------------------------#
+# This is a program that generates all of the COM files used by tomoAuto, with #
+# the benefit of being able to run manually, to tweak and check individual     #
+# steps with tomoAuto.                                                         #
+#------------------------------------------------------------------------------#
+# Author:  Dustin Morado                                                       #
+# Written: May 13th 2014                                                       #
+# Contact: Dustin.Morado@uth.tmc.edu                                           #
+#------------------------------------------------------------------------------#
+# Arguments: arg[1]: Image stack file <filename.st>                            #
+#            arg[2]: Fiducial size in nanometers <intger>                      #
+#            arg[3]: Table with option flags from getOpts                      #
+#===========================================================================--]]
+local tomoAutoDir = os.getenv('TOMOAUTOROOT')
+package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
+local comWriter = assert(require 'comWriter')
+local getOpt = assert(require 'getOpt')
+local MRCIOLib = assert(require 'MRCIOLib')
+local lfs, os, string = lfs, os, string
+
+local sString = 'c, d_, g, h, i_, l_, p_, s, t, z_'
+local lString = 'ctf, defoucus, gpu, help, iter, config, \z
+   procnum, SIRT, tomo3d, thickness'
+local arg, Opts = getOpt.parse(arg, sString, lString)
+
+function genComs(stackFile, fidNm, Opts)
+   local header = MRCIOLib.getReqdHeader(stackFile, fidNm)
+
+   if Opts.c then
+      if Opts.d_ then
+         header.defocus = Opts.d_
+      else
+         error('Error; You need to enter an approximate defocus to run \z
+            with CTF correction.\n', 0)
+      end
+   end
+
+   local filename = string.sub(stackFile, 1, -4)
+   local comDir = filename .. '_COMs'
+   assert(lfs.mkdir(comDir),
+      '\n\nError: Could not make COMs directory.\n')
+   assert(os.execute(string.format('mv %s %s', stackFile, comDir)),
+      '\n\nError: Could not move input file to filename directory.\n')
+   assert(lfs.chdir(comDir), 
+      '\n\nError: Could not change to filename directory.\n')
+   
+   local ret, mesg = pcall(comWriter.write, stackFile, header, Opts)
+   if not ret then 
+      io.stderr:write(mesg)
+      io.stderr:write(
+         '\n\nError: Could not write ComFiles. Go bother Dustin.\n')
+      assert(os.execute(string.format('mv %s ..', stackFile )),
+         '\n\nError: Could not move input file to parent directory.\n')
+      assert(lfs.chdir('..'),
+         '\n\nError: Could not change to parent directory.\n')
+      assert(os.execute(string.format('rm -rf  %s', comDir)),
+         '\n\nError: Could not remove filename directory.\n')
+      return false
+   else
+      return true
+   end
+end
+
+genComs(arg[1], arg[2], Opts)

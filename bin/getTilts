@@ -1,0 +1,6 @@
+#!/usr/bin/env lua
+local tomoAutoDir = os.getenv('TOMOAUTOROOT')
+package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
+local MRCIOLib = assert(require 'MRCIOLib')
+
+MRCIOLib.getTilts(arg[1], arg[2])

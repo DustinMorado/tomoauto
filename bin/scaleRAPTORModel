@@ -1,0 +1,11 @@
+#!/usr/bin/env lua
+local tomoAutoDir = os.getenv('TOMOAUTOROOT')
+package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
+local MRCIOLib = assert(require 'MRCIOLib')
+local tomoLib = assert(require 'tomoLib')
+
+local filename = string.sub(arg[1], 1, -9)
+local stackFile = filename .. '.st'
+local H = MRCIOLib.getReqdHeader(stackFile, 10)
+
+tomoLib.scaleRAPTORModel(arg[1], H, arg[2])

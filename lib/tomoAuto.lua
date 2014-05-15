@@ -26,14 +26,20 @@ local function run(funcString)
       local success, exit, signal = os.execute(funcString .. '&> /dev/null')
       if (not success) or (signal ~= 0) then 
          error('\nError: ' .. funcString .. ' failed.\n\n', 0)
-      else
-         return true
       end
    end)
-   if not status then
-      io.stderr:write(err)
-      os.exit(1)
-   end
+   return status, err
+end
+
+local function cleanOnFail(filename)
+   run(string.format('mv tomoAuto.log finalFiles/tomoAuto_%s.log',
+      os.date('%d.%m.%y')))
+   run(string.format('rm -rf *.com *.log %s* raptor*',
+      filename))
+   run(string.format('mv finalFiles/* ..'))
+   run(string.format('rmdir finalFiles'))
+   lfs.chdir('..')
+   run(string.format('rmdir %s'), filename)
 end
 
 function tomoAuto.reconstruct(stackFile, fidNm, Opts)
@@ -64,7 +70,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
 
    if Opts.h then
       tomoLib.dispHelp()
-      os.exit(0)
+      return 0
    end
 
    -- Multiple times throughout we will check for enough disk space
@@ -79,7 +85,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
       else
          io.stderr:write('You need to enter an approximate defocus to run \z
             with CTF correction.\n')
-         os.exit(1)
+         return 1
       end
    end
 
@@ -87,16 +93,26 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    local status, err = pcall(lfs.mkdir, filename)
    if not status then
       io.stderr:write(err)
-      os.exit(1)
+      return 1
    end
-   run(string.format('mv %s %s', stackFile, filename)) 
+   status, err = run(string.format('mv %s %s', stackFile, filename)) 
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
    if Opts.l_ then
-      run(string.format('cp %s %s', Opts.l_, filename))
+      status, err = run(string.format('cp %s %s', Opts.l_, filename))
+      if not status then
+         io.stderr:write(err)
+         cleanOnFail(filename)
+         return 1
+      end
    end
    status, err = pcall(lfs.chdir, filename)
    if not status then
       io.stderr:write(err)
-      os.exit(1)
+      return 1
    end
    local startDir = lfs.currentdir()
 
@@ -113,87 +129,243 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    status, err = pcall(lfs.mkdir, 'finalFiles')
    if not status then
       io.stderr:write(err)
-      os.exit(1)
+      cleanOnFail(filename)
+      return 1
    end
-   run(string.format('cp %s finalFiles', stackFile))
+   status, err = run(string.format('cp %s finalFiles', stackFile))
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
 
    -- We should always remove the Xrays from the image using ccderaser
-   run('submfg -s ccderaser.com')
+   status, err = run('submfg -s ccderaser.com')
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
    tomoLib.writeLog(filename)
    tomoLib.isFile(ccdErasedFile)
-   run(string.format('mv %s %s', stackFile, origFile))
-   run(string.format('mv %s %s', ccdErasedFile, stackFile))
+   status, err = run(string.format('mv %s %s', stackFile, origFile))
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
+   status, err = run(string.format('mv %s %s', ccdErasedFile, stackFile))
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
 
    -- Here we run the Coarse alignment as done in etomo
-   run('submfg -s tiltxcorr.com xftoxg.com prenewstack.com')
+   status, err = run('submfg -s tiltxcorr.com xftoxg.com prenewstack.com')
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
    tomoLib.writeLog(filename)
    tomoLib.isFile(preAliFile)
 
    -- Now we run RAPTOR to produce a succesfully aligned stack
    tomoLib.checkFreeSpace(startDir)
-   run('submfg -s raptor1.com')
+   status, err = run('submfg -s raptor1.com')
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
    tomoLib.writeLog(filename)
-   run(string.format('cp %s .', rFidFile))
+   status, err = run(string.format('cp %s .', rFidFile))
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
    tomoLib.scaleRAPTORModel(fidTxtFile, header, fidFile)
-   run('submfg -s tiltalign.com xfproduct.com')
-   run(string.format('cp %s %s', fidXfFile, xfFile))
-   run(string.format('cp %s %s', tltFile, fidTltFile)) 
-   run('submfg -s newstack.com')
+   status, err = run('submfg -s tiltalign.com xfproduct.com')
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
+   status, err = run(string.format('cp %s %s', fidXfFile, xfFile))
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
+   status, err = run(string.format('cp %s %s', tltFile, fidTltFile)) 
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
+   status, err = run('submfg -s newstack.com')
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
    tomoLib.writeLog(filename)
-   run(string.format('binvol -b 4 -z 1 %s %s', aliFile, aliBin4File))
-   run(string.format('cp %s %s finalFiles', aliFile, aliBin4File))
-   tomoLib.checkAlign(aliFile, header.nz)
+   status, err = run(string.format('binvol -b 4 -z 1 %s %s',
+      aliFile, aliBin4File))
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
+   status, err = run(string.format('cp %s %s finalFiles',
+      aliFile, aliBin4File))
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
+   status, err = tomoLib.checkAlign(aliFile, header.nz)
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
 
    -- Ok for the new stuff here we add CTF correction
    -- noise background is now set in the global config file
    if Opts.c then
       tomoLib.checkFreeSpace(startDir)
       if Opts.p_ then
-         run('submfg -s ctfplotter.com')
+         status, err = run('submfg -s ctfplotter.com')
+         if not status then
+            io.stderr:write(err)
+            cleanOnFail(filename)
+            return 1
+         end
          tomoLib.isFile(dfcFile)
-         run('splitcorrection ctfcorrection.com')
-         run(string.format(
+         status, err = run('splitcorrection ctfcorrection.com')
+         if not status then
+            io.stderr:write(err)
+            cleanOnFail(filename)
+            return 1
+         end
+         status, err = run(string.format(
             'processchunks -g -C 0,0,0 -T 600,0 %d ctfcorrection', Opts.p_))
+         if not status then
+            io.stderr:write(err)
+            cleanOnFail(filename)
+            return 1
+         end
          tomoLib.isFile(ctfFile)
          tomoLib.writeLog(filename)
       else
-         run('submfg -s ctfplotter.com ctfcorrection.com')
+         status, err = run('submfg -s ctfplotter.com ctfcorrection.com')
+         if not status then
+            io.stderr:write(err)
+            cleanOnFail(filename)
+            return 1
+         end
          tomoLib.isFile(ctfFile)
          tomoLib.writeLog(filename)
       end
       tomoLib.modCTFPlotter()
-      run(string.format('cp %s ctfplotter.com finalFiles', dfcFile))
-      run(string.format('mv %s %s', aliFile, ali1File))
-      run(string.format('mv %s %s', ctfFile, aliFile))
-      run(string.format('cp %s finalFiles', aliFile))
+      status, err = run(string.format('cp %s ctfplotter.com finalFiles',
+         dfcFile))
+      if not status then
+         io.stderr:write(err)
+         return 1
+      end
+      status, err = run(string.format('mv %s %s', aliFile, ali1File))
+      if not status then
+         io.stderr:write(err)
+         return 1
+      end
+      status, err = run(string.format('mv %s %s', ctfFile, aliFile))
+      if not status then
+         io.stderr:write(err)
+         return 1
+      end
+      status, err = run(string.format('cp %s finalFiles', aliFile))
+      if not status then
+         io.stderr:write(err)
+         return 1
+      end
    end
 
    -- Now we erase the gold
-   run(string.format('xfmodel -xf %s %s %s', tltXfFile, fidFile, erFidFile))
-   run('submfg -s gold_ccderaser.com')
+   status, err = run(string.format('xfmodel -xf %s %s %s',
+      tltXfFile, fidFile, erFidFile))
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
+   status, err = run('submfg -s gold_ccderaser.com')
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
    tomoLib.writeLog(filename)
    tomoLib.isFile(erAliFile)
-   run(string.format('mv %s %s', aliFile, ali2File))
-   run(string.format('mv %s %s', erAliFile, aliFile))
+   status, err = run(string.format('mv %s %s', aliFile, ali2File))
+   if not status then
+      io.stderr:write(err)
+      return 1
+   end
+   status, err = run(string.format('mv %s %s', erAliFile, aliFile))
+   if not status then
+      io.stderr:write(err)
+      return 1
+   end
 
    -- Finally we compute the reconstruction
    if not Opts.t then      -- Using IMOD to handle the reconstruction.
       if not Opts.s then   -- Using Weighted Back Projection method.
          recFile = filename .. '_full.rec'
          if Opts.p_ then
-            run(string.format('splittilt -n %d tilt.com', Opts.p_))
-            run(string.format(
+            status, err = run(string.format('splittilt -n %d tilt.com',
+               Opts.p_))
+            if not status then
+               io.stderr:write(err)
+               cleanOnFail(filename)
+               return 1
+            end
+            status, err = run(string.format(
                'processchunks -g -C 0,0,0 -T 600,0 %d tilt', Opts.p_))
+            if not status then
+               io.stderr:write(err)
+               cleanOnFail(filename)
+               return 1
+            end
             tomoLib.writeLog(filename)
          else
-            run('submfg -s tilt.com')
+            status, err = run('submfg -s tilt.com')
+            if not status then
+               io.stderr:write(err)
+               cleanOnFail(filename)
+               return 1
+            end
             tomoLib.writeLog(filename)
          end
       else                 -- Using S.I.R.T method
          local thds = Opts.p_ or '1'
-         run(string.format('sirtsetup -n %d -i 15 tilt.com', thds))
-         run(string.format(
+         status, err = run(string.format('sirtsetup -n %d -i 15 tilt.com',
+            thds))
+         if not status then
+            io.stderr:write(err)
+            cleanOnFail(filename)
+            return 1
+         end
+         status, err = run(string.format(
             'processchunks -g -C 0,0,0 -T 600,0 %d tilt_sirt', thds))
+         if not status then
+            io.stderr:write(err)
+            cleanOnFail(filename)
+            return 1
+         end
       end
    else                    -- Using TOMO3D to handle the reconstruction
       recFile  = filename .. '_tomo3d.rec'
@@ -203,7 +375,13 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
       local t3Str    = string.format(
          ' -a %s -i %s -t %d -z %d', tltFile, aliFile, thds, z)
       if header.mode == 6 then
-         run(string.format('newstack -mo 1 %s %s', aliFile, aliFile))
+         status, err = run(string.format('newstack -mo 1 %s %s',
+            aliFile, aliFile))
+         if not status then
+            io.stderr:write(err)
+            cleanOnFail(filename)
+            return 1
+         end
       end
       if Opts.g then
          t3Str = 'tomo3dhybrid -g 0 ' .. t3Str
@@ -217,7 +395,12 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
          t3Str   = string.format('%s -o %s', t3Str, recFile)
       end
 
-      run(t3Str)
+      status, err = run(t3Str)
+      if not status then
+         io.stderr:write(err)
+         cleanOnFail(filename)
+         return 1
+      end
    end
    tomoLib.isFile(recFile)
    
@@ -226,12 +409,44 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    -- handedness.
    -- We bin the tomogram by a factor of 4 to make visualization faster
    -- We bin the alignment by 4 as well to check the alignment quality
-   run(string.format('clip rotx %s %s', recFile, recFile))
-   run(string.format('binvol -binning 4 %s %s', recFile, binFile))
-   run(string.format('mv %s %s tomoAuto.log finalFiles', recFile, binFile))
-   run(string.format('rm -rf *.com *.log %s* raptor*', filename))
-   run('mv finalFiles/* .')
-   run('rmdir finalFiles')
+   status, err = run(string.format('clip rotx %s %s', recFile, recFile))
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
+   status, err = run(string.format('binvol -binning 4 %s %s',
+      recFile, binFile))
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
+   status, err = run(string.format('mv %s %s tomoAuto.log finalFiles',
+      recFile, binFile))
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
+   status, err = run(string.format('rm -rf *.com *.log %s* raptor*',
+      filename))
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
+   status, err = run('mv finalFiles/* .')
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
+   status, err = run('rmdir finalFiles')
+   if not status then
+      io.stderr:write(err)
+      return 1
+   end
    lfs.chdir('..')
 
    return 0
