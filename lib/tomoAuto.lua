@@ -22,8 +22,11 @@ local lfs, os, string = lfs, os, string
 local tomoAuto = {}
 
 local function run(funcString)
+   local dateString = os.date('%d.%m.%y.%H.%M.%S')
    local status, err = pcall(function()
-      local success, exit, signal = os.execute(funcString .. '&> /dev/null')
+      local success, exit, signal = os.execute(string.format(
+         '%s 1>> tomoAuto_%s.log 2>> tomoAuto_%s.err.log',
+          funcString, dateString, dateString))
       if (not success) or (signal ~= 0) then 
          error('\nError: ' .. funcString .. ' failed.\n\n', 0)
       end
@@ -32,12 +35,11 @@ local function run(funcString)
 end
 
 local function cleanOnFail(filename)
-   run(string.format('mv tomoAuto.log finalFiles/tomoAuto_%s.log',
-      os.date('%d.%m.%y')))
-   run(string.format('rm -rf *.com *.log %s* raptor*',
-      filename))
-   run(string.format('mv finalFiles/* ..'))
-   run(string.format('rmdir finalFiles'))
+   run(string.format('mv *err.log ..'))
+   run(string.format('mv %s_orig.st ../%s.st', filename, filename))
+   run(string.format('mv %s_finalFiles ..', filename))
+   run(string.format('rm -rf *.com *.log %s* raptor*', filename))
+   run(string.format('rmdir %s_finalFiles', filename))
    lfs.chdir('..')
    run(string.format('rmdir %s', filename))
 end
@@ -46,6 +48,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    -- These are all of the files created and used throughout
    local filename = string.sub(stackFile, 1, -4)
    local rawTiltFile    = filename .. '.rawtlt'
+   local finalFiles     = filename .. '_finalFiles'
    local ccdErasedFile  = filename .. '_fixed.st'
    local origFile       = filename .. '_orig.st'
    local preAliFile     = filename .. '.preali'
@@ -126,13 +129,13 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    tomoLib.isFile(rawTiltFile)
 
    -- We create this directory as a backup for the original stack
-   status, err = pcall(lfs.mkdir, 'finalFiles')
+   status, err = pcall(lfs.mkdir, finalFiles)
    if not status then
       io.stderr:write(err)
       cleanOnFail(filename)
       return 1
    end
-   status, err = run(string.format('cp %s finalFiles', stackFile))
+   status, err = run(string.format('cp %s %s', stackFile, finalFiles))
    if not status then
       io.stderr:write(err)
       cleanOnFail(filename)
@@ -159,6 +162,35 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
       io.stderr:write(err)
       cleanOnFail(filename)
       return 1
+   end
+   if Opts.m_ == 'erase' then
+      status, err = run(string.format('mv %s %s tomoAuto*.log %s',
+         stackFile, origFile, finalFiles))
+      if not status then
+         io.stderr:write(err)
+         cleanOnFail(filename)
+         return 1
+      end
+      status, err = run(string.format('rm -rf *.com *.log %s*', filename))
+      if not status then
+         io.stderr:write(err)
+         cleanOnFail(filename)
+         return 1
+      end
+      status, err = run(string.format('mv %s/* .', finalFiles))
+      if not status then
+         io.stderr:write(err)
+         cleanOnFail(filename)
+         return 1
+      end
+      status, err = run(string.format('rmdir %s', finalFiles))
+      if not status then
+         io.stderr:write(err)
+         cleanOnFail(filename)
+         return 1
+      end
+      lfs.chdir('..')
+      return 0
    end
 
    -- Here we run the Coarse alignment as done in etomo
@@ -199,6 +231,12 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
       cleanOnFail(filename)
       return 1
    end
+   status, err = run(string.format('cp %s %s', tltFile, finalFiles))
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
    status, err = run(string.format('cp %s %s', tltFile, fidTltFile)) 
    if not status then
       io.stderr:write(err)
@@ -219,8 +257,8 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
       cleanOnFail(filename)
       return 1
    end
-   status, err = run(string.format('cp %s %s finalFiles',
-      aliFile, aliBin4File))
+   status, err = run(string.format('cp %s %s %s',
+      aliFile, aliBin4File, finalFiles))
    if not status then
       io.stderr:write(err)
       cleanOnFail(filename)
@@ -237,14 +275,52 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    -- noise background is now set in the global config file
    if Opts.c then
       tomoLib.checkFreeSpace(startDir)
-      if Opts.p_ then
-         status, err = run('submfg -s ctfplotter.com')
+      status, err = run('submfg -s ctfplotter.com')
+      if not status then
+         io.stderr:write(err)
+         cleanOnFail(filename)
+         return 1
+      end
+      tomoLib.writeLog(filename)
+      tomoLib.isFile(dfcFile)
+      tomoLib.modCTFPlotter()
+      status, err = run(string.format('cp %s ctfplotter.com %s',
+         dfcFile, finalFiles))
+      if not status then
+         io.stderr:write(err)
+         return 1
+      end
+      if Opts.m_ == 'align' then
+         status, err = run(string.format('mv tomoAuto*.log %s',
+            finalFiles))
          if not status then
             io.stderr:write(err)
             cleanOnFail(filename)
             return 1
          end
-         tomoLib.isFile(dfcFile)
+         status, err = run(string.format('rm -rf *.com *.log %s*', filename))
+         if not status then
+            io.stderr:write(err)
+            cleanOnFail(filename)
+            return 1
+         end
+         status, err = run(string.format('mv %s/* .', finalFiles))
+         if not status then
+            io.stderr:write(err)
+            cleanOnFail(filename)
+            return 1
+         end
+         status, err = run(string.format('rmdir %s', finalFiles))
+         if not status then
+            io.stderr:write(err)
+            cleanOnFail(filename)
+            return 1
+         end
+         lfs.chdir('..')
+         return 0
+      end
+         
+      if Opts.p_ then
          status, err = run('splitcorrection ctfcorrection.com')
          if not status then
             io.stderr:write(err)
@@ -261,7 +337,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
          tomoLib.isFile(ctfFile)
          tomoLib.writeLog(filename)
       else
-         status, err = run('submfg -s ctfplotter.com ctfcorrection.com')
+         status, err = run('submfg -s ctfcorrection.com')
          if not status then
             io.stderr:write(err)
             cleanOnFail(filename)
@@ -269,13 +345,6 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
          end
          tomoLib.isFile(ctfFile)
          tomoLib.writeLog(filename)
-      end
-      tomoLib.modCTFPlotter()
-      status, err = run(string.format('cp %s ctfplotter.com finalFiles',
-         dfcFile))
-      if not status then
-         io.stderr:write(err)
-         return 1
       end
       status, err = run(string.format('mv %s %s', aliFile, ali1File))
       if not status then
@@ -287,7 +356,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
          io.stderr:write(err)
          return 1
       end
-      status, err = run(string.format('cp %s finalFiles', aliFile))
+      status, err = run(string.format('cp %s %s', aliFile, finalFiles))
       if not status then
          io.stderr:write(err)
          return 1
@@ -422,8 +491,8 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
       cleanOnFail(filename)
       return 1
    end
-   status, err = run(string.format('mv %s %s tomoAuto.log finalFiles',
-      recFile, binFile))
+   status, err = run(string.format('mv %s %s tomoAuto.log %s',
+      recFile, binFile, finalFiles))
    if not status then
       io.stderr:write(err)
       cleanOnFail(filename)
@@ -436,13 +505,13 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
       cleanOnFail(filename)
       return 1
    end
-   status, err = run('mv finalFiles/* .')
+   status, err = run(string.format('mv %s/* .', finalFiles))
    if not status then
       io.stderr:write(err)
       cleanOnFail(filename)
       return 1
    end
-   status, err = run('rmdir finalFiles')
+   status, err = run(string.format('rmdir %s', finalFiles))
    if not status then
       io.stderr:write(err)
       return 1
