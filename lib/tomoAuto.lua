@@ -39,7 +39,7 @@ local function cleanOnFail(filename)
    run(string.format('mv finalFiles/* ..'))
    run(string.format('rmdir finalFiles'))
    lfs.chdir('..')
-   run(string.format('rmdir %s'), filename)
+   run(string.format('rmdir %s', filename))
 end
 
 function tomoAuto.reconstruct(stackFile, fidNm, Opts)
