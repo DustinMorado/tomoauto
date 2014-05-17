@@ -130,7 +130,7 @@ end
 # Arguments: arg[1] = image filename <string>                                 #
 #==========================================================================--]]
 function tomoLib.writeLog(filename)
-   local log = assert(io.open('tomoAuto.log', 'w'))
+   local log = assert(io.open('tomoAuto_IMOD.log', 'w'))
 
    local ccd = io.open('ccderaser.log', 'r')
    if ccd then

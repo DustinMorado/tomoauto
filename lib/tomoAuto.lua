@@ -1,17 +1,17 @@
---[[==========================================================================#
-# This is a program to automate the alignment of a raw tilt series, use the   #
-# program RAPTOR to make a final alignment, use IMOD to estimate the defocus  #
-# and then correct the CTF by appropriate phase flipping, and then finally    #
-# using eTomo to create the reconstruction.                                   #
-#-----------------------------------------------------------------------------#
-# Author: Dustin Morado                                                       #
-# Written: February 27th 2014                                                 #
-# Contact: Dustin.Morado@uth.tmc.edu                                          #
-#-----------------------------------------------------------------------------#
-# Arguments: arg[1] = image stack file <filename.st>                          #
-#            arg[2] = fiducial size in nm <integer>                           #
-#            arg[3] = table with option flags from getOpts                    #
-#==========================================================================--]]
+--[[===========================================================================#
+# This is a program to automate the alignment of a raw tilt series, use the    #
+# program RAPTOR to make a final alignment, use IMOD to estimate the defocus   #
+# and then correct the CTF by appropriate phase flipping, and then finally     #
+# using eTomo to create the reconstruction.                                    #
+#------------------------------------------------------------------------------#
+# Author: Dustin Morado                                                        #
+# Written: February 27th 2014                                                  #
+# Contact: Dustin.Morado@uth.tmc.edu                                           #
+#------------------------------------------------------------------------------#
+# Arguments: arg[1] = image stack file <filename.st>                           #
+#            arg[2] = fiducial size in nm <integer>                            #
+#            arg[3] = table with option flags from getOpts                     #
+#===========================================================================--]]
 local tomoAutoDir = os.getenv('TOMOAUTOROOT')
 package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
 local comWriter = require 'comWriter'
@@ -21,12 +21,11 @@ local lfs, os, string = lfs, os, string
 
 local tomoAuto = {}
 
-local function run(funcString)
-   local dateString = os.date('%d.%m.%y.%H.%M.%S')
+local function run(funcString,filename)
    local status, err = pcall(function()
       local success, exit, signal = os.execute(string.format(
          '%s 1>> tomoAuto_%s.log 2>> tomoAuto_%s.err.log',
-          funcString, dateString, dateString))
+          funcString, filename, filename))
       if (not success) or (signal ~= 0) then 
          error('\nError: ' .. funcString .. ' failed.\n\n', 0)
       end
@@ -35,20 +34,21 @@ local function run(funcString)
 end
 
 local function cleanOnFail(filename)
-   run(string.format('mv *err.log ..'))
-   run(string.format('mv %s_orig.st ../%s.st', filename, filename))
-   run(string.format('mv %s_finalFiles ..', filename))
-   run(string.format('rm -rf *.com *.log %s* raptor*', filename))
-   run(string.format('rmdir %s_finalFiles', filename))
+   run(string.format('mv tomoAuto_%s.err.log ..'), filename)
+   run(string.format('mv %s_orig.st ../%s.st', filename, filename), filename)
+   run(string.format('mv %s_finalFiles ..', filename), filename)
+   run(string.format('rm -rf *.com *.log %s* raptor*', filename), filename)
    lfs.chdir('..')
-   run(string.format('rmdir %s', filename))
+   run(string.format('rmdir %s', filename), filename)
 end
 
 function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    -- These are all of the files created and used throughout
-   local filename = string.sub(stackFile, 1, -4)
+   local filename       = string.sub(stackFile, 1, -4)
+   local logFile        = 'tomoAuto_' .. filename .. '.log'
+   local errLogFile     = 'tomoAuto_' .. filename .. '.err.log'
+   local finalFiles     = 'finalFiles_' .. filename
    local rawTiltFile    = filename .. '.rawtlt'
-   local finalFiles     = filename .. '_finalFiles'
    local ccdErasedFile  = filename .. '_fixed.st'
    local origFile       = filename .. '_orig.st'
    local preAliFile     = filename .. '.preali'
@@ -71,6 +71,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    local recFile        = filename .. '_full.rec'
    local binFile        = filename .. '.bin4'
 
+   -- If help flag is called display help and then exit
    if Opts.h then
       tomoLib.dispHelp()
       return 0
@@ -82,10 +83,11 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    -- Here we read the MRC file format header
    local header = MRCIOLib.getReqdHeader(stackFile, fidNm)
 
+   -- If we are applying CTF correction, we make sure we have a defocus.
    if Opts.c then
       if Opts.d_ then 
          header.defocus = Opts.d_
-      else
+      elseif not header.defocus then
          io.stderr:write('You need to enter an approximate defocus to run \z
             with CTF correction.\n')
          return 1
@@ -98,17 +100,17 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
       io.stderr:write(err)
       return 1
    end
-   status, err = run(string.format('mv %s %s', stackFile, filename)) 
+   status, err = pcall(os.execute, string.format(
+      'mv %s %s', stackFile, filename))
    if not status then
       io.stderr:write(err)
-      cleanOnFail(filename)
       return 1
    end
    if Opts.l_ then
-      status, err = run(string.format('cp %s %s', Opts.l_, filename))
+      status, err = pcall(os.execute, string.format(
+         'cp %s %s', Opts.l_, filename))
       if not status then
          io.stderr:write(err)
-         cleanOnFail(filename)
          return 1
       end
    end
@@ -117,9 +119,13 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
       io.stderr:write(err)
       return 1
    end
+   status, err = pcall(os.execute, string.format(
+      'touch %s %s', logFile, errLogFile))
+   if not status then
+      io.stderr:write(err)
+      return 1
+   end
    local startDir = lfs.currentdir()
-
-
 
    -- Here we write all of the needed command files.
    comWriter.write(stackFile, header, Opts)
@@ -132,18 +138,16 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    status, err = pcall(lfs.mkdir, finalFiles)
    if not status then
       io.stderr:write(err)
-      cleanOnFail(filename)
       return 1
    end
-   status, err = run(string.format('cp %s %s', stackFile, finalFiles))
+   status, err = run(string.format('cp %s %s', stackFile, finalFiles), filename)
    if not status then
       io.stderr:write(err)
-      cleanOnFail(filename)
       return 1
    end
 
    -- We should always remove the Xrays from the image using ccderaser
-   status, err = run('submfg -s ccderaser.com')
+   status, err = run('submfg -s ccderaser.com', filename)
    if not status then
       io.stderr:write(err)
       cleanOnFail(filename)
@@ -151,42 +155,38 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    end
    tomoLib.writeLog(filename)
    tomoLib.isFile(ccdErasedFile)
-   status, err = run(string.format('mv %s %s', stackFile, origFile))
+   status, err = run(string.format('mv %s %s', stackFile, origFile), filename)
    if not status then
       io.stderr:write(err)
-      cleanOnFail(filename)
       return 1
    end
-   status, err = run(string.format('mv %s %s', ccdErasedFile, stackFile))
+   status, err = run(string.format('mv %s %s', ccdErasedFile, stackFile),
+      filename)
    if not status then
       io.stderr:write(err)
-      cleanOnFail(filename)
       return 1
    end
    if Opts.m_ == 'erase' then
       status, err = run(string.format('mv %s %s tomoAuto*.log %s',
-         stackFile, origFile, finalFiles))
+         stackFile, origFile, finalFiles), filename)
       if not status then
          io.stderr:write(err)
-         cleanOnFail(filename)
          return 1
       end
-      status, err = run(string.format('rm -rf *.com *.log %s*', filename))
+      status, err = run(string.format('rm -rf *.com *.log %s*', filename),
+         filename)
       if not status then
          io.stderr:write(err)
-         cleanOnFail(filename)
          return 1
       end
-      status, err = run(string.format('mv %s/* .', finalFiles))
+      status, err = run(string.format('mv %s/* .', finalFiles), filename)
       if not status then
          io.stderr:write(err)
-         cleanOnFail(filename)
          return 1
       end
-      status, err = run(string.format('rmdir %s', finalFiles))
+      status, err = run(string.format('rmdir %s', finalFiles), filename)
       if not status then
          io.stderr:write(err)
-         cleanOnFail(filename)
          return 1
       end
       lfs.chdir('..')
@@ -194,7 +194,8 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    end
 
    -- Here we run the Coarse alignment as done in etomo
-   status, err = run('submfg -s tiltxcorr.com xftoxg.com prenewstack.com')
+   status, err = run('submfg -s tiltxcorr.com xftoxg.com prenewstack.com',
+      filename)
    if not status then
       io.stderr:write(err)
       cleanOnFail(filename)
@@ -205,45 +206,47 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
 
    -- Now we run RAPTOR to produce a succesfully aligned stack
    tomoLib.checkFreeSpace(startDir)
-   status, err = run('submfg -s raptor1.com')
+   status, err = run('submfg -s raptor1.com', filename)
    if not status then
       io.stderr:write(err)
       cleanOnFail(filename)
       return 1
    end
    tomoLib.writeLog(filename)
-   status, err = run(string.format('cp %s .', rFidFile))
+   status, err = run(string.format('cp %s .', rFidFile), filename)
    if not status then
       io.stderr:write(err)
-      cleanOnFail(filename)
       return 1
    end
    tomoLib.scaleRAPTORModel(fidTxtFile, header, fidFile)
-   status, err = run('submfg -s tiltalign.com xfproduct.com')
+   status, err = run(string.format('cp %s %s', fidFile, finalFiles),
+      filename)
+   if not status then
+      io.stderr:write(err)
+      return 1
+   end
+   status, err = run('submfg -s tiltalign.com xfproduct.com', filename)
    if not status then
       io.stderr:write(err)
       cleanOnFail(filename)
       return 1
    end
-   status, err = run(string.format('cp %s %s', fidXfFile, xfFile))
+   status, err = run(string.format('cp %s %s', fidXfFile, xfFile), filename)
    if not status then
       io.stderr:write(err)
-      cleanOnFail(filename)
       return 1
    end
-   status, err = run(string.format('cp %s %s', tltFile, finalFiles))
+   status, err = run(string.format('cp %s %s', tltFile, finalFiles), filename)
    if not status then
       io.stderr:write(err)
-      cleanOnFail(filename)
       return 1
    end
-   status, err = run(string.format('cp %s %s', tltFile, fidTltFile)) 
+   status, err = run(string.format('cp %s %s', tltFile, fidTltFile), filename) 
    if not status then
       io.stderr:write(err)
-      cleanOnFail(filename)
       return 1
    end
-   status, err = run('submfg -s newstack.com')
+   status, err = run('submfg -s newstack.com', filename)
    if not status then
       io.stderr:write(err)
       cleanOnFail(filename)
@@ -251,17 +254,16 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    end
    tomoLib.writeLog(filename)
    status, err = run(string.format('binvol -b 4 -z 1 %s %s',
-      aliFile, aliBin4File))
+      aliFile, aliBin4File), filename)
    if not status then
       io.stderr:write(err)
       cleanOnFail(filename)
       return 1
    end
    status, err = run(string.format('cp %s %s %s',
-      aliFile, aliBin4File, finalFiles))
+      aliFile, aliBin4File, finalFiles), filename)
    if not status then
       io.stderr:write(err)
-      cleanOnFail(filename)
       return 1
    end
    status, err = tomoLib.checkAlign(aliFile, header.nz)
@@ -275,7 +277,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    -- noise background is now set in the global config file
    if Opts.c then
       tomoLib.checkFreeSpace(startDir)
-      status, err = run('submfg -s ctfplotter.com')
+      status, err = run('submfg -s ctfplotter.com', filename)
       if not status then
          io.stderr:write(err)
          cleanOnFail(filename)
@@ -285,41 +287,38 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
       tomoLib.isFile(dfcFile)
       tomoLib.modCTFPlotter()
       status, err = run(string.format('cp %s ctfplotter.com %s',
-         dfcFile, finalFiles))
+         dfcFile, finalFiles), filename)
       if not status then
          io.stderr:write(err)
          return 1
       end
       if Opts.m_ == 'align' then
+
          status, err = run(string.format('mv tomoAuto*.log %s',
-            finalFiles))
+            finalFiles), filename)
          if not status then
             io.stderr:write(err)
-            cleanOnFail(filename)
             return 1
          end
-         status, err = run(string.format('rm -rf *.com *.log %s*', filename))
+         status, err = run(string.format('rm -rf *.com *.log %s* raptor1', 
+            filename), filename)
          if not status then
             io.stderr:write(err)
-            cleanOnFail(filename)
             return 1
          end
-         status, err = run(string.format('mv %s/* .', finalFiles))
+         status, err = run(string.format('mv %s/* .', finalFiles), filename)
          if not status then
             io.stderr:write(err)
-            cleanOnFail(filename)
             return 1
          end
-         status, err = run(string.format('rmdir %s', finalFiles))
+         status, err = run(string.format('rmdir %s', finalFiles), filename)
          if not status then
             io.stderr:write(err)
-            cleanOnFail(filename)
             return 1
          end
          lfs.chdir('..')
          return 0
       end
-         
       if Opts.p_ then
          status, err = run('splitcorrection ctfcorrection.com')
          if not status then
@@ -328,7 +327,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
             return 1
          end
          status, err = run(string.format(
-            'processchunks -g -C 0,0,0 -T 600,0 %d ctfcorrection', Opts.p_))
+            'processchunks -g %d ctfcorrection', Opts.p_), filename)
          if not status then
             io.stderr:write(err)
             cleanOnFail(filename)
@@ -337,7 +336,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
          tomoLib.isFile(ctfFile)
          tomoLib.writeLog(filename)
       else
-         status, err = run('submfg -s ctfcorrection.com')
+         status, err = run('submfg -s ctfcorrection.com', filename)
          if not status then
             io.stderr:write(err)
             cleanOnFail(filename)
@@ -346,17 +345,18 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
          tomoLib.isFile(ctfFile)
          tomoLib.writeLog(filename)
       end
-      status, err = run(string.format('mv %s %s', aliFile, ali1File))
+      status, err = run(string.format('mv %s %s', aliFile, ali1File), filename)
       if not status then
          io.stderr:write(err)
          return 1
       end
-      status, err = run(string.format('mv %s %s', ctfFile, aliFile))
+      status, err = run(string.format('mv %s %s', ctfFile, aliFile), filename)
       if not status then
          io.stderr:write(err)
          return 1
       end
-      status, err = run(string.format('cp %s %s', aliFile, finalFiles))
+      status, err = run(string.format('cp %s %s', aliFile, finalFiles),
+         filename)
       if not status then
          io.stderr:write(err)
          return 1
@@ -365,13 +365,13 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
 
    -- Now we erase the gold
    status, err = run(string.format('xfmodel -xf %s %s %s',
-      tltXfFile, fidFile, erFidFile))
+      tltXfFile, fidFile, erFidFile), filename)
    if not status then
       io.stderr:write(err)
       cleanOnFail(filename)
       return 1
    end
-   status, err = run('submfg -s gold_ccderaser.com')
+   status, err = run('submfg -s gold_ccderaser.com', filename)
    if not status then
       io.stderr:write(err)
       cleanOnFail(filename)
@@ -379,12 +379,12 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    end
    tomoLib.writeLog(filename)
    tomoLib.isFile(erAliFile)
-   status, err = run(string.format('mv %s %s', aliFile, ali2File))
+   status, err = run(string.format('mv %s %s', aliFile, ali2File), filename)
    if not status then
       io.stderr:write(err)
       return 1
    end
-   status, err = run(string.format('mv %s %s', erAliFile, aliFile))
+   status, err = run(string.format('mv %s %s', erAliFile, aliFile), filename)
    if not status then
       io.stderr:write(err)
       return 1
@@ -396,14 +396,14 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
          recFile = filename .. '_full.rec'
          if Opts.p_ then
             status, err = run(string.format('splittilt -n %d tilt.com',
-               Opts.p_))
+               Opts.p_), filename)
             if not status then
                io.stderr:write(err)
                cleanOnFail(filename)
                return 1
             end
             status, err = run(string.format(
-               'processchunks -g -C 0,0,0 -T 600,0 %d tilt', Opts.p_))
+               'processchunks -g %d tilt', Opts.p_), filename)
             if not status then
                io.stderr:write(err)
                cleanOnFail(filename)
@@ -411,7 +411,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
             end
             tomoLib.writeLog(filename)
          else
-            status, err = run('submfg -s tilt.com')
+            status, err = run('submfg -s tilt.com', filename)
             if not status then
                io.stderr:write(err)
                cleanOnFail(filename)
@@ -422,14 +422,14 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
       else                 -- Using S.I.R.T method
          local thds = Opts.p_ or '1'
          status, err = run(string.format('sirtsetup -n %d -i 15 tilt.com',
-            thds))
+            thds), filename)
          if not status then
             io.stderr:write(err)
             cleanOnFail(filename)
             return 1
          end
          status, err = run(string.format(
-            'processchunks -g -C 0,0,0 -T 600,0 %d tilt_sirt', thds))
+            'processchunks -g %d tilt_sirt', thds), filename)
          if not status then
             io.stderr:write(err)
             cleanOnFail(filename)
@@ -445,7 +445,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
          ' -a %s -i %s -t %d -z %d', tltFile, aliFile, thds, z)
       if header.mode == 6 then
          status, err = run(string.format('newstack -mo 1 %s %s',
-            aliFile, aliFile))
+            aliFile, aliFile), filename)
          if not status then
             io.stderr:write(err)
             cleanOnFail(filename)
@@ -478,46 +478,43 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    -- handedness.
    -- We bin the tomogram by a factor of 4 to make visualization faster
    -- We bin the alignment by 4 as well to check the alignment quality
-   status, err = run(string.format('clip rotx %s %s', recFile, recFile))
+   status, err = run(string.format('clip rotx %s %s', recFile, recFile),
+      filename)
    if not status then
       io.stderr:write(err)
       cleanOnFail(filename)
       return 1
    end
    status, err = run(string.format('binvol -binning 4 %s %s',
-      recFile, binFile))
+      recFile, binFile), filename)
    if not status then
       io.stderr:write(err)
       cleanOnFail(filename)
       return 1
    end
    status, err = run(string.format('mv %s %s tomoAuto.log %s',
-      recFile, binFile, finalFiles))
+      recFile, binFile, finalFiles), filename)
    if not status then
       io.stderr:write(err)
-      cleanOnFail(filename)
       return 1
    end
    status, err = run(string.format('rm -rf *.com *.log %s* raptor*',
-      filename))
+      filename), filename)
    if not status then
       io.stderr:write(err)
-      cleanOnFail(filename)
       return 1
    end
-   status, err = run(string.format('mv %s/* .', finalFiles))
+   status, err = run(string.format('mv %s/* .', finalFiles), filename)
    if not status then
       io.stderr:write(err)
-      cleanOnFail(filename)
       return 1
    end
-   status, err = run(string.format('rmdir %s', finalFiles))
+   status, err = run(string.format('rmdir %s', finalFiles), filename)
    if not status then
       io.stderr:write(err)
       return 1
    end
    lfs.chdir('..')
-
    return 0
 end
 return tomoAuto

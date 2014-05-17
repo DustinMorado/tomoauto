@@ -1,26 +1,26 @@
 local getOpt = {}
 
 function getOpt.parse(arg, shortString, longString)
-   local optTable = {}
-   local mapOpts = {}
-   local longOptTable = {}
-   local mapLongOpts = {}
+   local sOpts = {}
+   local oSopts = {}
+   local lOpts = {}
+   local oLopts = {}
    local newArg = {}
    local stringArg = ' '
    local shift = 0 
-   for l in shortString:gmatch('(%a_?),?') do
-      table.insert(mapOpts, l)
-      optTable[l] = false 
+   for l in shortString:gmatch('%a_?') do
+      table.insert(oSopts, l)
+      sOpts[l] = false 
    end
-   for lOpt in longString:gmatch('(%w+),?') do
-      table.insert(mapLongOpts, lOpt)
+   for lOpt in longString:gmatch('%w+') do
+      table.insert(oLopts, lOpt)
    end
-   assert(#mapLongOpts == #mapOpts,
+   assert(#oLopts == #oSopts,
       'Error: the number of short options and long options do not match.')
-   for i,opt in ipairs(mapLongOpts) do
-      longOptTable[opt] = mapOpts[i]
+   for i,opt in ipairs(oLopts) do
+      lOpts[opt] = oSopts[i]
    end
-   mapOpts = nil; mapLongOpts = nil
+   oSopts = nil; oLopts = nil
    for _,v in ipairs(arg) do 
       stringArg = stringArg .. v .. ', '
    end
@@ -34,42 +34,43 @@ function getOpt.parse(arg, shortString, longString)
                newArg[i] = arg[shift + i]
             end
             arg = newArg
-            return arg, optTable
+            return arg, sOpts
          elseif option:find('=') then -- has argument
             local i = option:find('=')
             local opt = option:sub(2, i-1)
             local arg = option:sub(i+1)
-            local index = longOptTable[opt]
-            optTable[index] = arg
-         elseif longOptTable[option:sub(2)] then
+            local index = lOpts[opt]
+            sOpts[index] = arg
+         elseif lOpts[option:sub(2)] then
             local opt = option:sub(2)
-            local index = longOptTable[opt]
-            optTable[longOptTable[opt]] = true
+            local index = lOpts[opt]
+            sOpts[lOpts[opt]] = true
          else
             error('Invalid long option, please check usage.')
          end
       elseif #option == 1 then -- short option
-         if optTable[option .. '_'] ~= nil then -- has argument
+         if sOpts[option .. '_'] ~= nil then -- has argument
             shift = shift + 1
-            optTable[option .. '_'] = arg[shift]
-         elseif optTable[option] ~= nil then
-            optTable[option] = true
+            sOpts[option .. '_'] = arg[shift]
+         elseif sOpts[option] ~= nil then
+            sOpts[option] = true
          else
+            print(option)
             error('Invalid short option, please check usage.')
          end
       else -- globbed short options
          for i = 1, #option do
             local letter = option:sub(i,i)
-            if optTable[letter] ~= nil then
-               optTable[letter] = true
-            elseif optTable[letter .. '_'] ~= nil then
+            if sOpts[letter] ~= nil then
+               sOpts[letter] = true
+            elseif sOpts[letter .. '_'] ~= nil then
                if i == #option then
                   shift = shift + 1
-                  optTable[letter .. '_'] = arg[shift]
+                  sOpts[letter .. '_'] = arg[shift]
                else
                   local j = i+1
                   local argWord = option:sub(j)
-                  optTable[letter .. '_'] = argWord
+                  sOpts[letter .. '_'] = argWord
                end
             end
          end
@@ -79,6 +80,6 @@ function getOpt.parse(arg, shortString, longString)
       newArg[i] = arg[shift + i]
    end
    arg = newArg
-   return arg, optTable
+   return arg, sOpts
 end
 return getOpt
