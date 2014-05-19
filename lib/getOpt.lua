@@ -1,85 +1,140 @@
-local getOpt = {}
-
-function getOpt.parse(arg, shortString, longString)
+local string, table = string, table
+local yago = {}
+function yago.getOpt(Arg, shorts, longs)
+   -- Short and long option tables
    local sOpts = {}
-   local oSopts = {}
    local lOpts = {}
+
+   -- Ordered short and long option tables
+   local oSopts = {}
    local oLopts = {}
-   local newArg = {}
-   local stringArg = ' '
-   local shift = 0 
-   for l in shortString:gmatch('%a_?') do
-      table.insert(oSopts, l)
-      sOpts[l] = false 
+
+   -- Determines whether non-options are option arguments or function arguments.
+   local skip = false
+
+   for i in string.gmatch(shorts, '%w_?') do
+      table.insert(oSopts, i)
+      sOpts[i] = false
    end
-   for lOpt in longString:gmatch('%w+') do
-      table.insert(oLopts, lOpt)
+
+   for i in string.gmatch(longs, '%w+') do
+      table.insert(oLopts, i)
    end
-   assert(#oLopts == #oSopts,
-      'Error: the number of short options and long options do not match.')
-   for i,opt in ipairs(oLopts) do
-      lOpts[opt] = oSopts[i]
+
+   for i, v in ipairs(oLopts) do
+      lOpts[oLopts[i]] = oSopts[i]
    end
-   oSopts = nil; oLopts = nil
-   for _,v in ipairs(arg) do 
-      stringArg = stringArg .. v .. ', '
+   oSopts, oLopts = nil
+
+   if #Sopts ~= #Lopts then
+      error('\n\nError: The number of short opts and long opts do not match.\n')
    end
-   for option in stringArg:gmatch('%s%-([%w._=%-]+),') do
-      shift = shift + 1
-      local i1 = option:sub(1,1)
-      local i2 = option:sub(2,2)
-      if i1 == '-' then -- long option
-         if i2 == '-' then 
-            for i = 1, (#arg - shift) do
-               newArg[i] = arg[shift + i]
+
+   for num, arg in ipairs(Arg) do
+
+      -- Check for short options (simple or globbed)
+      if string.match(arg, '^%-%w') then
+         arg  = string.gsub(arg, '^%-', '')
+         arg_ = arg .. '_'
+
+         -- Simple short option
+         if string.len(arg) == 1 then
+            if sOpts[arg] or sOpts[arg] == false then
+               sOpts[arg] = true
+
+            -- Option requires argument
+            elseif sOpts[arg_] or sOpts[arg_] == false then
+               sOpts[arg_] = Arg[num + 1]
+               skip = true
+
+            else
+               error(string.format(
+                  '\n\nError: Invalid simple short option %s.\n', arg))
             end
-            arg = newArg
-            return arg, sOpts
-         elseif option:find('=') then -- has argument
-            local i = option:find('=')
-            local opt = option:sub(2, i-1)
-            local arg = option:sub(i+1)
-            local index = lOpts[opt]
-            sOpts[index] = arg
-         elseif lOpts[option:sub(2)] then
-            local opt = option:sub(2)
-            local index = lOpts[opt]
-            sOpts[lOpts[opt]] = true
-         else
-            error('Invalid long option, please check usage.')
-         end
-      elseif #option == 1 then -- short option
-         if sOpts[option .. '_'] ~= nil then -- has argument
-            shift = shift + 1
-            sOpts[option .. '_'] = arg[shift]
-         elseif sOpts[option] ~= nil then
-            sOpts[option] = true
-         else
-            print(option)
-            error('Invalid short option, please check usage.')
-         end
-      else -- globbed short options
-         for i = 1, #option do
-            local letter = option:sub(i,i)
-            if sOpts[letter] ~= nil then
-               sOpts[letter] = true
-            elseif sOpts[letter .. '_'] ~= nil then
-               if i == #option then
-                  shift = shift + 1
-                  sOpts[letter .. '_'] = arg[shift]
+
+         -- Globbed short options
+         elseif string.len(arg) > 1 then
+            local i = 0
+            for j in string.gmatch(arg, '%w') do
+               local j_ = j .. '_'
+               i = i + 1
+               
+               -- Simple globbed short option
+               if sOpts[j] or sOpts[j] == false then
+                  sOpts[j] = true
+
+               -- Option requires argument
+               elseif sOpts[j_] or sOpts[j_] == false then
+
+                  -- Option argument is not globbed with options
+                  if i == #arg then
+                     sOpts[j_] = Arg[num + 1]
+                     skip = true
+
+                  -- Option argument is globbed with options
+                  else
+                     sOpts[j_] = string.sub(arg, i + 1, -1)
+                     break
+                  end
                else
-                  local j = i+1
-                  local argWord = option:sub(j)
-                  sOpts[letter .. '_'] = argWord
+                  error(string.format(
+                     '\n\nError: Invalid globbed short option %s.\n', j))
                end
             end
          end
+
+      -- Check for long options
+      elseif string.match(arg, '^%-%-%w') then
+         arg = string.gsub(arg, '^%-%-', '')
+         local hasArg = string.find(arg, '=')
+         if hasArg then
+            local lhs = string.sub(arg, 1, hasArg - 1)
+            local rhs = string.sub(arg, hasArg + 1, -1)
+            local l2s = lOpts[lhs]
+            if sOpts[l2s] or sOpts[l2s] == false then
+               sOpts[l2s] = rhs
+            else
+               error(string.format(
+                  '\n\nError: Invalid long option %s.\n', lhs))
+            end
+         else
+            if lOpts[arg] == nil then
+               error(string.format(
+                  '\n\nError: Invalid long option %s.\n', arg))
+            end
+            if string.len(lOpts[arg]) == 1 then
+               local l2s = lOpts[arg]
+               if sOpts[l2s] == false then
+                  sOpts[l2s] = true
+               elseif sOpts[l2s] then
+                  sOpts[l2s] = true
+               end
+            else
+               local l2s = lOpts[arg]
+               if sOpts[l2s] == false then
+                  sOpts[l2s] = Arg[num + 1]
+                  skip = true
+               elseif sOpts[l2s] then
+                  sOpts[l2s] = Arg[num + 1]
+                  skip = true
+               end
+            end
+         end
+      elseif string.match(arg, '^%-%-$') then
+         for i = 1, num do
+            table.remove(Arg, 1)
+         end
+         return Arg, sOpts
+      else
+         if skip then
+            skip = false
+         elseif not skip then
+            for i = 1, num - 1 do
+               table.remove(Arg, 1)
+            end
+            return Arg, sOpts
+         end
       end
    end
-   for i = 1, (#arg - shift) do
-      newArg[i] = arg[shift + i]
-   end
-   arg = newArg
-   return arg, sOpts
 end
-return getOpt
+return yago
