@@ -1,10 +1,16 @@
 #!/usr/bin/env lua
 local tomoAutoDir = os.getenv('TOMOAUTOROOT')
-package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
-local tomoAuto = assert(require 'tomoAuto')
-local getOpt = assert(require 'getOpt')
-local sString = 'c, d_, g, h, i_, l_, m_, p_, s, t,  z_'
-local lString = 'ctf, defocus, gpu, help, iter, config, mode, \z
-   procnum, SIRT, tomo3D, thickness'
-local arg, Opts = getOpt.parse(arg, sString, lString)
+package.path   = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
+local tomoAuto = require 'tomoAuto'
+local yago     = require 'yago'
+local sString  = 'c,   d_,      g,   h,    i_,   l_,     m_, '
+local lString  = 'ctf, defocus, gpu, help, iter, config, mode, '
+local sString  = sString .. 'p_,      s,    t,      z_'
+local lString  = lString .. 'procnum, SIRT, tomo3D, thickness'
+local status, arg, Opts = pcall(yago.getOpt, arg, sString, lString)
+if not status then
+   io.stderr:write(arg)
+   return 1
+end
+
 tomoAuto.reconstruct(arg[1], arg[2], Opts)

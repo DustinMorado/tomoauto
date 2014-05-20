@@ -1,20 +1,26 @@
 #!/usr/bin/env lua
 local tomoAutoDir = os.getenv('TOMOAUTOROOT')
 package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
-local MRCIOLib = assert(require 'MRCIOLib')
-local getOpt   = assert(require 'getOpt')
-local io = io
+local MRCIOLib = require 'MRCIOLib'
+local yago     = require 'yago'
+local io       = io
 
 local function printExtHeader(filename)
    -- Handle options
-   local sString  = 'a, b, c, d, e, h, H, i, m, M, p, t, T, s, S'
+   local sString  = 'a,    b,   c,     d,   e,   h,    H,  i,   m, '
    local lString  = 'aDef, bin, coord, def, exp, help, ht, int, mean, '
-   lString        =  lString .. 'mag, pix, tlt, tltAx, stg, shft'
-   local arg, Opts = getOpt.parse(arg, sString, lString)
+   sString = sString .. 'M,   p,   t,   T,     s,   S'
+   lString = lString .. 'mag, pix, tlt, tltAx, stg, shft'
+   local status, arg, Opts = pcall(yago.getOpt, arg, sString, lString)
+   if not status then
+      io.stderr:write(arg)
+      return 1
+   end
    local filename = arg[1]
-   local section = arg[2]
-   local ref = ''
-   local refName = ''
+   local section  = arg[2]
+   local ref      = ''
+   local refName  = ''
+
    if Opts.a then
       ref      = 'appliedDefocus'
       refName  = 'Applied Defocus'
@@ -31,7 +37,22 @@ local function printExtHeader(filename)
       ref      = 'exp_time'
       refName  = 'Exposure Time'
    elseif Opts.h then
-      io.stdout:write('\nI still need to write the help... it is looong\n\n')
+      io.stdout:write('\nUsage: readExtHeader [OPTION..] MRC file\n\n')
+      io.stdout:write('-a, --aDef\t\tprint applied defocus (approximate)\n')
+      io.stdout:write('-b, --bin\t\tprint applied binning\n')
+      io.stdout:write('-c, --coord\t\tprint stage coordinates\n')
+      io.stdout:write('-d, --def\t\tprint section defocus(approximate)\n')
+      io.stdout:write('-e, --exp\t\tprint section exposure(approximate)\n')
+      io.stdout:write('-h, --help\t\tprint this help and then exit\n')
+      io.stdout:write('-H, --ht\t\tprint screen high tension\n')
+      io.stdout:write('-i, --int\t\tprint section intensity\n')
+      io.stdout:write('-m, --mean\t\tprint section mean values\n')
+      io.stdout:write('-M, --Mag\t\tprint section magnification\n')
+      io.stdout:write('-p, --pix\t\tprint pixel size\n')
+      io.stdout:write('-t, --tlt\t\tprint section tilt angle\n')
+      io.stdout:write('-T, --tltAx\t\tprint tilt axis offset\n')
+      io.stdout:write('-s, --stg\t\tprint stage coordinates\n')
+      io.stdout:write('-S, --shift\t\tprint section image shift\n')
       return 0
    elseif Opts.H then
       ref      = 'ht'

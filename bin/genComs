@@ -16,15 +16,20 @@
 #===========================================================================--]]
 local tomoAutoDir = os.getenv('TOMOAUTOROOT')
 package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
-local comWriter = assert(require 'comWriter')
-local getOpt = assert(require 'getOpt')
-local MRCIOLib = assert(require 'MRCIOLib')
+local comWriter = require 'comWriter'
+local yago      = require 'yago'
+local MRCIOLib  = require 'MRCIOLib'
 local lfs, os, string = lfs, os, string
 
-local sString = 'c, d_, g, h, i_, l_, p_, s, t, z_'
-local lString = 'ctf, defoucus, gpu, help, iter, config, \z
-   procnum, SIRT, tomo3d, thickness'
-local arg, Opts = getOpt.parse(arg, sString, lString)
+local sString = 'c,   d_,       g,   h,    i_,   l_,    '
+local lString = 'ctf, defoucus, gpu, help, iter, config '
+local sString = sString .. 'p_,      s,    t,      z_'
+local lString = lString .. 'procnum, SIRT, tomo3d, thickness'
+local status, arg, Opts = pcall(yago.getOpt, arg, sString, lString)
+if not status then
+   io.stderr:write(arg)
+   return 1
+end
 
 function genComs(stackFile, fidNm, Opts)
    local header = MRCIOLib.getReqdHeader(stackFile, fidNm)

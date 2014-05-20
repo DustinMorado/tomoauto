@@ -27,19 +27,22 @@ local function run(funcString,filename)
          '%s 1>> tomoAuto_%s.log 2>> tomoAuto_%s.err.log',
           funcString, filename, filename))
       if (not success) or (signal ~= 0) then 
-         error('\nError: ' .. funcString .. ' failed.\n\n', 0)
+         error(string.format(
+            '\nError: %s failed for %s.\n\n', funcString, filename), 0)
       end
    end)
    return status, err
 end
 
 local function cleanOnFail(filename)
-   run(string.format('mv tomoAuto_%s.err.log ..'), filename)
+   run(string.format('mv tomoAuto_%s.err.log ..',filename), filename)
+   run(string.format(
+      'mv tomoAuto_IMOD.log ../tomoAuto_IMOD_%s.log', filename), filename)
    run(string.format('mv %s_orig.st ../%s.st', filename, filename), filename)
-   run(string.format('mv %s_finalFiles ..', filename), filename)
+   run(string.format('mv finalFiles_%s ..', filename), filename)
    run(string.format('rm -rf *.com *.log %s* raptor*', filename), filename)
    lfs.chdir('..')
-   run(string.format('rmdir %s', filename), filename)
+   run(string.format('rm -rf %s', filename), filename)
 end
 
 function tomoAuto.reconstruct(stackFile, fidNm, Opts)
@@ -319,6 +322,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
          lfs.chdir('..')
          return 0
       end
+
       if Opts.p_ then
          status, err = run('splitcorrection ctfcorrection.com')
          if not status then

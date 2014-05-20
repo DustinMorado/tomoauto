@@ -1,8 +1,8 @@
 #!/usr/bin/env lua
 local tomoAutoDir = os.getenv('TOMOAUTOROOT')
 package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
-local MRCIOLib = require 'MRCIOLib'
-local filename = arg[1]
+local MRCIOLib   = require 'MRCIOLib'
+local filename   = arg[1]
 local io, string = io, string
 
 local function printHeader(filename)
