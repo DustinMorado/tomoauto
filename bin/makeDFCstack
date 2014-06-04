@@ -1,0 +1,126 @@
+#!/usr/bin/env lua
+local lfs = require 'lfs'
+local io, string, table = io, string, table
+
+local function doseFracToStack(Log, stamp)
+   local stackFile    = nil
+   local filename     = nil
+   local filelist     = nil
+   local newStackFile = nil
+   local mdocFile     = nil
+   local mrcTable     = {}
+   local tltTable     = {}
+   local newMrcTable  = {}
+   local newTltTable  = {}
+
+   local log = io.open(Log, 'r')
+   for line in log:lines('*l') do
+      if string.find(line, 'Opened') then
+         stackFile = string.match(line, '%w+%.st')
+         filename = string.sub(stackFile, 1, -4)
+         filelist = filename .. '_list.txt'
+         newStackFile = filename .. '_driftcorr.st'
+         mdocFile = newStackFile .. '.mdoc'
+      end
+      local mrc = string.match(line, '[%w%-%_%.]+%.mrc')
+      local los = string.find(line, 'This%sRecord[%s%w]+data%sloss')
+      local tlt = string.match(line, 'Tilt%s=%s([%-%d%.]+)')
+      local err = string.find(line, 'TERMINATING')
+      if mrc then
+         local base   = string.sub(mrc, 1, -5)
+         local newmrc = string.format('%s_driftcorr.mrc', base)
+         table.insert(mrcTable, newmrc)
+      end
+      if los then
+         table.remove(mrcTable)
+      end
+      if tlt then
+         table.insert(tltTable, tlt)
+      end
+      if err then
+         error(string.format(
+            '\nError: Original stack %s terminated so we will too.\n\n',
+            stackFile), 0)
+      end
+   end
+   log:close()
+   if not mdocFile then
+      error(string.format(
+         '\nError: %s did not attempt to make a stack file so we will not \z
+           either.\n\n', Log), 0)
+   end
+
+   if #mrcTable ~= #tltTable then 
+      error(string.format(
+         '\nError: %s has unequal file and tilt angle references.\n\n', Log), 0)
+   end
+
+   for i = 1, #tltTable do
+      if i == 1 then
+         table.insert(newTltTable, tltTable[i])
+         table.insert(newMrcTable, mrcTable[i])
+      elseif tonumber(tltTable[i]) > tonumber(newTltTable[1]) then
+         table.insert(newTltTable, 1, tltTable[i])
+         table.insert(newMrcTable, 1, mrcTable[i])
+      elseif tonumber(tltTable[i]) < tonumber(newTltTable[#newTltTable]) then
+         table.insert(newTltTable, tltTable[i])
+         table.insert(newMrcTable, mrcTable[i])
+      else
+         error(string.format(
+            '\nError: %s has unordered or duplicate tilt angles.\n\n', Log), 0)
+      end
+   end
+
+   local mdc = io.open(mdocFile, 'w')
+   local lst = io.open(filelist, 'w')
+   lst:write(string.format('%d\n', #tltTable))
+   mdc:write(string.format('ImageFile = %s\n', newStackFile))
+   mdc:write(string.format('ImageSize = 3710 3808\n'))
+   mdc:write(string.format('DataMode = 2\n\n'))
+   mdc:write(string.format(
+      '[T = SerialEM: Digitized by Gatan Camera on Polara Liu Lab U ]\n\n'))
+   mdc:write(string.format(
+      '[T =    Tilt axis angle = -12.2, binning = 1  spot = 6  camera = 0]\n\n'))
+   local shift = 0
+   for i = 1, #newTltTable do
+      local file = io.open(newMrcTable[i], 'r')
+      if file ~= nil then
+         file:close()
+         lst:write(string.format('%s\n0\n', newMrcTable[i]))
+         mdc:write(string.format('[ZValue = %d]\n', i - shift))
+         mdc:write(string.format('TiltAngle = %s\n', newTltTable[i]))
+         mdc:write(string.format('RotationAngle = 77.85\n'))
+         mdc:write(string.format('Binning = 1\n'))
+         mdc:write(string.format('CameraIndex = 0\n\n'))
+      else
+         shift = shift + 1
+      end
+   end
+   if shift ~= 0 then
+      lst:seek('set', 0)
+      lst:write(string.format('%d\n', #tltTable - shift))
+   end
+   lst:close()
+   mdc:close()
+   
+   return string.format('newstack -filei %s %s', filelist, newStackFile)
+end
+
+local count = 1
+local batchFile = io.open('batchNewstack.sh', 'w')
+batchFile:write('#!/bin/bash\n')
+
+for logFile in lfs.dir('.') do
+   if logFile:find('%w+%.%log$') then
+      local stamp = string.format('%04d', count)
+      count = count + 1
+      local status, runString = pcall(doseFracToStack, logFile, stamp)
+      if not status then
+         local err = runString
+         io.stderr:write(err)
+      else
+         batchFile:write(runString,'\nwait\n')
+      end
+   end
+end
+batchFile:close()
