@@ -60,6 +60,8 @@ local function dose_fractioned_to_stack(log, stamp)
    else
       num = #MRC_table
    end
+   header = MRCIOLib.getHeader(stack_file)
+   extended_header = MRCIOLib.getExtendedHeader(stack_file)
    local file_list_file = io.open(file_list, 'w')
    file_list_file:write(string.format('%d\n', num))
    for i = 1, num do
@@ -84,12 +86,20 @@ local function dose_fractioned_to_stack(log, stamp)
          file_list_file:write(string.format('%s\n0\n', new_MRC_table[i]))
       else
          shift = shift + 1
+         table.remove(new_MRC_table, i)
+         table.remove(new_tilt_angle_table, i)
       end
    end
    if shift ~= 0 then
+      num = num - shift
       file_list_file:seek('set', 0)
       file_list_file:write(string.format('%d\n', num - shift))
    end
+   for i = 1, num do
+      extended_header[i].a_tilt = new_tilt_angle_table[i]
+   end
+   header.nz   = num
+   header.mode = 2
    file_list_file:close()
    local status, err = pcall(os.execute(string.format(
       'newstack -filei %s %s &> /dev/null', file_list, new_stack_file)))
@@ -97,8 +107,6 @@ local function dose_fractioned_to_stack(log, stamp)
       io.stderr:write(err)
       return 1
    end
-   header = MRCIOLib.getHeader(stack_file)
-   extended_header = MRCIOLib.getExtendedHeader(stack_file)
    MRCIOLib.setHeader(new_stack_file, 'temp.st', header, extended_header)
    status, err = pcall(os.execute(string.format(
       'mv temp.st %s', new_stack_file)))
