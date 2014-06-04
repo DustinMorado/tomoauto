@@ -4,23 +4,21 @@ package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
 local MRCIOLib = require 'MRCIOLib'
 local yago     = require 'yago'
 local io       = io
-
 local function printExtHeader(filename)
-   -- Handle options
-   local sString  = 'a,    b,   c,     d,   e,   h,    H,  i,   m, '
-   local lString  = 'aDef, bin, coord, def, exp, help, ht, int, mean, '
+   local sString  = 'a,    b,   c,     d,   e,   E,    h,    H,  i,   m,    '
+   local lString  = 'aDef, bin, coord, def, exp, dose, help, ht, int, mean, '
    sString = sString .. 'M,   p,   t,   T,     s,   S'
    lString = lString .. 'mag, pix, tlt, tltAx, stg, shft'
    local status, arg, Opts = pcall(yago.getOpt, arg, sString, lString)
    if not status then
-      io.stderr:write(arg)
+      local err = arg
+      io.stderr:write(err)
       return 1
    end
-   local filename = arg[1]
-   local section  = arg[2]
-   local ref      = ''
-   local refName  = ''
-
+   local ref             = ''
+   local refName         = ''
+   local header          = MRCIOLib.getHeader(filename)
+   local extended_header = MRCIOLib.getExtendedHeader(filename)
    if Opts.a then
       ref      = 'appliedDefocus'
       refName  = 'Applied Defocus'
@@ -38,21 +36,22 @@ local function printExtHeader(filename)
       refName  = 'Exposure Time'
    elseif Opts.h then
       io.stdout:write('\nUsage: readExtHeader [OPTION..] MRC file\n\n')
-      io.stdout:write('-a, --aDef\t\tprint applied defocus (approximate)\n')
-      io.stdout:write('-b, --bin\t\tprint applied binning\n')
+      io.stdout:write('-a, --aDef \t\tprint applied defoci (approximate)\n')
+      io.stdout:write('-b, --bin  \t\tprint applied binning\n')
       io.stdout:write('-c, --coord\t\tprint stage coordinates\n')
-      io.stdout:write('-d, --def\t\tprint section defocus(approximate)\n')
-      io.stdout:write('-e, --exp\t\tprint section exposure(approximate)\n')
-      io.stdout:write('-h, --help\t\tprint this help and then exit\n')
-      io.stdout:write('-H, --ht\t\tprint screen high tension\n')
-      io.stdout:write('-i, --int\t\tprint section intensity\n')
-      io.stdout:write('-m, --mean\t\tprint section mean values\n')
-      io.stdout:write('-M, --Mag\t\tprint section magnification\n')
-      io.stdout:write('-p, --pix\t\tprint pixel size\n')
-      io.stdout:write('-t, --tlt\t\tprint section tilt angle\n')
-      io.stdout:write('-T, --tltAx\t\tprint tilt axis offset\n')
-      io.stdout:write('-s, --stg\t\tprint stage coordinates\n')
-      io.stdout:write('-S, --shift\t\tprint section image shift\n')
+      io.stdout:write('-d, --def  \t\tprint defoci (approximate)\n')
+      io.stdout:write('-e, --exp  \t\tprint exposure times (approximate)\n')
+      io.stdout:write('-E, --dose \t\tprint exposure doses (approximate)\n')
+      io.stdout:write('-h, --help \t\tprint this help and then exit\n')
+      io.stdout:write('-H, --ht   \t\tprint screen high tension\n')
+      io.stdout:write('-i, --int  \t\tprint intensities\n')
+      io.stdout:write('-m, --mean \t\tprint mean values\n')
+      io.stdout:write('-M, --Mag  \t\tprint magnifications\n')
+      io.stdout:write('-p, --pix  \t\tprint pixel size\n')
+      io.stdout:write('-t, --tlt  \t\tprint tilt angles\n')
+      io.stdout:write('-T, --tltAx\t\tprint tilt axis offsets\n')
+      io.stdout:write('-s, --stg  \t\tprint stage coordinates\n')
+      io.stdout:write('-S, --shift\t\tprint image shifts\n')
       return 0
    elseif Opts.H then
       ref      = 'ht'
@@ -85,59 +84,57 @@ local function printExtHeader(filename)
       ref      = 'a_tilt'
       refName  = 'Tilt Angles'
    end
-   
-   -- Get the standard header
-   local  H = MRCIOLib.getHeader(filename)
    io.stdout:write(string.format(
       '\n\nInput Filename ....................\t%s\n\n', filename))
-   for i = 1, H.nz do
-      local eH = MRCIOLib.getExtendedHeader(filename, i)
-      if Opts.p then
-         if eH[ref] then
+   for i = 1, header.nz do
+      if ref == 'pixel_size' then
+         if extended_header[i][ref] then
             io.stdout:write(string.format(
                '%03d %s : ....................\t%5.4e\n',
-                i, refName, eH[ref]))
+                i, refName, extended_header[i][ref]))
          else
             io.stderr:write(string.format(
                'No %s found in the extended header.\n\n', refName))
             return 1
          end
-      elseif Opts.t and eH.b_tilt then
-         if eH[ref] then
+      elseif ref == 'a_tilt' and extended_header[i].b_tilt then
+         if extended_header[i][ref] then
             io.stdout:write(string.format(
                '%03d %s : ....................\t%05.2f\t%05.2f\n',
-                i, refName, eH[ref], eH.b_tilt))
+                i, refName, extended_header[i][ref], extended_header[i].b_tilt))
          else
             io.stderr:write(string.format(
                'No %s found in the extended header.\n\n', refName))
             return 1
          end
-      elseif Opts.s then
-         if eH[ref] then
+      elseif ref == 'x_stage' then
+         if extended_header[i][ref] then
             io.stdout:write(string.format(
-               '%03d %s section %d : \z
-               ....................\t%05.2f\t%05.2f\t%05.2f\n',
-                i, refName, eH[ref], eH.y_stage, eH.z_stage))
+               '%03d %s : \z
+                ....................\t%05.2f\t%05.2f\t%05.2f\n',
+                i, refName, extended_header[i][ref], extended_header[i].y_stage,
+                extended_header[i].z_stage))
          else
             io.stderr:write(string.format(
                'No %s found in the extended header.\n\n', refName))
             return 1
          end
-      elseif Opts.S then
-         if eH[ref] then
+      elseif ref == 'x_shift' then
+         if extended_header[i][ref] then
             io.stdout:write(string.format(
                '%03d %s : ....................\t%05.2f\t%05.2f\n',
-                i, refName, eH[ref], eH.y_shift))
+                i, refName, extended_header[i][ref],
+                extended_header[i].y_shift))
          else
             io.stderr:write(string.format(
                'No %s found in the extended header.\n\n', refName))
             return 1
          end
       else
-         if eH[ref] then
+         if extended_header[i][ref] then
             io.stdout:write(string.format(
                '%03d %s : ....................\t% 06.2f\n',
-                i, refName, eH[ref]))
+                i, refName, extended_header[i][ref]))
          else
             io.stderr:write(string.format(
                'No %s found in the extended header.\n\n', refName))
@@ -147,5 +144,4 @@ local function printExtHeader(filename)
    end
    return 0
 end
-
-printExtHeader(filename)
+printExtHeader(arg[1])

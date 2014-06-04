@@ -121,57 +121,58 @@ tiltxcorrExcludeCentralPeak = nil
 -- Number of pixels to trim off each edge in X and in Y (the default is to use
 -- the whole image).
 tiltxcorrBordersInXandY_use = nil
-tiltxcorrBordersInXandY = "0 0"
+tiltxcorrBordersInXandY = '0 0'
 
 -- XMinAndMax:
 -- Starting and ending X coordinates of a region to correlate, based on the
 -- position of the region at zero tilt.  This entry will override an X border
 -- value entered with BordersInXandY.
 tiltxcorrXMinAndMax_use = nil
-tiltxcorrXMinAndMax = "0 0"
+tiltxcorrXMinAndMax = '0 0'
 
 -- YMinAndMax:
 -- Starting and ending Y coordinates of a region to correlate. This entry will
 -- override a Y border value entered with BordersInXandY.
 tiltxcorrYMinAndMax_use = nil
-tiltxcorrYMinAndMax = "0 0"
+tiltxcorrYMinAndMax = '0 0'
 
 -- PadsInXandY:
 -- Number of pixels to pad images in X and in Y. The default is 5% of the image
 -- dimensions up to 20 pixels.
 tiltxcorrPadsInXandY_use = nil
-tiltxcorrPadsInXandY = "20 20" 
+tiltxcorrPadsInXandY = '20 20' 
 
 -- TapersInXandY: Number of pixels to taper images in X and Y. The default is 10%
 -- of the image dimensions up to 100 pixels.
 tiltxcorrTapersInXandY_use = nil
-tiltxcorrTapersInXandY = "100 100"
+tiltxcorrTapersInXandY = '100 100'
 
 -- StartingEndingViews:
 -- Starting and ending view numbers, numbered from 1, for doing a subset of
 -- views.
 tiltxcorrStartingEndingViews_use = nil
-tiltxcorrStartingEndingViews = "1 129"
+tiltxcorrStartingEndingViews = '1 129'
  
 -- CumulativeCorrelation:
 -- Use this option to add up previously aligned pictures to get the reference
 -- for the next alignment. Alignments will start at low tilt and work up to high
 -- tilt.
-tiltxcorrCumulativeCorrelation = nil
+tiltxcorrCumulativeCorrelation_use = nil
 
 -- AbsoluteCosineStretch:
 -- Stretch each image added into the cumulative sum by 1 over the cosine of its
 -- tilt angle.
-tiltxcorrAbsoluteCosineStretch = nil
+tiltxcorrAbsoluteCosineStretch_use = nil
 
 -- NoCosineStretch:
 -- Do not do any cosine stretching for correlations or for accumulating into the
 -- reference (this option overrides AbsoluteCosineStretch).
-tiltxcorrNoCosineStretch = nil
+tiltxcorrNoCosineStretch_use = nil
 
 -- TestOutput:
 -- Specify a filename with this option to have two padded, tapered images and
 -- the cross-correlation saved for every pair of images that are correlated.
+tiltxcorrTestOutput_use = nil
 tiltxcorrTestOutput = nil
 
 -- These are the options for the xftoxg command used to take a list of xf
@@ -249,14 +250,14 @@ prenewstackFloatDensities = 2
 -- bytes. It will not work if the data were loaded into 3dmod with intensity
 -- scaling; use mrcbyte in that case.
 prenewstackContrastBlackWhite_use = nil
-prenewstackContrastBlackWhite = "0 255"
+prenewstackContrastBlackWhite = '0 255'
 
 -- ScaleMinAndMax:
 -- Rescale the densities of all sections by the same factors so that the
 -- original minimum and maximum density will be mapped to the Min and Max values
 -- that are entered.
 prenewstackScaleMinAndMax_use = nil
-prenewstackScaleMinAndMax = "0 255"
+prenewstackScaleMinAndMax = '0 255'
 
 --[[==========================================================================#
 # Step 3: RAPTOR automated fiducial model algorithm                           #
@@ -268,7 +269,7 @@ prenewstackScaleMinAndMax = "0 255"
 
 -- RaptorExecPath:
 -- Path where RAPTOR binaries are located (REQUIRED)
-raptorExecPath = "/usr/local/IMOD/bin/realbin/"
+raptorExecPath = '/usr/local/IMOD/bin/realbin/'
 
 -- AnglesInHeader:
 -- If this option is specified, RAPTOR will extract tilt angles from the header
@@ -296,7 +297,7 @@ raptorxRay_use = nil
 --[[==========================================================================#
 # Step 4: Alignment by use of fiducial model                                  #
 #-----------------------------------------------------------------------------#
-# Commands: tiltalign                                                         #
+# Commands: tiltalign, newstack                                               #
 #==========================================================================--]]
 -- These are the options for the tiltalign command that solves for the
 -- displacements, rotations, tilts and magnification differences of a tilt 
@@ -411,7 +412,7 @@ tiltAlignShiftZFromOriginal_use = true
 
 -- LocalAlignments:
 -- Do alignments with subsets of points in local areas.
-tiltAlignLocalAlignments_use = true
+tiltAlignLocalAlignments_use = false
 
 -- MinSizeOrOverlapXandY:
 -- Either the minimum size of each patch in X and Y or the minimum fractional
@@ -486,14 +487,46 @@ tiltAlignNumberOfLocalPatchesXandY = '5,5'
 -- higher than the median residuals, and no weight to the most extreme points.
 tiltAlignRobustFitting_use = true
 
--- TODO: I need to fill these in before I push a release version
+-- These are the options for the newstack command which create the aligned stack
+-- from the aligned transformations produced above.
 
+-- TaperAtFill: 
+-- To taper an output image at a border between real image and
+-- a filled area, just as is done with Mrctaper, enter this option with two
+-- values: 1) the distance over which to taper or 1 for a default distance, 
+-- and 2) a 0 for tapering outside or 1 for tapering inside the border.  The
+-- default distance is 1% of the mean of the X and Y sizes of the output image,
+-- but at least 16 pixels and no more than 127.  The program will exit with an
+-- error if there is not enough memory to hold the entire output image.
 newstackTaperAtFill = '1,0'
+
+-- AdjustOrigin:
+-- Adjust the origin values in the image file header for changes in
+-- image size or the centering of a subarea.
 newstackAdjustOrigin_use = true
+
+-- OffsetsInXandY:
+-- X and Y center offsets for each section.
 newstackOffsetsInXandY = '0.0,0.0'
+
+-- DistortionField:
+-- Image distortion field file to use for undistorting images.  The
+-- undistortion is applied before any transformations.
 newstackDistortionField_use = nil
+
+-- ImagesAreBinned:
+-- The current binning of the images, so that the distortion field can be
+-- applied correctly.
 newstackImagesAreBinned = 1
+
+-- BinByFactor:
+-- Use ordinary binning to reduce images in size by the given factor, or use
+-- antialias filtering to reduce images by this factor if the -antialias option
+-- is entered and -shrink is not.
 newstackBinByFactor = 1
+
+-- GradientFile:
+-- File with magnification gradients to be applied for each image.
 newstackGradientFile_use = nil
 
 --[[==========================================================================#
@@ -524,7 +557,7 @@ ctfOffsetToAdd = 0.0
 -- The configure file specifies the noise files used to estimate the noise
 -- floor, one file per line.  The files can be specified with either absolute
 -- paths or with paths relative to the loca- tion of the configure file itself.
-ctfConfigFile = '/usr/local/ImodCalib/CTFnoise/K2background/polara-K2-2013.ctg'
+ctfConfigFile = '/usr/local/ImodCalib/CTFnoise/K22Kbackground/polara-K2-2k-2013.ctg'
 
 -- PSResolution:
 -- The number of points over which CTF will be computed.  The Nyquist frequency
@@ -584,7 +617,7 @@ ctfAngleRange = '-40.0 40.0'
 -- angles and step size between ranges.  A value of zero for the step will make
 -- it fit to each single image separate, regardless of the value for the range.
 -- This autofitting differs from that invoked through the Angles dialog in
--- several respects: 1) All tiles will be used for fits; the "All tiles" radio
+-- several respects: 1) All tiles will be used for fits; the 'All tiles' radio
 -- button will be selected at the end. 2) Three fitting iterations will be done,
 -- with the expected defocus used the first time and the cur- rent defocus
 -- estimate used for the next two iterations.  3) The size of the range is
@@ -594,7 +627,7 @@ ctfAutoFitRangeAndStep = '10.0 10.0'
 
 -- FrequencyRangeToFit:
 -- Starting and ending frequencies of range to fit in power spec- trum.  The two
--- values will be used to set the "X1 starts" and "X2 ends" fields in the
+-- values will be used to set the 'X1 starts' and 'X2 ends' fields in the
 -- fitting dialog.
 ctfFrequencyRangeToFit = '0.05 0.225'
 
@@ -692,7 +725,7 @@ point2modelSphereRadius_use = 1 point2modelSphereRadius = 2
 -- Color to make an object; enter red, green, and blue values ranging from 0 to
 -- 255.  To assign colors to multiple objects, enter this option multiple times.
 -- (Successive entries accumulate)
-point2modelColorOfObject = "0 255 0"
+point2modelColorOfObject = '0 255 0'
 
 -- These are the options for the ccderaser command used to erase the fiducial
 -- markers from the aligned stack
@@ -702,7 +735,7 @@ point2modelColorOfObject = "0 255 0"
 -- circle around each point.  The sphere radius, which can be an individual
 -- value for each point, is used to indicate the size of circle to replace.
 -- Ranges can be entered, and / to specify all objects.
-gccderaserCircleObjects = "/"
+gccderaserCircleObjects = '/'
 
 -- BetterRadius:
 -- For circle objects, this entry specifies a radius to use for points without
@@ -746,7 +779,7 @@ gccderaserExcludeAdjacent = 1
 -- with an error.  Enter 2 numbers: the first for the action when the GPU is
 -- requested by the UseGPU option; the second for the action when the GPU is
 -- requested only by the environment variable IMOD_USE_GPU.
-tiltActionIfGPUFails = "1, 2"
+tiltActionIfGPUFails = '1, 2'
 
 -- AdjustOrigin:
 -- Adjust origin for shifts with the SHIFT option and size changes with WIDTH
@@ -798,7 +831,7 @@ tiltMODE = 1
 -- non-centered subset with the tilt axis centered in them, then using this
 -- entry together with SUBSETSTART and FULLIMAGE should produce a correct
 -- result.
-tiltOFFSET_use = nil tiltOFFSET = "0.0 0.0"
+tiltOFFSET_use = nil tiltOFFSET = '0.0 0.0'
 
 -- PARALLEL:
 -- Output slices parallel to the plane of the zero tilt projection.  This option
@@ -823,14 +856,14 @@ end
 -- great than 1 the distances are interpreted as pixels in Fourier space;
 -- otherwise they are treated as frequencies in cycles/pixel, which range from 0
 -- to 0.5.
-tiltRADIAL = "0.35 0.05"
+tiltRADIAL = '0.35 0.05'
 
 -- SCALE:
 -- With this entry, the values in the reconstruction will be scaled by adding
 -- the first value then multiplying by the second one. The default is 0,1. After
 -- the reconstruction is complete, the program will output the scale values that
 -- would make the data range from 10 to 245.
-tiltSCALE = "0.0 700.0"
+tiltSCALE = '0.0 700.0'
 
 -- SHIFT:
 -- This entry allows one to shift the reconstructed slice in X or Z before it is
@@ -838,7 +871,7 @@ tiltSCALE = "0.0 700.0"
 -- and the output will contain the left part of the whole potentially
 -- reconstructable area.  If the Z shift is positive, the slice is shifted
 -- upward.  The Z entry is optional and defaults to 0 when omitted.
-tiltSHIFT = "0.0 0.0"
+tiltSHIFT = '0.0 0.0'
 
 -- SLICE:
 -- Starting and ending slice number to reconstruct, and interval between slices.
@@ -846,7 +879,7 @@ tiltSHIFT = "0.0 0.0"
 -- in the projection images.  Slices are numbered from 0.  The interval entry is
 -- optional, must be positive, and defaults to 1 when omitted.
 tiltSLICE_use = nil
-tiltSLICE = "0 2048 1"
+tiltSLICE = '0 2048 1'
 
 -- SUBSETSTART:
 -- If the aligned stack contains a subset of the area in the original images,
@@ -855,8 +888,8 @@ tiltSLICE = "0 2048 1"
 -- coordinates (numbered from 0) of the lower left corner of the subset within
 -- the original images. A FULLIMAGE entry must also be included. If the aligned
 -- stack is larger than the original images, use negative values.
-tiltSUBSETSTART_use = nil
-tiltSUBSETSTART = "0 0"
+tiltSUBSETSTART_use = true
+tiltSUBSETSTART = '0 0'
 
 -- THICKNESS:
 -- Thickness in Z of reconstructed volume, in pixels
@@ -883,12 +916,20 @@ tiltWIDTH = 2048
 -- reconstruction extends 500 slices, and the section is 5 pixels below the
 -- middle in the first slice and 5 pixels above the middle in the last slice,
 -- the angle should be 1.1 (the arc sine of 10/500).
-tiltXAXISTILT_use = nil
-tiltXAXISTILT = 5.00
+tiltXAXISTILT_use = true
+tiltXAXISTILT = 0.0
 
 -- XTILTFILE:
 -- Use this entry to specify a file containing a list of tilts to be applied
 -- around the X axis for the individual views.  A global tilt specified by the
 -- XAXISTILT entry, if any, will be subtracted from these tilts. If this file
 -- contains all zeros, the program runs the same as if the file was not entered.
-tiltXTILTFILE_use = nil
+tiltXTILTFILE_use = true
+
+-- LOCALFILE:
+-- Use this entry to specify a file containing solutions to local alignments.
+tiltLOCALFILE_use = true
+
+-- ZFACTORFILE:
+-- Use this entry to specify a file containing zfactors
+tiltZFACTORFILE_use = true

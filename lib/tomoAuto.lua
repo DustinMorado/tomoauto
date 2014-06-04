@@ -26,7 +26,7 @@ local function run(funcString,filename)
       local success, exit, signal = os.execute(string.format(
          '%s 1>> tomoAuto_%s.log 2>> tomoAuto_%s.err.log',
           funcString, filename, filename))
-      if (not success) or (signal ~= 0) then 
+      if (not success) or (signal ~= 0) then
          error(string.format(
             '\nError: %s failed for %s.\n\n', funcString, filename), 0)
       end
@@ -48,21 +48,20 @@ end
 function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    -- These are all of the files created and used throughout
    local filename       = string.sub(stackFile, 1, -4)
-   local logFile        = 'tomoAuto_' .. filename .. '.log'
-   local errLogFile     = 'tomoAuto_' .. filename .. '.err.log'
-   local finalFiles     = 'finalFiles_' .. filename
    local rawTiltFile    = filename .. '.rawtlt'
    local ccdErasedFile  = filename .. '_fixed.st'
    local origFile       = filename .. '_orig.st'
    local preAliFile     = filename .. '.preali'
    local aliFile        = filename .. '.ali'
-   local aliBin4File    = aliFile .. '.bin4'
+   local aliBin4File    = aliFile  .. '.bin4'
    local tltFile        = filename .. '.tlt'
-   local rFidFile       = 'raptor1/IMOD/' .. filename .. '.fid.txt'
    local fidFile        = filename .. '.fid'
-   local fidTxtFile     = fidFile .. '.txt'
+   local fidTxtFile     = fidFile  .. '.txt'
    local fidXfFile      = filename .. '_fid.xf'
    local xfFile         = filename .. '.xf'
+   local localFile      = filename .. 'local.xf'
+   local xTiltFile      = filename .. '.xtilt'
+   local zFacFile       = filename .. '.zfac'
    local fidTltFile     = filename .. '_fid.tlt'
    local dfcFile        = filename .. '.defocus'
    local ali1File       = filename .. '_first.ali'
@@ -73,6 +72,10 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    local ali2File       = filename .. '_second.ali'
    local recFile        = filename .. '_full.rec'
    local binFile        = filename .. '.bin4'
+   local logFile        = 'tomoAuto_'     .. filename .. '.log'
+   local errLogFile     = 'tomoAuto_'     .. filename .. '.err.log'
+   local finalFiles     = 'finalFiles_'   .. filename
+   local rFidFile       = 'raptor1/IMOD/' .. filename .. '.fid.txt'
 
    -- If help flag is called display help and then exit
    if Opts.h then
@@ -81,14 +84,19 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    end
 
    -- Multiple times throughout we will check for enough disk space
-   tomoLib.checkFreeSpace(lfs.currentdir())
+   local status, err = tomoLib.checkFreeSpace(lfs.currentdir())
+   if not status then
+      io.stderr:write(err)
+      return 1
+   end
 
    -- Here we read the MRC file format header
    local header = MRCIOLib.getReqdHeader(stackFile, fidNm)
 
    -- If we are applying CTF correction, we make sure we have a defocus.
+   -- TODO: Check defocus from header and check if it is sensible
    if Opts.c then
-      if Opts.d_ then 
+      if Opts.d_ then
          header.defocus = Opts.d_
       elseif not header.defocus then
          io.stderr:write('You need to enter an approximate defocus to run \z
@@ -98,7 +106,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    end
 
    -- Environment setup, make folder with file basename
-   local status, err = pcall(lfs.mkdir, filename)
+   status, err = pcall(lfs.mkdir, filename)
    if not status then
       io.stderr:write(err)
       return 1
@@ -134,6 +142,8 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    comWriter.write(stackFile, header, Opts)
 
    -- Here we extract the tilt angles from the header
+   -- TODO: Handle the new DoseFractionations which have tilt angle info
+   --       in an mdoc file.
    MRCIOLib.getTilts(stackFile, rawTiltFile)
    tomoLib.isFile(rawTiltFile)
 
@@ -208,7 +218,12 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    tomoLib.isFile(preAliFile)
 
    -- Now we run RAPTOR to produce a succesfully aligned stack
-   tomoLib.checkFreeSpace(startDir)
+   status, err = tomoLib.checkFreeSpace(lfs.currentdir())
+   if not status then
+      io.stderr:write(err)
+      cleanOnFail(filename)
+      return 1
+   end
    status, err = run('submfg -s raptor1.com', filename)
    if not status then
       io.stderr:write(err)
@@ -244,7 +259,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
       io.stderr:write(err)
       return 1
    end
-   status, err = run(string.format('cp %s %s', tltFile, fidTltFile), filename) 
+   status, err = run(string.format('cp %s %s', tltFile, fidTltFile), filename)
    if not status then
       io.stderr:write(err)
       return 1
@@ -279,7 +294,12 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
    -- Ok for the new stuff here we add CTF correction
    -- noise background is now set in the global config file
    if Opts.c then
-      tomoLib.checkFreeSpace(startDir)
+      status, err = tomoLib.checkFreeSpace(lfs.currentdir())
+      if not status then
+         io.stderr:write(err)
+         cleanOnFail(filename)
+         return 1
+      end
       status, err = run('submfg -s ctfplotter.com', filename)
       if not status then
          io.stderr:write(err)
@@ -303,7 +323,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
             io.stderr:write(err)
             return 1
          end
-         status, err = run(string.format('rm -rf *.com *.log %s* raptor1', 
+         status, err = run(string.format('rm -rf *.com *.log %s* raptor1',
             filename), filename)
          if not status then
             io.stderr:write(err)
@@ -396,6 +416,12 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
 
    -- Finally we compute the reconstruction
    if not Opts.t then      -- Using IMOD to handle the reconstruction.
+      status, err = tomoLib.checkFreeSpace(lfs.currentdir())
+      if not status then
+         io.stderr:write(err)
+         cleanOnFail(filename)
+         return 1
+      end
       if not Opts.s then   -- Using Weighted Back Projection method.
          recFile = filename .. '_full.rec'
          if Opts.p_ then
@@ -461,7 +487,7 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
       else
          t3Str = 'tomo3d' .. t3Str
       end
-      if Opts.s then 
+      if Opts.s then
          recFile = filename .. '_sirt.rec'
          t3Str   = string.format('%s -l %d -S -o %s', t3Str, iter, recFile)
       else
@@ -476,8 +502,8 @@ function tomoAuto.reconstruct(stackFile, fidNm, Opts)
       end
    end
    tomoLib.isFile(recFile)
-   
-   -- We rotate the tomogram around the X-axis by -90 degrees 
+
+   -- We rotate the tomogram around the X-axis by -90 degrees
    -- this generates a volume perpendicular to the beam without changing the
    -- handedness.
    -- We bin the tomogram by a factor of 4 to make visualization faster

@@ -9,7 +9,8 @@ local sString  = sString .. 'p_,      s,    t,      z_'
 local lString  = lString .. 'procnum, SIRT, tomo3D, thickness'
 local status, arg, Opts = pcall(yago.getOpt, arg, sString, lString)
 if not status then
-   io.stderr:write(arg)
+   local err = arg
+   io.stderr:write(err)
    return 1
 end
 

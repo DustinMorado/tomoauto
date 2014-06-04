@@ -38,12 +38,19 @@ end
 # some of the more data heavy IMOD routines                                   #
 #==========================================================================--]]
 function tomoLib.checkFreeSpace(Directory)
-	local file = assert(io.popen('df -h ' .. Directory, 'r'))
-	local space = string.sub(string.match(file:read('*a'), '.%d%%'), 1, -2)
-   space = tonumber(space)
-	file:close()
-	return assert(space <= 98,
-                 'Error: Disk usage is at or above 98% please make more space')
+   local status, err = pcall(function()
+	   local file = assert(io.popen('df -h ' .. Directory, 'r'))
+      local contents = file:read('*a')
+	   file:close()
+      local space = tonumber(string.match(contents, '(%d+)%%'))
+      if space <= 98 then
+         return true
+      else
+         error(string.format(
+            '\nError: Disk usage in %s is above 98%%.\n', Directory))
+      end
+   end)
+   return status, err
 end
 --[[==========================================================================#
 #                                   isFile                                    #
