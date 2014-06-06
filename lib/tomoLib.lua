@@ -1,18 +1,19 @@
-local tomoAutoDir = os.getenv('TOMOAUTOROOT')
-package.cpath = package.cpath .. ';' .. tomoAutoDir .. '/lib/?.so;'
-package.path  = package.path .. ';' ..tomoAutoDir .. '/lib/?.lua;'
-local MRCIOLib = assert(require 'MRCIOLib')
+local tomoauto_directory = os.getenv('TOMOAUTOROOT')
+package.cpath = package.cpath .. ';' .. tomoauto_directory .. '/lib/?.so;'
+package.path  = package.path  .. ';' ..tomoauto_directory .. '/lib/?.lua;'
+local MRC_IO_lib = require 'MRC_IO_lib'
+local lfs = require 'lfs'
 
 --[[==========================================================================#
 #                              Local Functions                                #
 #==========================================================================--]]
-local tomoLib = {}
+local tomoauto_lib = {}
 --[[==========================================================================#
-#                                  dispHelp                                   #
+#                                 display_help                                #
 #-----------------------------------------------------------------------------#
 # A function that displays the usage and options of tomoAuto                  #
 #==========================================================================--]]
-function tomoLib.dispHelp()
+function tomoauto_lib.display_help()
    io.write(
    [[\nUsage: \n\z
    tomoAuto [-c -d <int> -g -h -i -l <file> -p <int> -s -t -z <int>] \z
@@ -28,39 +29,45 @@ function tomoLib.dispHelp()
    -p, --procnum \t Uses <int> processors to speed up tilt\n\z
    -s, --SIRT \t Use SIRT to reconstruct [default WBP]\n\z
    -t, --tomo3d \t Use the TOMO3D to compute reconstruction [default IMOD]\n\z
-   -z, --thickness \t Create a tomogram with <int> thickness\n]])
-   return
+   -z, --thickness \t Create a tomogram with <int> thickness\n]]
+   )
+   return true
 end
 --[[==========================================================================#
-#                             checkFreeSpace                                  #
+#                               check_free_space                              #
 #-----------------------------------------------------------------------------#
 # A function to check that there is enough free space to successfully run     #
 # some of the more data heavy IMOD routines                                   #
 #==========================================================================--]]
-function tomoLib.checkFreeSpace(Directory)
-   local status, err = pcall(function()
-	   local file = assert(io.popen('df -h ' .. Directory, 'r'))
-      local contents = file:read('*a')
-	   file:close()
-      local space = tonumber(string.match(contents, '(%d+)%%'))
-      if space <= 98 then
-         return true
-      else
-         error(string.format(
-            '\nError: Disk usage in %s is above 98%%.\n', Directory))
+function tomoauto_lib.check_free_space()
+   local status, err = pcall(
+      function()
+	      local file = io.popen('df -h ' .. lfs.currentdir(), 'r')
+         local contents = file:read('*a')
+	      file:close()
+         local space = tonumber(string.match(contents, '(%d+)%%'))
+         if space <= 98 then
+            return true
+         else
+            error(string.format(
+                  '\nError: Disk usage in %s is above 98%%.\n', 
+                  Directory
+               ), 0
+            )
+         end
       end
-   end)
+   )
    return status, err
 end
 --[[==========================================================================#
-#                                   isFile                                    #
+#                                   is_File                                   #
 #-----------------------------------------------------------------------------#
 # A function to check if file exists, since older versions of IMOD have a     #
 # funny way of handling exit codes in case of errors.                         #
 #-----------------------------------------------------------------------------#
-# Arguments: arg[1] = filename to check <string>                              #
+# Arguments: filename = filename to check <string>                            #
 #==========================================================================--]]
-function tomoLib.isFile(filename)
+function tomoauto_lib.is_File(filename)
    local status, err = pcall(
       function()
          local file = io.open(filename, 'r')
@@ -68,25 +75,34 @@ function tomoLib.isFile(filename)
             io.close(file)
             return true 
          else 
-            error(string.format('\nError: %s was not produced or found.\n\n',
-               filename))
+            error(
+               string.format(
+                  '\nError: %s was not produced or found.\n\n',
+                  filename
+               ), 0
+            )
          end
-      end)
+      end
+   )
    if not status then
       io.stderr:write(err)
    end
 end
 --[[==========================================================================#
-#                               scaleRAPTORModel                              #
+#                              scale_RAPTOR_model                             #
 #-----------------------------------------------------------------------------#
 # A function that fixes the fiducial model generated by RAPTOR in how its     #
 # drawn and scaled.                                                           #
 #-----------------------------------------------------------------------------#
-# Arguments: arg[1] = RAPTOR generated fid model <filename.fid.txt>           #
-#            arg[2] = Image stack header <table>                              #
-#            arg[3] = Output file <filename.fid>                              #
+# Arguments: input_filename  = RAPTOR generated fid model <string>            #
+#            header          = Image stack header <table>                     #
+#            output_filename = Output file <string>                           #
 #==========================================================================--]]
-function tomoLib.scaleRAPTORModel(inputFile, header, outputFile)
+function tomoauto_lib.scale_RAPTOR_model(
+   input_filename, 
+   header, 
+   output_filename
+)
    local inFile  = assert(io.open(inputFile, 'r'))
    local outFile = assert(io.open(outputFile, 'w'))
 
@@ -119,9 +135,9 @@ end
 # Arguments: arg[1] = Aligned Image Stack <filename.ali>                      #
 #            arg[2] = number of original sections <integer>                   #
 #==========================================================================--]]
-function tomoLib.checkAlign(inputFile, nz)
+function tomoauto_lib.checkAlign(inputFile, nz)
    local status, err = pcall(function()
-      local H = MRCIOLib.getHeader(inputFile)
+      local H = MRC_IO_lib.getHeader(inputFile)
       local aliNz = H.nz
       H = nil
       local cut = nz - aliNz
@@ -140,7 +156,7 @@ end
 #-----------------------------------------------------------------------------#
 # Arguments: arg[1] = image filename <string>                                 #
 #==========================================================================--]]
-function tomoLib.writeLog(filename)
+function tomoauto_lib.writeLog(filename)
    local log = assert(io.open('tomoAuto_IMOD.log', 'w'))
 
    local ccd = io.open('ccderaser.log', 'r')
@@ -233,7 +249,7 @@ end
 #------------------------------------------------------------------------------#
 # A function that fixes the ctfplotter.com file so that it can be checked.     #
 #===========================================================================--]]
-function tomoLib.modCTFPlotter()
+function tomoauto_lib.modCTFPlotter()
    local file = io.open('ctfplotter.com', 'r')
    local temp = io.open('tmp.com', 'w')
    for line in file:lines('*l') do
@@ -254,8 +270,8 @@ end
 # Arguments: arg[1]: image filename <string>                                   #
 #            arg[2]: filter size <integer>                                     #
 #===========================================================================--]]
-function tomoLib.medNfilter (filename, size)
-   local H = MRCIOLib.getHeader(filename)
+function tomoauto_lib.medNfilter (filename, size)
+   local H = MRC_IO_lib.getHeader(filename)
    local nz = H.nz
    H = nil
 
@@ -307,4 +323,4 @@ function tomoLib.medNfilter (filename, size)
    assert(os.execute('rm -f filelist.txt ' .. filename .. '.avg_*'))
 end
 
-return tomoLib
+return tomoauto_lib

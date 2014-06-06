@@ -1,8 +1,22 @@
 #!/usr/bin/env lua
-
+--[[===========================================================================#
+#                           dose_fractioned_to_stack                           #
+#------------------------------------------------------------------------------#
+# This is a program to take a set of dose fraction, drift-corrected sum images #
+# and creates an MRC image stack. It also fixes the header information which   #
+# is currently erased by Yifan Cheng's dosefgpu_driftcorr program.             #
+#                                                                              #
+# NOTE: This currently handles a bug in the beta version of SerialEM 3.4       #
+#------------------------------------------------------------------------------#
+# Author:  Dustin Morado                                                       #
+# Written: June 06th 2014                                                      #
+# Contact: Dustin.Morado@uth.tmc.edu                                           #
+#------------------------------------------------------------------------------#
+# Arguments: NONE                                                              #
+#===========================================================================--]]
 local tomoauto_directory = os.getenv('TOMOAUTOROOT')
 package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
-local MRCIOLib = require 'MRCIOLib'
+local MRC_IO_lib = require 'MRC_IO_lib'
 local lfs = require 'lfs'
 local io, string, table = io, string, table
 
@@ -61,8 +75,8 @@ local function dose_fractioned_to_stack(log)
    else
       num = #MRC_table
    end
-   header = MRCIOLib.getHeader(stack_file)
-   extended_header = MRCIOLib.getExtendedHeader(stack_file)
+   header = MRC_IO_lib.get_header(stack_file)
+   extended_header = MRC_IO_lib.get_extended_heeader(stack_file)
    local file_list_file = io.open(file_list, 'w')
    file_list_file:write(string.format('%d\n', num))
    for i = 1, num do
@@ -72,7 +86,9 @@ local function dose_fractioned_to_stack(log)
       elseif tonumber(tilt_angle_table[i]) > tonumber(new_tilt_angle_table[1]) then
          table.insert(new_tilt_angle_table, 1, tilt_angle_table[i])
          table.insert(new_MRC_table, 1, MRC_table[i])
-      elseif tonumber(tilt_angle_table[i]) < tonumber(new_tilt_angle_table[#new_tilt_angle_table]) then
+      elseif tonumber(tilt_angle_table[i]) <
+         tonumber(new_tilt_angle_table[#new_tilt_angle_table])
+      then
          table.insert(new_tilt_angle_table, tilt_angle_table[i])
          table.insert(new_MRC_table, MRC_table[i])
       else
@@ -116,7 +132,7 @@ local function dose_fractioned_to_stack(log)
       io.stderr:write(err)
       return 1
    end
-   initial_driftcorr_header = MRCIOLib.getHeader(new_stack_file)
+   initial_driftcorr_header = MRC_IO_lib.get_header(new_stack_file)
    header.nx    = initial_driftcorr_header.nx
    header.ny    = initial_driftcorr_header.ny
    header.mx    = initial_driftcorr_header.mx
@@ -127,8 +143,11 @@ local function dose_fractioned_to_stack(log)
    header.amax  = initial_driftcorr_header.amax
    header.amean = initial_driftcorr_header.amean
    initial_driftcorr_header = nil
-   MRCIOLib.setHeader(new_stack_file, 'temp.st', header, extended_header)
-   status, err = pcall(os.execute, string.format('mv temp.st %s', new_stack_file))
+   MRC_IO_lib.set_header(new_stack_file, 'temp.st', header, extended_header)
+   status, err = pcall(
+      os.execute, 
+      string.format('mv temp.st %s', new_stack_file)
+   )
    if not status then
       io.stderr:write(err)
       return 1
