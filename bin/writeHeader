@@ -1,27 +1,42 @@
 #!/usr/bin/env lua
-local tomoAutoDir = os.getenv('TOMOAUTOROOT')
-package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
-local MRCIOLib = require 'MRCIOLib'
+local tomoauto_directory = os.getenv('TOMOAUTOROOT')
+package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
+local MRC_IO_lib = require 'MRC_IO_lib'
 local yago = require 'yago'
-local sString = 'a_, b_, c_, d_,   e_,      f_,      g_,      h,    i_, j_, k_,'
-local lString = 'nx, ny, nz, mode, nxstart, nystart, nzstart, help, mx, my, mz,'
-sString = sString .. ' l_,   m_,   n_,   o_,   p_,   q_,    r_,      s_      '
-lString = lString .. ' xlen, ylen, zlen, amin, amax, amean, cAngleX, cAngleY,'
-sString = sString .. ' t_,      u_,   v_,   w_,   x_,  y_,      '
-lString = lString .. ' cAnglez, xorg, yorg, zorg, rms, addlabel,'
-sString = sString .. ' A_,         B_,           C_,      D_,      E_,      '
-lString = lString .. ' startAngle, angleSpacing, defocus, expTime, tiltAxis,'
-sString = sString .. ' F_,      G_,  I_, J_,      K_        '
-lString = lString .. ' pixSize, mag, ht, binning, appDefocus'
+local short_options = 'a_, b_, c_, d_,   e_,      f_,      g_,      h,    i_, '
+local long_options  = 'nx, ny, nz, mode, nxstart, nystart, nzstart, help, mx, '
 
-local status, arg, Opts = pcall(yago.getOpt, arg, sString, lString)
+short_options = short_opitons .. 'j_, k_, l_,   m_,   n_,   o_,   p_,   q_,    '
+long_options  = long_options  .. 'my, mz  xlen, ylen, zlen, amin, amax, amean, '
+
+short_options = short_options .. 'r_,      s_,      t_,      u_,   v_,   w_,   '
+long_options  = long_options  .. 'cAngleX, cAngleY, cAnglez, xorg, yorg, zorg, '
+
+short_options = short_options .. 'x_,  y_,       z_,         '
+long_options  = long_options  .. 'rms, addlabel, labelIndex, '
+
+short_options = short_options .. 'A_,         B_,           C_,      D_,      '
+long_options  = long_options  .. 'startAngle, angleSpacing, defocus, expTime, '
+
+short_options = short_options .. 'E_,       F_,      G_,  I_, J_,      '
+long_options  = long_options  .. 'tiltAxis, pixSize, mag, ht, binning, '
+
+short_options = short_options .. 'K_,         L_,        M_'
+long_options  = long_options  .. 'appDefocus, intensity, expDose'
+
+local status, arg, options_table = pcall(
+   yago.getOpt,
+   arg,
+   short_options,
+   long_options
+)
 if not status then
    local err = arg
    io.stderr:write(err)
    return 1
 end
 
-if Opts.h then
+if options_table.h then
    io.stdout:write('\nUsage: setHeader [OPTION..] InputFile OutputFile\n\n')
    io.stdout:write('--nx\t\t\tSet Image X dimension\n')
    io.stdout:write('--ny\t\t\tSet Image Y dimension\n')
@@ -48,6 +63,7 @@ if Opts.h then
    io.stdout:write('--zorg\t\t\tSet Z origin value\n')
    io.stdout:write('--rms\t\t\tSet RMS value\n')
    io.stdout:write('--addlabel\t\tAdd a label to the header\n')
+   io.stdout:write('--labelIndex\t\tAdd label to this number\n')
    io.stdout:write('--startAngle\t\tStart of tilt angles [e.g 60]\n')
    io.stdout:write('--angleSpacing\t\tSet increment of tilt angles\n')
    io.stdout:write('--defocus\t\tSet Image Defocus\n')
@@ -58,7 +74,9 @@ if Opts.h then
    io.stdout:write('--ht\t\t\tSet High Tension Voltage\n')
    io.stdout:write('--binning\t\tSet Image Binning\n')
    io.stdout:write('--appDefocus\t\tSet Applied Defocus\n')
+   io.stdout:write('--intensity\t\tSet intensity[IMOD]\n')
+   io.stdout:write('--expDose\t\tSet Exposure Dose[IMOD]\n')
    return 0
 else
-   MRCIOLib.setHeader(arg[1], arg[2], Opts)
+   MRC_IO_lib.set_header(arg[1], arg[2], options_table)
 end

@@ -1,6 +1,6 @@
 #!/usr/bin/env lua
 --[[===========================================================================#
-#                                   genComs                                    #
+#                            generate_command_files                            #
 #------------------------------------------------------------------------------#
 # This is a program that generates all of the COM files used by tomoAuto, with #
 # the benefit of being able to run manually, to tweak and check individual     #
@@ -12,61 +12,88 @@
 #------------------------------------------------------------------------------#
 # Arguments: arg[1]: Image stack file <filename.st>                            #
 #            arg[2]: Fiducial size in nanometers <intger>                      #
-#            arg[3]: Table with option flags from getOpts                      #
+#            arg[3]: Table with option flags from yago                         #
 #===========================================================================--]]
-local tomoAutoDir = os.getenv('TOMOAUTOROOT')
-package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
-local comWriter = require 'comWriter'
-local yago      = require 'yago'
-local MRCIOLib  = require 'MRCIOLib'
+local tomoauto_dir = os.getenv('TOMOAUTOROOT')
+package.path = package.path .. ';' .. tomoauto_dir .. '/lib/?.lua;'
+local comWriter   = require 'comWriter'
+local yago        = require 'yago'
+local MRC_IO_lib  = require 'MRC_IO_lib'
 local lfs, os, string = lfs, os, string
 
-local sString = 'c,   d_,       g,   h,    i_,   l_,    '
-local lString = 'ctf, defoucus, gpu, help, iter, config '
-local sString = sString .. 'p_,      s,    t,      z_'
-local lString = lString .. 'procnum, SIRT, tomo3d, thickness'
-local status, arg, Opts = pcall(yago.getOpt, arg, sString, lString)
-if not status then
-   io.stderr:write(arg)
-   return 1
-end
+function generate_command_files(
+   input_filename,
+   fiducial_diameter,
+   options_table
+)
 
-function genComs(stackFile, fidNm, Opts)
-   local header = MRCIOLib.getReqdHeader(stackFile, fidNm)
-
-   if Opts.c then
-      if Opts.d_ then
-         header.defocus = Opts.d_
+   local header = MRC_IO_lib.get_required_header(
+      input_filename,
+      fiducial_diameter
+   )
+   if options_table.c then
+      if options_table.d_ then
+         header.defocus = options_table.d_
       else
          error('Error; You need to enter an approximate defocus to run \z
-            with CTF correction.\n', 0)
+                with CTF correction.\n', 0
+         )
       end
    end
 
-   local filename = string.sub(stackFile, 1, -4)
-   local comDir = filename .. '_COMs'
-   assert(lfs.mkdir(comDir),
-      '\n\nError: Could not make COMs directory.\n')
-   assert(os.execute(string.format('mv %s %s', stackFile, comDir)),
-      '\n\nError: Could not move input file to filename directory.\n')
-   assert(lfs.chdir(comDir), 
-      '\n\nError: Could not change to filename directory.\n')
-   
-   local ret, mesg = pcall(comWriter.write, stackFile, header, Opts)
-   if not ret then 
-      io.stderr:write(mesg)
+   local basename = string.sub(input_filename, 1, -4)
+   local command_file_directory = basename .. '_COMs'
+   assert(lfs.mkdir(command_file_directory),
+      '\n\nError: Could not make COMs directory.\n'
+   )
+   assert(os.execute(string.format(
+      'mv %s %s',
+      input_filename,
+      command_file_directory)),
+      '\n\nError: Could not move input file to basename directory.\n'
+   )
+   assert(lfs.chdir(command_file_directory),
+      '\n\nError: Could not change to basename directory.\n'
+   )
+   local status, err = pcall(
+      comWriter.write,
+      input_filename,
+      header,
+      options_table
+   )
+   if not status then
+      io.stderr:write(err)
       io.stderr:write(
-         '\n\nError: Could not write ComFiles. Go bother Dustin.\n')
-      assert(os.execute(string.format('mv %s ..', stackFile )),
-         '\n\nError: Could not move input file to parent directory.\n')
+         '\n\nError: Could not write ComFiles. Go bother Dustin.\n'
+      )
+      assert(os.execute(string.format('mv %s ..', input_filename )),
+         '\n\nError: Could not move input file to parent directory.\n'
+      )
       assert(lfs.chdir('..'),
-         '\n\nError: Could not change to parent directory.\n')
-      assert(os.execute(string.format('rm -rf  %s', comDir)),
-         '\n\nError: Could not remove filename directory.\n')
+         '\n\nError: Could not change to parent directory.\n'
+      )
+      assert(os.execute(string.format('rm -rf  %s', command_file_directory)),
+         '\n\nError: Could not remove basename directory.\n'
+      )
       return false
    else
       return true
    end
 end
 
-genComs(arg[1], arg[2], Opts)
+local short_options = 'c,   d_,       g,   h,    i_,   l_,    '
+local long_options  = 'ctf, defoucus, gpu, help, iter, config '
+short_options = short_options .. 'p_,      s,    t,      z_'
+long_options = long_options .. 'procnum, SIRT, tomo3d, thickness'
+local status, arg, options_table = pcall(
+   yago.getOpt,
+   arg,
+   short_options,
+   long_options
+)
+if not status then
+   local err = arg
+   io.stderr:write(err)
+   return 1
+end
+generate_command_files(arg[1], arg[2], options_table)

@@ -90,8 +90,12 @@ function tomoLib.scaleRAPTORModel(inputFile, header, outputFile)
    local inFile  = assert(io.open(inputFile, 'r'))
    local outFile = assert(io.open(outputFile, 'w'))
 
-   local refString = string.format('refcurscale %5.3f %5.3f %5.3f',
-      header.xPx, header.yPx, header.zPx)
+   local refString = string.format(
+      'refcurscale %5.3f %5.3f %5.3f',
+      header.xlen / header.mx, 
+      header.ylen / header.my,
+      header.zlen / header.mz
+   )
 
    for line in inFile:lines('*l') do
       line = line:gsub('drawmode%s+%d+',

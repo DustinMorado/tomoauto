@@ -1,40 +1,26 @@
 #!/usr/bin/env lua
-local tomoAutoDir = os.getenv('TOMOAUTOROOT')
-package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
-local MRCIOLib = require 'MRCIOLib'
-local yago     = require 'yago'
-local io       = io
-local function printExtHeader(filename)
-   local sString  = 'a,    b,   c,     d,   e,   E,    h,    H,  i,   m,    '
-   local lString  = 'aDef, bin, coord, def, exp, dose, help, ht, int, mean, '
-   sString = sString .. 'M,   p,   t,   T,     s,   S'
-   lString = lString .. 'mag, pix, tlt, tltAx, stg, shft'
-   local status, arg, Opts = pcall(yago.getOpt, arg, sString, lString)
-   if not status then
-      local err = arg
-      io.stderr:write(err)
-      return 1
-   end
-   local ref             = ''
-   local refName         = ''
-   local header          = MRCIOLib.getHeader(filename)
-   local extended_header = MRCIOLib.getExtendedHeader(filename)
-   if Opts.a then
-      ref      = 'appliedDefocus'
-      refName  = 'Applied Defocus'
-   elseif Opts.b then
-      ref      = 'binning'
-      refName  = 'Binning'
-   elseif Opts.c then
-      ref      = 'mon'
-      refName  = 'Montage Coordinates'
-   elseif Opts.d then
-      ref      = 'defocus'
-      refName  = 'Defocus'
-   elseif Opts.e then
-      ref      = 'exp_time'
-      refName  = 'Exposure Time'
-   elseif Opts.h then
+--[[===========================================================================#
+#                             print_extended_header                            #
+#------------------------------------------------------------------------------#
+# This is a program to print information in the extended header to the screen  #
+# it is similar to extracttilts in IMOD, but also displays the information in  #
+# the extended header of Agard style MRC headers.                              #
+#------------------------------------------------------------------------------#
+# Author:   Dustin Morado                                                      #
+# Written:  May 23rd 2014                                                      #
+# Contact:  Dustin.Morado@uth.tmc.edu                                          #
+#------------------------------------------------------------------------------#
+# Arguments: arg[1]: Image stack filename <string>                             #
+#            arg[2]: Options table as produced by yago                         #
+#===========================================================================--]]
+local tomoauto_directory = os.getenv('TOMOAUTOROOT')
+package.path     = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
+local MRC_IO_lib = require 'MRC_IO_lib'
+local yago       = require 'yago'
+local io         = io
+
+local function print_extended_header(filename, options_table)
+   if options_table.h then
       io.stdout:write('\nUsage: readExtHeader [OPTION..] MRC file\n\n')
       io.stdout:write('-a, --aDef \t\tprint applied defoci (approximate)\n')
       io.stdout:write('-b, --bin  \t\tprint applied binning\n')
@@ -53,95 +39,171 @@ local function printExtHeader(filename)
       io.stdout:write('-s, --stg  \t\tprint stage coordinates\n')
       io.stdout:write('-S, --shift\t\tprint image shifts\n')
       return 0
-   elseif Opts.H then
-      ref      = 'ht'
-      refName  = 'High Tension'
-   elseif Opts.i then
-      ref      = 'int'
-      refName  = 'Intensity'
-   elseif Opts.m then
-      ref      = 'mean_int'
-      refName  = 'Mean integers'
-   elseif Opts.M then
-      ref      = 'magnification'
-      refName  = 'Magnification'
-   elseif Opts.p then
-      ref      = 'pixel_size'
-      refName  = 'Pixel Size'
-   elseif Opts.t then
-      ref      = 'a_tilt'
-      refName  = 'Tilt Angles'
-   elseif Opts.T then
-      ref      = 'tilt_axis'
-      refName  = 'Tilt Axis Offset'
-   elseif Opts.s then
-      ref      = 'x_stage'
-      refName  = 'Stage position'
-   elseif Opts.S then
-      ref      = 'x_shift'
-      refName  = 'Image Shift'
-   else
-      ref      = 'a_tilt'
-      refName  = 'Tilt Angles'
    end
+
+   local reference       = ''
+   local reference_name  = ''
+   local header          = MRC_IO_lib.get_header(filename)
+   local extended_header = MRC_IO_lib.get_extended_header(filename)
+
+   if options_table.a then
+      reference      = 'appliedDefocus'
+      reference_name = 'Applied Defocus'
+   elseif options_table.b then
+      reference      = 'binning'
+      reference_name = 'Binning'
+   elseif options_table.c then
+      reference      = 'mon'
+      reference_name = 'Montage Coordinates'
+   elseif options_table.d then
+      reference      = 'defocus'
+      reference_name = 'Defocus'
+   elseif options_table.e then
+      reference      = 'exp_time'
+      reference_name = 'Exposure Time'
+   elseif options_table.E then
+      reference      = 'exp_dose'
+      reference_name = 'Exposure Dose'
+   elseif options_table.H then
+      reference      = 'ht'
+      reference_name = 'High Tension'
+   elseif options_table.i then
+      reference      = 'int'
+      reference_name = 'Intensity'
+   elseif options_table.m then
+      reference      = 'mean_int'
+      reference_name = 'Mean integers'
+   elseif options_table.M then
+      reference      = 'magnification'
+      reference_name = 'Magnification'
+   elseif options_table.p then
+      reference      = 'pixel_size'
+      reference_name = 'Pixel Size'
+   elseif options_table.t then
+      reference      = 'a_tilt'
+      reference_name = 'Tilt Angles'
+   elseif options_table.T then
+      reference      = 'tilt_axis'
+      reference_name = 'Tilt Axis Offset'
+   elseif options_table.s then
+      reference      = 'x_stage'
+      reference_name = 'Stage position'
+   elseif options_table.S then
+      reference      = 'x_shift'
+      reference_name = 'Image Shift'
+   else
+      reference      = 'a_tilt'
+      reference_name = 'Tilt Angles'
+   end
+
    io.stdout:write(string.format(
-      '\n\nInput Filename ....................\t%s\n\n', filename))
+      '\n\nInput Filename ....................\t%s\n\n',
+      filename
+   ))
+
    for i = 1, header.nz do
-      if ref == 'pixel_size' then
-         if extended_header[i][ref] then
+      if reference == 'pixel_size' then
+         if extended_header[i][reference] then
             io.stdout:write(string.format(
                '%03d %s : ....................\t%5.4e\n',
-                i, refName, extended_header[i][ref]))
+               i,
+               reference_name,
+               extended_header[i][reference]
+            ))
          else
             io.stderr:write(string.format(
-               'No %s found in the extended header.\n\n', refName))
+               'No %s found in the extended header.\n\n',
+               reference_name
+            ))
             return 1
          end
-      elseif ref == 'a_tilt' and extended_header[i].b_tilt then
-         if extended_header[i][ref] then
+      elseif reference == 'a_tilt' and extended_header[i].b_tilt then
+         if extended_header[i][reference] then
             io.stdout:write(string.format(
                '%03d %s : ....................\t%05.2f\t%05.2f\n',
-                i, refName, extended_header[i][ref], extended_header[i].b_tilt))
+               i,
+               reference_name,
+               extended_header[i][reference],
+               extended_header[i].b_tilt
+            ))
          else
             io.stderr:write(string.format(
-               'No %s found in the extended header.\n\n', refName))
+               'No %s found in the extended header.\n\n',
+               reference_name
+            ))
             return 1
          end
-      elseif ref == 'x_stage' then
-         if extended_header[i][ref] then
+      elseif reference == 'x_stage' then
+         if extended_header[i][reference] then
             io.stdout:write(string.format(
-               '%03d %s : \z
-                ....................\t%05.2f\t%05.2f\t%05.2f\n',
-                i, refName, extended_header[i][ref], extended_header[i].y_stage,
-                extended_header[i].z_stage))
+               '%03d %s : \z....................\t%05.2f\t%05.2f\t%05.2f\n',
+               i,
+               reference_name,
+               extended_header[i][reference],
+               extended_header[i].y_stage,
+               extended_header[i].z_stage
+            ))
          else
             io.stderr:write(string.format(
-               'No %s found in the extended header.\n\n', refName))
+               'No %s found in the extended header.\n\n',
+               reference_name
+            ))
             return 1
          end
-      elseif ref == 'x_shift' then
-         if extended_header[i][ref] then
+      elseif reference == 'x_shift' then
+         if extended_header[i][reference] then
             io.stdout:write(string.format(
                '%03d %s : ....................\t%05.2f\t%05.2f\n',
-                i, refName, extended_header[i][ref],
-                extended_header[i].y_shift))
+               i,
+               reference_name,
+               extended_header[i][reference],
+               extended_header[i].y_shift
+            ))
          else
             io.stderr:write(string.format(
-               'No %s found in the extended header.\n\n', refName))
+               'No %s found in the extended header.\n\n',
+               reference_name
+            ))
             return 1
          end
       else
-         if extended_header[i][ref] then
+         if extended_header[i][reference] then
             io.stdout:write(string.format(
                '%03d %s : ....................\t% 06.2f\n',
-                i, refName, extended_header[i][ref]))
+               i,
+               reference_name,
+               extended_header[i][reference]
+            ))
          else
             io.stderr:write(string.format(
-               'No %s found in the extended header.\n\n', refName))
+               'No %s found in the extended header.\n\n',
+               reference_name
+            ))
             return 1
          end
       end
    end
    return 0
 end
-printExtHeader(arg[1])
+
+local short_options  = 'a,    b,   c,     d,   e,   E,    h,    H,  i,   m,    '
+local long_options   = 'aDef, bin, coord, def, exp, dose, help, ht, int, mean, '
+
+short_options = short_options .. 'M,   p,   t,   T,     s,   S'
+long_options  = long_options  .. 'mag, pix, tlt, tltAx, stg, shft'
+
+local status, arg, options_table = pcall(
+   yago.getOpt,
+   arg,
+   short_options,
+   long_options
+)
+
+if not status then
+   local err = arg
+   io.stderr:write(err)
+   os.exit(1)
+end
+
+local filename = arg[1]
+print_extended_header(filename, options_table)

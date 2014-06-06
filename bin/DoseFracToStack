@@ -1,11 +1,12 @@
 #!/usr/bin/env lua
-local tomoauto_dir = os.getenv('TOMOAUTOROOT')
-package.path = package.path .. ';' .. tomoauto_dir .. '/lib/?.lua;'
+
+local tomoauto_directory = os.getenv('TOMOAUTOROOT')
+package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 local MRCIOLib = require 'MRCIOLib'
 local lfs = require 'lfs'
 local io, string, table = io, string, table
 
-local function dose_fractioned_to_stack(log, stamp)
+local function dose_fractioned_to_stack(log)
    local new_stack_file       = nil
    local     stack_file       = nil
    local filename             = nil
@@ -71,7 +72,7 @@ local function dose_fractioned_to_stack(log, stamp)
       elseif tonumber(tilt_angle_table[i]) > tonumber(new_tilt_angle_table[1]) then
          table.insert(new_tilt_angle_table, 1, tilt_angle_table[i])
          table.insert(new_MRC_table, 1, MRC_table[i])
-      elseif tonumber(tilt_angle_table[i]) < tonumber(new_tilt_angle_table[num]) then
+      elseif tonumber(tilt_angle_table[i]) < tonumber(new_tilt_angle_table[#new_tilt_angle_table]) then
          table.insert(new_tilt_angle_table, tilt_angle_table[i])
          table.insert(new_MRC_table, MRC_table[i])
       else
@@ -95,33 +96,53 @@ local function dose_fractioned_to_stack(log, stamp)
       file_list_file:seek('set', 0)
       file_list_file:write(string.format('%d\n', num - shift))
    end
+   file_list_file:close()
    for i = 1, num do
+      if math.floor(new_tilt_angle_table[i]) == -2 then
+         table.insert(extended_header, i, {})
+         for k,v in pairs(extended_header[i - 1]) do
+            extended_header[i][k] = v
+         end
+      end
       extended_header[i].a_tilt = new_tilt_angle_table[i]
    end
    header.nz   = num
+   header.mz   = num
+   header.zlen = (header.xlen / header.mx) * header.mz
    header.mode = 2
-   file_list_file:close()
-   local status, err = pcall(os.execute(string.format(
-      'newstack -filei %s %s &> /dev/null', file_list, new_stack_file)))
+   local status, err = pcall(os.execute, string.format(
+      'newstack -filei %s %s &> /dev/null', file_list, new_stack_file))
    if not status then
       io.stderr:write(err)
       return 1
    end
+   initial_driftcorr_header = MRCIOLib.getHeader(new_stack_file)
+   header.nx    = initial_driftcorr_header.nx
+   header.ny    = initial_driftcorr_header.ny
+   header.mx    = initial_driftcorr_header.mx
+   header.my    = initial_driftcorr_header.my
+   header.xlen  = (header.zlen / header.mz) * header.mx
+   header.ylen  = (header.zlen / header.mz) * header.my
+   header.amin  = initial_driftcorr_header.amin
+   header.amax  = initial_driftcorr_header.amax
+   header.amean = initial_driftcorr_header.amean
+   initial_driftcorr_header = nil
    MRCIOLib.setHeader(new_stack_file, 'temp.st', header, extended_header)
-   status, err = pcall(os.execute(string.format(
-      'mv temp.st %s', new_stack_file)))
+   status, err = pcall(os.execute, string.format('mv temp.st %s', new_stack_file))
+   if not status then
+      io.stderr:write(err)
+      return 1
+   end
+   status, err = pcall(os.execute, string.format('rm %s', file_list))
    if not status then
       io.stderr:write(err)
       return 1
    end
    return 0
 end
-local count = 1
 for log_file in lfs.dir('.') do
    if log_file:find('%w+%.%log$') then
-      local stamp = string.format('%04d', count)
-      count = count + 1
-      local status, runString = pcall(dose_fractioned_to_stack, log_file, stamp)
+      local status, runString = pcall(dose_fractioned_to_stack, log_file)
       if not status then
          local err = runString
          io.stderr:write(err)

@@ -1,10 +1,23 @@
 #!/usr/bin/env lua
-local tomoAutoDir = os.getenv('TOMOAUTOROOT')
-package.path = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
-local MRCIOLib  = require 'MRCIOLib'
+--[[===========================================================================#
+#                               scaleRAPTORModel                               #
+#------------------------------------------------------------------------------#
+# This is a program that takes a fiducial model generated automatically by     #
+# RAPTOR and scales and changes it to make it better for erasing gold and for  #
+# computing the alignment using IMOD tiltalign                                 #
+#------------------------------------------------------------------------------#
+# Author:  Dustin Morado                                                       #
+# Written: May 21st 2014                                                       #
+# Contact: Dustin.Morado@uth.tmc.edu                                           #
+#------------------------------------------------------------------------------#
+# Arguments: arg[1]: RAPTOR generated fiducial model filename <string>         #
+#            arg[2]: Output filename <string>                                  #
+#===========================================================================--]]
+local tomoauto_directory = os.getenv('TOMOAUTOROOT')
+package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
+local MRC_IO_lib  = require 'MRC_IO_lib'
 local tomoLib   = require 'tomoLib'
-local filename  = string.sub(arg[1], 1, -9)
-local stackFile = filename .. '.st'
-local H = MRCIOLib.getReqdHeader(stackFile, 10)
-
-tomoLib.scaleRAPTORModel(arg[1], H, arg[2])
+local basename  = string.sub(arg[1], 1, -9)
+local input_stack_filename = basename .. '.st'
+local header = MRC_IO_lib.get_header(input_stack_filename)
+tomoLib.scaleRAPTORModel(arg[1], header, arg[2])
