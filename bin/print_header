@@ -1,0 +1,190 @@
+#!/usr/bin/env lua
+--[[===========================================================================#
+#                                 print_header                                 #
+#------------------------------------------------------------------------------#
+# This is a program to print the standard header information of MRC files      #
+# similar to the IMOD command header, although this one puts out a little more #
+# information, pertaining to whether or not the file is IMOD or Agard style    #
+#------------------------------------------------------------------------------#
+# Author:  Dustin Morado                                                       #
+# Written: June 01st 2014                                                      #
+# Contact: Dustin.Morado@uth.tmc.edu                                           #
+#------------------------------------------------------------------------------#
+# Arguments: input_filename: Image stack filename <string>                     #
+#===========================================================================--]]
+local tomoauto_directory = os.getenv('TOMOAUTOROOT')
+package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
+local MRC_IO_lib   = require 'MRC_IO_lib'
+local io, string = io, string
+
+local function print_header(input_filename)
+   local header = MRC_IO_lib.get_header(input_filename)
+   io.stdout:write('\n')
+   io.stdout:write(
+      string.format(
+         'Image Filename:\t\t%s\n\n',
+         input_filename
+      )
+   )
+   io.stdout:write(
+      string.format(
+         'Number of columns, rows, sections ..........\t%d\t%d\t%d\n',
+         header.nx,
+         header.ny,
+         header.nz
+      )
+   )
+   io.stdout:write(
+      string.format(
+         'Map mode ...................................\t%d\n',
+         header.mode
+      )
+   )
+   io.stdout:write(
+      string.format(
+         'Image size lower bounds ....................\t%d\t%d\t%d\n',
+         header.nxstart,
+         header.nystart,
+         header.nzstart
+      )
+   )
+   io.stdout:write(
+      string.format(
+         'Cell Pixel Spacing (Angstroms) .............\t%6.4f\t%6.4f\t%6.4f\n',
+         header.xlen/header.mx,
+         header.ylen/header.my,
+         header.zlen/header.mz
+      )
+   )
+   io.stdout:write(
+      string.format(
+         'Cell Angles (degrees) ......................\t%5.2f\t%5.2f\t%5.2f\n',
+         header.alpha,
+         header.beta,
+         header.gamma
+      )
+   )
+   local axes = { 'X', 'Y', 'Z'}
+   io.stdout:write(
+      string.format(
+         'Axis Mappings ..............................\t%s\t%s\t%s\n',
+         axes[header.mapc],
+         axes[header.mapr],
+         axes[header.maps]
+      )
+   )
+
+	if header.mode ~= 2 then
+	   io.stdout:write(
+         string.format(
+	         'Minimum density ............................\t%d\n',
+	         header.amin
+         )
+      )
+	   io.stdout:write(
+         string.format(
+	         'Maximum density ............................\t%d\n',
+	         header.amax
+         )
+      )
+	   io.stdout:write(
+         string.format(
+	         'Mean density ...............................\t%d\n',
+	         header.amean
+         )
+      )
+	else
+	   io.stdout:write(
+         string.format(
+	         'Minimum density ............................\t%10.4f\n',
+	         header.amin
+         )
+      )
+	   io.stdout:write(
+         string.format(
+	         'Maximum density ............................\t%10.4f\n',
+	         header.amax
+         )
+      )
+	   io.stdout:write(
+         string.format(
+	         'Mean density ...............................\t%10.4f\n',
+	         header.amean
+         )
+      )
+	end
+
+	io.stdout:write(
+      string.format(
+	      'Extra bytes after header until image data ..\t%d\n',
+	      header.Next
+      )
+   )
+   io.stdout:write(
+      string.format(
+         'Extended header Information (nint, nreal) ..\t%d\t%d\n',
+         header.nint,
+         header.nreal
+      )
+   )
+	io.stdout:write(
+      string.format(
+	      'Image header fields nd1, nd2, vd1, vd2 .....\t%d\t%d\t%d\t%d\n',
+	      header.nd1,
+         header.nd2,
+         header.vd1,
+         header.vd2
+      )
+   )
+	io.stdout:write(
+      string.format(
+	      'Original tilt angles .......................\t%5.2f\t%5.2f\t%5.2f\n',
+	      header.tiltAngles[1],
+         header.tiltAngles[2],
+         header.tiltAngles[3]
+      )
+   )
+	io.stdout:write(
+      string.format(
+	      'Current tilt angles ........................\t%5.2f\t%5.2f\t%5.2f\n',
+	      header.tiltAngles[4],
+         header.tiltAngles[5],
+         header.tiltAngles[6]
+      )
+   )
+	io.stdout:write(
+      string.format(
+	      'Origin of image ............................\t%5.2f\t%5.2f\t%5.2f\n',
+	      header.xorg,
+         header.yorg,
+         header.zorg
+      )
+   )
+
+   local is_IMOD = MRC_IO_lib.is_IMOD(header.nint, header.nreal)
+	local mrcType = is_IMOD and 'IMOD' or 'AGARD'
+	io.stdout:write(
+      string.format(
+	      'MRC format .................................\t%s\n',
+	      mrcType
+      )
+   )
+	io.stdout:write(
+      string.format(
+	      'Number of labels in header .................\t%d\n\n',
+	      header.nlabl
+      )
+   )
+
+	for i = 1, header.nlabl do
+	   io.stdout:write(
+         string.format(
+            '%s\n',
+            header.labels[i]
+         )
+      )
+	end
+   return true
+end
+
+print_header(arg[1])

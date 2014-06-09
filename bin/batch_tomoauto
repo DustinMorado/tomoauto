@@ -1,0 +1,101 @@
+#!/usr/bin/env lua
+--[[===========================================================================#
+#                                batchTomoauto                                 #
+#------------------------------------------------------------------------------#
+# This is a program to run tomoAuto in batch to align and reconstruct a large  #
+# number of raw image stacks.                                                  #
+#------------------------------------------------------------------------------#
+# Author:  Dustin Morado                                                       #
+# Written: March 24th 2014                                                     #
+# Contact: dustin.morado@uth.tmc.edu                                           #
+#------------------------------------------------------------------------------#
+# Arguments: None <nil>                                                        #
+#===========================================================================--]]
+local tomoauto_directory = os.getenv('TOMOAUTOROOT')
+package.cpath = package.cpath .. ';' .. tomoauto_directory .. '/lib/?.so;'
+package.path  = package.path  .. ';' .. tomoauto_directory .. '/lib/?.lua;'
+
+local lfs  = require 'lfs'
+local yago = require 'yago'
+
+local short_options = 'c,   d_,      f_,  g,   h,    i_,   l_,     m_,   '
+local long_options  = 'ctf, defocus, fid, gpu, help, iter, config, mode, '
+short_options = short_options .. ' n_,  p_,      s,    t,      z_'
+long_options  = long_options  .. ' num, procnum, SIRT, tomo3d, thickness'
+local status, arg, options_table = pcall(
+   yago.get_options,
+   arg,
+   short_options,
+   long_options
+)
+if not status then
+   local err = arg
+   io.stderr:write(err)
+   return nil
+end
+
+local fiducial_diameter = options_table.f_
+local threads               = 1
+local file_list             = {}
+local tomoauto_string       = ''
+local tomoauto_batch_string = ''
+
+threads = tonumber(options_table.n_) or threads
+threads = threads > 4 and 4 or threads
+
+-- to prevent errors in passing option table to tomoauto
+options_table.f_ = nil
+options_table.n_ = nil
+
+for filename in lfs.dir('.') do
+   if filename:find('%w+%.st$') then
+      table.insert(file_list, filename)
+   end
+end
+
+tomoauto_string = string.format(
+   '%s/bin/tomoauto',
+   tomoauto_directory
+)
+
+for option,argument in pairs(options_table) do
+   if argument then
+      tomoauto_string = string.format(
+         '%s -%s ',
+         tomoauto_string,
+         string.sub(option, 1, 1)
+      )
+      if argument ~= true then
+         tomoauto_string = string.format(
+            '%s %s ',
+            tomoauto_string,
+            argument
+         )
+      end
+   end
+end
+
+for i = 1, #file_list do
+   tomoauto_batch_string = string.format(
+      '%s %s %s %s &; ',
+      tomoauto_batch_string,
+      tomoauto_string,
+      file_list[i],
+      fiducial_diameter
+   )
+   if i % threads == 0 then
+      tomoauto_batch_string = string.format(
+         '%s; wait',
+         tomoauto_batch_string
+      )
+      os.execute(tomoauto_batch_string)
+      tomoauto_batch_string = ''
+   elseif i == #file_list then
+      tomoauto_batch_string = string.format(
+         '%s; wait',
+         tomoauto_batch_string
+      )
+      os.execute(tomoauto_batch_string)
+      tomoauto_batch_string = ''
+   end
+end

@@ -10,15 +10,15 @@
 # Written: May 13th 2014                                                       #
 # Contact: Dustin.Morado@uth.tmc.edu                                           #
 #------------------------------------------------------------------------------#
-# Arguments: arg[1]: Image stack file <filename.st>                            #
-#            arg[2]: Fiducial size in nanometers <intger>                      #
-#            arg[3]: Table with option flags from yago                         #
+# Arguments: input_filaname:    Image stack filename <string>                  #
+#            fiducial_diameter: Fiducial size in nanometers <integer>          #
+#            options_table:     Table with option flags from yago <table>      #
 #===========================================================================--]]
-local tomoauto_dir = os.getenv('TOMOAUTOROOT')
-package.path = package.path .. ';' .. tomoauto_dir .. '/lib/?.lua;'
-local comWriter   = require 'comWriter'
-local yago        = require 'yago'
-local MRC_IO_lib  = require 'MRC_IO_lib'
+local tomoauto_directory = os.getenv('TOMOAUTOROOT')
+package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
+local COM_file_writer = require 'COM_file_writer'
+local yago            = require 'yago'
+local MRC_IO_lib      = require 'MRC_IO_lib'
 local lfs, os, string = lfs, os, string
 
 function generate_command_files(
@@ -31,6 +31,7 @@ function generate_command_files(
       input_filename,
       fiducial_diameter
    )
+
    if options_table.c then
       if options_table.d_ then
          header.defocus = options_table.d_
@@ -43,39 +44,57 @@ function generate_command_files(
 
    local basename = string.sub(input_filename, 1, -4)
    local command_file_directory = basename .. '_COMs'
-   assert(lfs.mkdir(command_file_directory),
+
+   assert(
+      lfs.mkdir(command_file_directory),
       '\n\nError: Could not make COMs directory.\n'
    )
-   assert(os.execute(string.format(
-      'mv %s %s',
-      input_filename,
-      command_file_directory)),
+   assert(
+      os.execute(
+         string.format(
+            'mv %s %s',
+            input_filename,
+            command_file_directory
+         )
+      ),
       '\n\nError: Could not move input file to basename directory.\n'
    )
-   assert(lfs.chdir(command_file_directory),
+   assert(
+      lfs.chdir(command_file_directory),
       '\n\nError: Could not change to basename directory.\n'
    )
+
    local status, err = pcall(
-      comWriter.write,
+      COM_file_writer,
       input_filename,
       header,
       options_table
    )
    if not status then
       io.stderr:write(err)
-      io.stderr:write(
-         '\n\nError: Could not write ComFiles. Go bother Dustin.\n'
-      )
-      assert(os.execute(string.format('mv %s ..', input_filename )),
+      assert(
+         os.execute(
+            string.format(
+               'mv %s ..', 
+               input_filename
+            )
+         ),
          '\n\nError: Could not move input file to parent directory.\n'
       )
-      assert(lfs.chdir('..'),
+      assert(
+         lfs.chdir('..'),
          '\n\nError: Could not change to parent directory.\n'
       )
-      assert(os.execute(string.format('rm -rf  %s', command_file_directory)),
+      assert(
+         os.execute(
+            string.format(
+               'rm -rf  %s', 
+               command_file_directory
+            )
+         ),
          '\n\nError: Could not remove basename directory.\n'
       )
-      return false
+      return nil
    else
       return true
    end
@@ -84,9 +103,9 @@ end
 local short_options = 'c,   d_,       g,   h,    i_,   l_,    '
 local long_options  = 'ctf, defoucus, gpu, help, iter, config '
 short_options = short_options .. 'p_,      s,    t,      z_'
-long_options = long_options .. 'procnum, SIRT, tomo3d, thickness'
+long_options  = long_options  .. 'procnum, SIRT, tomo3d, thickness'
 local status, arg, options_table = pcall(
-   yago.getOpt,
+   yago.get_options,
    arg,
    short_options,
    long_options

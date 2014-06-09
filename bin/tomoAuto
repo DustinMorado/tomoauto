@@ -1,17 +1,36 @@
 #!/usr/bin/env lua
-local tomoAutoDir = os.getenv('TOMOAUTOROOT')
-package.path   = package.path .. ';' .. tomoAutoDir .. '/lib/?.lua;'
-local tomoAuto = require 'tomoAuto'
+--[[===========================================================================#
+#                                   tomoauto                                   #
+#------------------------------------------------------------------------------#
+# This program uses IMOD and RAPTOR to automatically handle the processing of  #
+# collected tilt-series. It can erase CCD pixel peaks, align tilt series, per- #
+# form CTF correction and reconstruct a tomogram using WBP or SIRT methods.    #
+#------------------------------------------------------------------------------#
+# Author:  Dustin Morado                                                       #
+# Written: May 22nd 2014                                                       #
+# Contact: Dustin.Morado@uth.tmc.edu                                           #
+#------------------------------------------------------------------------------#
+# Arguments: input_filename:    tilt-series filename <string>                  #
+#            fiducial_diameter: fiducial diameter in nanometers <integer>      #
+#            options_table:     options as output by yago <table>              #
+#===========================================================================--]]
+local tomoauto_directory = os.getenv('TOMOAUTOROOT')
+package.path   = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
+local tomoauto = require 'tomoauto'
 local yago     = require 'yago'
-local sString  = 'c,   d_,      g,   h,    i_,   l_,     m_, '
-local lString  = 'ctf, defocus, gpu, help, iter, config, mode, '
-local sString  = sString .. 'p_,      s,    t,      z_'
-local lString  = lString .. 'procnum, SIRT, tomo3D, thickness'
-local status, arg, Opts = pcall(yago.getOpt, arg, sString, lString)
+local short_options  = 'c,   d_,      g,   h,    i_,   l_,     m_, '
+local long_options   = 'ctf, defocus, gpu, help, iter, config, mode, '
+short_options  = short_options .. 'p_,      s,    t,      z_'
+long_options   = long_options  .. 'procnum, SIRT, tomo3D, thickness'
+local status, arg, options_table = pcall(
+   yago.get_options,
+   arg,
+   short_options,
+   long_options
+)
 if not status then
    local err = arg
    io.stderr:write(err)
-   return 1
+   return nil
 end
-
-tomoAuto.reconstruct(arg[1], arg[2], Opts)
+tomoAuto.reconstruct(arg[1], arg[2], options_table)

@@ -14,7 +14,7 @@ local MRC_IO_lib = {}
 # http://www.2dx.unibas.ch/documentation/mrc-software/                        #
 # fei-extended-mrc-format-not-used-by-2dx                                     #
 #-----------------------------------------------------------------------------#
-# Arguments: arg[1] = image stack file <filename.st>                          #
+# Arguments: input_filename = image stack filename <string>                   #
 #==========================================================================--]]
 function MRC_IO_lib.get_header(input_filename)
    local header    = {}
@@ -136,8 +136,8 @@ end
 # ended header. As can be seen here:                                           #
 # http://bio3d.colorado.edu/imod/doc/mrc_format.txt                            #
 #------------------------------------------------------------------------------#
-# Arguments: arg[1]: short_1 <short>                                           #
-#            arg[2]: short_2 <short>                                           #
+# Arguments: short_1: first short <integer>                                    #
+#            short_2: second short <integer>                                   #
 #===========================================================================--]]
 local function IMOD_short_to_float(short_1, short_2)
    local short_1_sign = short_1 < 0 and -1 or 1
@@ -154,8 +154,8 @@ end
 # A function that reads the nint and the nreal in the header and checks to see #
 # if the file comes from IMOD                                                  #
 #------------------------------------------------------------------------------#
-# Arguments: arg[1]: nint  <integer>                                           #
-#            arg[2]: nreal <integer>                                           #
+# Arguments: nint:  nint from header <integer>                                 #
+#            nreal: nreal from header <integer>                                #
 #===========================================================================--]]
 function MRC_IO_lib.is_IMOD(nint, nreal)
    local sum = 0
@@ -168,15 +168,15 @@ function MRC_IO_lib.is_IMOD(nint, nreal)
    if sum == nint then -- This is an IMOD extended header
       return true
    else                -- This is an AGARD extended header
-      return false
+      return nil
    end
 end
 --[[===========================================================================#
 #                              get_extended_header                             #
 #------------------------------------------------------------------------------#
-# A function that reads the extended header for a given section                #
+# A function that reads the extended header for a given MRC file.              #
 #------------------------------------------------------------------------------#
-# Arguments: arg[1]: image stack file <filename:string>                        #
+# Arguments: input_filename: image stack filename <string>                     #
 #===========================================================================--]]
 function MRC_IO_lib.get_extended_header(input_filename)
    local extended_header = {}
@@ -287,7 +287,10 @@ function MRC_IO_lib.get_extended_header(input_filename)
             -- Montage piece coordinates
             extended_header_section.mon = {}
             for i = 1, 3 do
-               local monCoord = struct.unpack('h', input_file:read(2))
+               local monCoord = struct.unpack(
+                  'h',
+                  input_file:read(2)
+               )
                table.insert(extended_header_section.mon, monCoord)
             end
          end
@@ -322,7 +325,7 @@ function MRC_IO_lib.get_extended_header(input_filename)
          end
       else
          io.stderr:write('Error: I do not know this type of input_file.')
-          return 1
+          return nil
       end
       extended_header[i] = extended_header_section
    end
@@ -335,8 +338,8 @@ end
 # This function writes the tilt angles out to stdout or a file, and this file  #
 # is used by many IMOD commands.                                               #
 #------------------------------------------------------------------------------#
-# Arguments: arg[1]: Image stack filename <filename.st>                        #
-#            arg[2]: [optional] Output file <filename.rawtlt>                  #
+# Arguments: input_filename:  Image stack filename <string>                    #
+#            output_filename: [optional] Output file <string>                  #
 #===========================================================================--]]
 function MRC_IO_lib.get_tilt_angles(input_filename, output_filename)
    local mdoc_filename   = inputfile_name .. '.mdoc'
@@ -355,12 +358,14 @@ function MRC_IO_lib.get_tilt_angles(input_filename, output_filename)
                   'Error: No tilt angle for %s section %d.\n',
                   inputoutput_file_name,
                   i
-            ), 0)
+               ), 0
+            )
          else
             output_file:write(string.format(
-               '% 6.2f\n',
-               extended_header[i].a_tilt
-            ))
+                  '% 6.2f\n',
+                  extended_header[i].a_tilt
+               )
+            )
          end
       end
    else
@@ -374,17 +379,19 @@ function MRC_IO_lib.get_tilt_angles(input_filename, output_filename)
             tilt_angle = tonumber(tilt_angle)
             if tilt_angle then
                output_file:write(string.format(
-                  '% 6.2f\n',
-                  tilt_angle
-               ))
+                     '% 6.2f\n',
+                     tilt_angle
+                  )
+               )
             end
          end
          mdoc_output_file:close()
       else
          error(string.format(
-            'Error: No tilt angles found in %s\'s extend header\n',
-            inputoutput_file_name
-         ), 0)
+               'Error: No tilt angles found in %s\'s extend header\n',
+               inputoutput_file_name
+            ), 0
+         )
       end
    end
    output_file:close()
@@ -394,10 +401,10 @@ end
 #------------------------------------------------------------------------------#
 # This function writes an MRC file using existing header tables                #
 #------------------------------------------------------------------------------#
-# Arguments: arg[1] = Input  Image Stack <MRC file>                            #
-#            arg[2] = Output Image Stack <MRC file>                            #
-#            arg[3] = Header <table>                                           #
-#            arg[4] = Extendend Header <table>                                 #
+# Arguments: input_filename:  Input Image filename <string>                    #
+#            output_filename: Output Image filename <string>                   #
+#            header:          Header <table>                                   #
+#            extended_header: Extendend Header <table>                         #
 #===========================================================================--]]
 function MRC_IO_lib.set_header(
    input_filename,
@@ -485,14 +492,16 @@ function MRC_IO_lib.set_header(
    for i = 1, 10 do
       if header.labels[i] then
          output_file:write(struct.pack(
-            'c80',
-            header.labels[i] .. string.rep(' ', 80)
-         ))
+               'c80',
+                header.labels[i] .. string.rep(' ', 80)
+            )
+         )
       else
          output_file:write(struct.pack(
-            'c80',
-            string.rep(' ', 80)
-         ))
+               'c80',
+               string.rep(' ', 80)
+            )
+         )
       end
    end
    if is_IMOD then
@@ -500,45 +509,52 @@ function MRC_IO_lib.set_header(
       for i = 1, header.nz do
          if extended_header[i].a_tilt then
             output_file:write(struct.pack(
-               'h',
-               extended_header[i].a_tilt * 100
-            ))
+                  'h',
+                  extended_header[i].a_tilt * 100
+               )
+            )
          end
          if extended_header[i].mon then
             for j = 1, 3 do
                output_file:write(struct.pack(
-                  'h',
-                  extended_header[i].mon[j]
-               ))
+                     'h',
+                     extended_header[i].mon[j]
+                  )
+               )
             end
          end
          if extended_header[i].x_stage then
             output_file:write(struct.pack(
-               'h',
-               extended_header[i].x_stage * 25
-            ))
+                  'h',
+                  extended_header[i].x_stage * 25
+               )
+            )
             output_file:write(struct.pack(
-               'h',
-               extended_header[i].y_stage * 25
-            ))
+                  'h',
+                  extended_header[i].y_stage * 25
+               )
+            )
          end
          if extended_header[i].magnification then
             output_file:write(struct.pack(
-               'h',
-               extended_header[i].magnification / 100
-            ))
+                  'h',
+                  extended_header[i].magnification / 100
+               )
+            )
          end
          if extended_header[i].intensity then
             output_file:write(struct.pack(
-               'h',
-               extended_header[i].intensity * 25000
-            ))
+                  'h',
+                  extended_header[i].intensity * 25000
+               )
+            )
          end
          if extended_header[i].exp_dose then
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].exp_dose
-            ))
+                  'f',
+                  extended_header[i].exp_dose
+               )
+            )
          end
       end
       if extended_header_extra > 1 and extended_header_extra % 2 == 0 then
@@ -550,69 +566,85 @@ function MRC_IO_lib.set_header(
       for i = 1, 1024 do
          if extended_header[i] then
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].a_tilt
-            ))
+                  'f',
+                  extended_header[i].a_tilt
+               )
+            )
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].b_tilt
-            ))
+                  'f',
+                  extended_header[i].b_tilt
+               )
+            )
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].x_stage
-            ))
+                  'f',
+                  extended_header[i].x_stage
+               )
+            )
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].y_stage
-            ))
+                  'f',
+                  extended_header[i].y_stage
+               )
+            )
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].z_stage
-            ))
+                  'f',
+                  extended_header[i].z_stage
+               )
+            )
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].x_shift
-            ))
+                  'f',
+                  extended_header[i].x_shift
+               )
+            )
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].y_shift
-            ))
+                  'f',
+                  extended_header[i].y_shift
+               )
+            )
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].defocus
-            ))
+                  'f',
+                  extended_header[i].defocus
+               )
+            )
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].exp_time
-            ))
+                  'f',
+                  extended_header[i].exp_time
+               )
+            )
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].mean_int
-            ))
+                  'f',
+                  extended_header[i].mean_int
+               )
+            )
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].tilt_axis
-            ))
+                  'f',
+                  extended_header[i].tilt_axis
+               )
+            )
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].pixel_size
-            ))
+                  'f',
+                  extended_header[i].pixel_size
+               )
+            )
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].magnification
-            ))
+                  'f',
+                  extended_header[i].magnification
+               )
+            )
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].ht
-            ))
+                  'f',
+                  extended_header[i].ht
+               )
+            )
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].binning
-            ))
+                  'f',
+                  extended_header[i].binning
+               )
+            )
             output_file:write(struct.pack(
-               'f',
-               extended_header[i].appliedDefocus
-            ))
+                  'f',
+                  extended_header[i].appliedDefocus
+               )
+            )
             for j = 1, 16 do
                output_file:write(struct.pack('f', 0))
             end
@@ -632,9 +664,9 @@ end
 # This function rewrites a stack file to alter, or more usefully fill in miss- #
 # ing information, if the information is lost for some reason.                 #
 #------------------------------------------------------------------------------#
-# Arguments: arg[1] = Input  Image Stack <MRC file>                            #
-#            arg[2] = Output Image Stack <MRC file>                            #
-#            arg[3] = Option table <options from yago>                         #
+# Arguments: input_filename:  Input  Image filename <string>                   #
+#            output_filename: Output Image filenam <string>                    #
+#            options_table:   Option as from yago <table>                      #
 #===========================================================================--]]
 function MRC_IO_lib.write_header(input_filename, output_filename, options_table)
    local header          = MRC_IO_lib.get_header(input_filename)
@@ -744,8 +776,8 @@ end
 # This function returns a table with a mix of data from the standard and the   #
 # extended MRC header as is required for reconstruction.                       #
 #------------------------------------------------------------------------------#
-# Arguments: arg[1]: Image stack file <filename:string>                        #
-#            arg[2]: Fiducial size in nanometers <integer>                     #
+# Arguments: input_filename:    Image stack file <string>                      #
+#            fiducial_diameter: Fiducial diameter in nanometers <integer>      #
 #===========================================================================--]]
 function MRC_IO_lib.get_required_header(input_filename, fiducial_diameter)
    local   header = MRC_IO_lib.get_header(input_filename)
@@ -765,7 +797,10 @@ function MRC_IO_lib.get_required_header(input_filename, fiducial_diameter)
       header.pixel_size = (header.xlen / header.mx) / 10
    else
       error(string.format(
-         'Error: I do no know how to handle image stack %s.\n', input_filename))
+            'Error: I do no know how to handle image stack %s.\n',
+            input_filename
+         )
+      )
    end
    -- Calculate the Fiducial size in pixels
    header.fiducial_diameter_px = math.floor(
@@ -779,9 +814,10 @@ function MRC_IO_lib.get_required_header(input_filename, fiducial_diameter)
    end
    if not header.split_angle then
       error(string.format(
-         'Error: Could not find a zero degree tilt for %s.\n',
-         input_filename
-      ), 0)
+            'Error: Could not find a zero degree tilt for %s.\n',
+            input_filename
+         ), 0
+      )
    end
    return header
 end

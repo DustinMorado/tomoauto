@@ -21,81 +21,106 @@ local lfs = require 'lfs'
 local io, string, table = io, string, table
 
 local function dose_fractioned_to_stack(log)
+   local stack_file           = nil
    local new_stack_file       = nil
-   local     stack_file       = nil
-   local filename             = nil
-   local file_list            = nil
+   local basename             = nil
+   local file_list_name       = nil
    local num                  = nil
    local shift                = 0
+   local MRC_table            = {}
    local new_MRC_table        = {}
-   local     MRC_table        = {}
+   local tilt_angle_table     = {}
    local new_tilt_angle_table = {}
-   local     tilt_angle_table = {}
    local header               = {}
    local extended_header      = {}
-
    local log_file = io.open(log, 'r')
+
    for line in log_file:lines('*l') do
-      if string.find(line, 'Opened') then
+
+      if string.find(line, 'Opened') then -- This finds the stack file name
          stack_file     = string.match(line, '%w+%.st')
-         filename       = string.sub(stack_file, 1, -4)
-         new_stack_file = filename .. '_driftcorr.st'
-         file_list      = filename .. '_list.txt'
+         basename       = string.sub(stack_file, 1, -4)
+         new_stack_file = basename .. '_driftcorr.st'
+         file_list_name = basename .. '_list.txt'
       end
+
       local mrc_filename  = string.match(line, '[%w%-%_%.]+%.mrc')
       local is_data_loss  = string.find(line, 'This%sRecord[%s%w]+data%sloss')
       local tilt_angle    = string.match(line, 'Tilt%s=%s([%-%d%.]+)')
       local is_terminated = string.find(line, 'TERMINATING')
+
       if mrc_filename then
          local basename   = string.sub(mrc_filename, 1, -5)
          local new_mrc_filename = string.format('%s_driftcorr.mrc', basename)
          table.insert(MRC_table, new_mrc_filename)
       end
+
       if is_data_loss then
          table.remove(MRC_table)
       end
+
       if tilt_angle then
-         table.insert(tilt_angle_table, tilt_angle)
+         table.insert(tilt_angle_table, tonumber(tilt_angle))
       end
+
       if is_terminated then
          error(string.format(
-            '\nError: Original stack %s terminated so we will too.\n\n',
-            stack_file), 0)
+               '\nError: Original stack %s terminated so we will too.\n\n',
+               stack_file
+            ), 0
+         )
       end
    end
    log_file:close()
+
    if not stack_file then
       error(string.format(
-         '\nError: %s did not attempt to make a stack file so we will not \z
-           either.\n\n', log), 0)
+            '\nError: %s did not attempt to make a stack file \z
+            so we will not either.\n',
+            log
+         ), 0
+      )
    end
-   if #MRC_table ~= #tilt_angle_table then 
+
+   if #MRC_table ~= #tilt_angle_table then
       error(string.format(
-         '\nError: %s has unequal file and tilt angle references.\n\n', log), 0)
+         '\nError: %s has unequal file and tilt angle references.\n\n',
+         log
+      ), 0
+   )
    else
       num = #MRC_table
    end
-   header = MRC_IO_lib.get_header(stack_file)
+
+   header          = MRC_IO_lib.get_header(stack_file)
    extended_header = MRC_IO_lib.get_extended_heeader(stack_file)
-   local file_list_file = io.open(file_list, 'w')
-   file_list_file:write(string.format('%d\n', num))
+   local file_list = io.open(file_list_name, 'w')
+   file_list:write(string.format('%d\n', num))
+
    for i = 1, num do
       if i == 1 then
-         table.insert(new_tilt_angle_table, tilt_angle_table[i])
-         table.insert(new_MRC_table, MRC_table[i])
-      elseif tonumber(tilt_angle_table[i]) > tonumber(new_tilt_angle_table[1]) then
+         table.insert(new_tilt_angle_table,
+            tilt_angle_table[i]
+         )
+         table.insert(new_MRC_table,
+            MRC_table[i]
+         )
+      elseif tilt_angle_table[i] > new_tilt_angle_table[1] then
+         local table_length = #new_tilt_angle_table
          table.insert(new_tilt_angle_table, 1, tilt_angle_table[i])
          table.insert(new_MRC_table, 1, MRC_table[i])
-      elseif tonumber(tilt_angle_table[i]) <
-         tonumber(new_tilt_angle_table[#new_tilt_angle_table])
-      then
+      elseif tilt_angle_table[i] < new_tilt_angle_table[table_length] then
          table.insert(new_tilt_angle_table, tilt_angle_table[i])
          table.insert(new_MRC_table, MRC_table[i])
       else
          error(string.format(
-            '\nError: %s has unordered or duplicate tilt angles.\n\n', log), 0)
+               '\nError: %s has unordered or duplicate tilt angles.\n\n',
+               log
+            ), 0
+         )
       end
    end
+
    for i = 1, num do
       local file = io.open(new_MRC_table[i], 'r')
       if file ~= nil then
@@ -103,17 +128,23 @@ local function dose_fractioned_to_stack(log)
          file_list_file:write(string.format('%s\n0\n', new_MRC_table[i]))
       else
          shift = shift + 1
+         io.stderr:write(string.format(
+            'Dosefgpu_driftcorr did not process %s.\n',
+            new_MRC_table[i]
+         ))
          table.remove(new_MRC_table, i)
          table.remove(new_tilt_angle_table, i)
       end
    end
+
    if shift ~= 0 then
       num = num - shift
       file_list_file:seek('set', 0)
       file_list_file:write(string.format('%d\n', num - shift))
    end
    file_list_file:close()
-   for i = 1, num do
+
+   for i = 1, num do --SerialEM beta 3.4 bug work around
       if math.floor(new_tilt_angle_table[i]) == -2 then
          table.insert(extended_header, i, {})
          for k,v in pairs(extended_header[i - 1]) do
@@ -122,43 +153,49 @@ local function dose_fractioned_to_stack(log)
       end
       extended_header[i].a_tilt = new_tilt_angle_table[i]
    end
-   header.nz   = num
-   header.mz   = num
-   header.zlen = (header.xlen / header.mx) * header.mz
-   header.mode = 2
+
    local status, err = pcall(os.execute, string.format(
       'newstack -filei %s %s &> /dev/null', file_list, new_stack_file))
    if not status then
       io.stderr:write(err)
-      return 1
+      return nil
    end
+
    initial_driftcorr_header = MRC_IO_lib.get_header(new_stack_file)
+   header.zlen  = (header.xlen / header.mx) * header.mz
    header.nx    = initial_driftcorr_header.nx
    header.ny    = initial_driftcorr_header.ny
+   header.nz    = num
+   header.mode  = 2
    header.mx    = initial_driftcorr_header.mx
    header.my    = initial_driftcorr_header.my
+   header.mz    = num
    header.xlen  = (header.zlen / header.mz) * header.mx
    header.ylen  = (header.zlen / header.mz) * header.my
    header.amin  = initial_driftcorr_header.amin
    header.amax  = initial_driftcorr_header.amax
    header.amean = initial_driftcorr_header.amean
    initial_driftcorr_header = nil
+
    MRC_IO_lib.set_header(new_stack_file, 'temp.st', header, extended_header)
    status, err = pcall(
-      os.execute, 
+      os.execute,
       string.format('mv temp.st %s', new_stack_file)
    )
    if not status then
       io.stderr:write(err)
-      return 1
+      return nil
    end
+
    status, err = pcall(os.execute, string.format('rm %s', file_list))
    if not status then
       io.stderr:write(err)
-      return 1
+      return nil
    end
-   return 0
+   return true
 end
+
+-- Run dose_fractioned_to_stack for all of the logs in the current directory
 for log_file in lfs.dir('.') do
    if log_file:find('%w+%.%log$') then
       local status, runString = pcall(dose_fractioned_to_stack, log_file)
