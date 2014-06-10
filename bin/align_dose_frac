@@ -100,41 +100,61 @@ local function write_newstack(input_fiilename)
 end
 
 local function run(program, basename)
-   local status, err = pcall(function()
-      local sucess, exit, signal = os.execute(string.format(
+   local sucess, exit, signal = os.execute(
+      string.format(
          '%s 1>> align_dose_fractioned_%s.log \z
              2>> align_dose_fractioned_%s.err.log',
          program,
          basename,
          basename
-      ))
-      if (not success) or (signal ~= 0) then
-         error(string.format(
-               '\nError: %s failed for %s.\n\n',
-               program,
-               basename
-            ), 0
-         )
-      end
-   end)
-   return status, err
+      )
+   )
+   if (not success) or (signal ~= 0) then
+      error(
+         string.format(
+            '\nError: %s failed for %s.\n\n',
+            program,
+            basename
+         ), 0
+      )
+   else
+      return true
+   end
 end
 
-local input_filename = arg[1]
-local basename  = input_filename:sub(1, -5)
-local status, err = nil, nil
-write_xfalign(input_filename)
-write_xftoxg(input_filename)
-write_newstack(input_filename)
-run('submfg -s -t xfalign.com xftoxg.com newstack.com', basename)
-run(string.format(
-      'xyzproj -axis Y %s.ali %s_driftcorr.mrc',
-      basename,
+function align_dose_fractioned(input_filename)
+   local basename  = input_filename:sub(1, -5)
+   write_xfalign(input_filename)
+   write_xftoxg(input_filename)
+   write_newstack(input_filename)
+   run(
+      'submfg -s -t xfalign.com xftoxg.com newstack.com',
       basename
-   ), basename
-)
-run(string.format(
-      'rm *.com *.log *.xf *.xg %s.ali',
+   )
+   run(
+      string.format(
+         'xyzproj -axis Y %s.ali %s_driftcorr.mrc',
+         basename,
+         basename
+      ),
       basename
-   ), basename
+   )
+   run(
+      string.format(
+         'rm *.com *.log *.xf *.xg %s.ali',
+         basename
+      ),
+      basename
+   )
+end
+
+local status, err = pcall(
+   align_dose_fractioned,
+   arg[1]
 )
+if not status then
+   io.stderr:write(err)
+   os.exit(1)
+else
+   os.exit(0)
+end

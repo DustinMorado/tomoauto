@@ -50,7 +50,7 @@ local status, arg, options_table = pcall(
 if not status then
    local err = arg
    io.stderr:write(err)
-   return nil
+   os.exit(1)
 end
 
 if options_table.h then
@@ -93,7 +93,13 @@ if options_table.h then
    io.stdout:write('--appDefocus\t\tSet Applied Defocus\n')
    io.stdout:write('--intensity\t\tSet intensity[IMOD]\n')
    io.stdout:write('--expDose\t\tSet Exposure Dose[IMOD]\n')
-   return 0
+   os.exit(0)
+end
+
+status, err = pcall(MRC_IO_lib.set_header, arg[1], arg[2], options_table)
+if not status then
+   io.stderr:write(err)
+   os.exit(1)
 else
-   MRC_IO_lib.set_header(arg[1], arg[2], options_table)
+   os.exit(0)
 end

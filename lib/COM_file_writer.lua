@@ -30,26 +30,26 @@ local function write_ccderaser(input_filename)
       )
    )
    command_file:write(string.format(
-         'InputFile %s\n', 
+         'InputFile %s\n',
          input_filename
       )
-   ) 
+   )
    command_file:write(string.format(
-         'OutputFile %s_fixed.st\n', 
+         'OutputFile %s_fixed.st\n',
          basename
       )
-   ) 
+   )
    command_file:write(string.format(
          'FindPeaks\n'
       )
    )
    command_file:write(string.format(
-         'PeakCriterion %s\n', 
+         'PeakCriterion %s\n',
          ccderaser_PeakCriterion
       )
    )
    command_file:write(string.format(
-         'DiffCriterion %s\n', 
+         'DiffCriterion %s\n',
          ccderaser_DiffCriterion
       )
    )
@@ -87,36 +87,36 @@ local function write_ccderaser(input_filename)
          'MaximumRadius %s\n',
          ccderaser_MaximumRadius
       )
-   ) 
+   )
    command_file:write(string.format(
          'AnnulusWidth %s\n',
-         ccderaserAnnulusWidth
+         ccderaser_AnnulusWidth
       )
-   ) 
+   )
    command_file:write(string.format(
          'XYScanSize %s\n',
-         ccderaserXYScanSize
+         ccderaser_XYScanSize
       )
-   ) 
+   )
    command_file:write(string.format(
          'ScanCriterion %s\n',
-         ccderaserScanCriterion
+         ccderaser_ScanCriterion
       )
    )
    command_file:write(string.format(
          'BorderSize %s\n',
-         ccderaserBorderSize
+         ccderaser_BorderSize
       )
-   ) 
+   )
    command_file:write(string.format(
          'PolynomialOrder %s\n',
-         ccderaserPolynomialOrder
+         ccderaser_PolynomialOrder
       )
-   ) 
+   )
    command_file:close()
 end
 
-local function writeTiltXCorrCom(input_filename, header)
+local function write_tiltxcorr(input_filename, header)
 	local command_filename = 'tiltxcorr.com'
 	local basename = string.sub(input_filename, 1, -4)
 	local command_file = assert(io.open(command_filename, 'w'))
@@ -128,113 +128,113 @@ local function writeTiltXCorrCom(input_filename, header)
          'InputFile %s\n',
          input_filename
       )
-   ) 
+   )
    command_file:write(string.format(
          'OutputFile %s.prexf\n',
          basename
       )
-   ) 
+   )
    command_file:write(string.format(
          'TiltFile %s.rawtlt\n',
          basename
       )
-   ) 
+   )
    command_file:write(string.format(
          'RotationAngle %s\n',
          header.tilt_axis
       )
-   ) 
+   )
    command_file:write(string.format(
          'AngleOffset %s\n',
-         tiltxcorrAngleOffset
+         tiltxcorr_AngleOffset
       )
-   ) 
+   )
    command_file:write(string.format(
          'FilterRadius2 %s\n',
-         tiltxcorrFilterRadius2
+         tiltxcorr_FilterRadius2
       )
-   ) 
+   )
    command_file:write(string.format(
          'FilterSigma1 %s\n',
-         tiltxcorrFilterSigma1
+         tiltxcorr_FilterSigma1
       )
-   ) 
+   )
    command_file:write(string.format(
          'FilterSigma2 %s\n',
-         tiltxcorrFilterSigma2
+         tiltxcorr_FilterSigma2
       )
-   ) 
-	if tiltxcorrExcludeCentralPeak then
+   )
+	if tiltxcorr_ExcludeCentralPeak then
       command_file:write(string.format(
             'ExcludeCentralPeak\n'
          )
       )
    end
-	if tiltxcorrBordersInXandY_use then
+	if tiltxcorr_BordersInXandY_use then
       command_file:write(string.format(
             'BordersInXandY %s\n',
-            tiltxcorrBordersInXandY
+            tiltxcorr_BordersInXandY
          )
       )
    end
-	if tiltxcorrXMinAndMax_use then
+	if tiltxcorr_XMinAndMax_use then
       command_file:write(string.format(
             'XMinAndMax %s\n',
-            tiltxcorrXMinAndMax
+            tiltxcorr_XMinAndMax
          )
       )
    end
-	if tiltxcorrYMinAndMax_use then
+	if tiltxcorr_YMinAndMax_use then
       command_file:write(string.format(
             'YMinAndMax %s\n',
-            tiltxcorrYMinAndMax
+            tiltxcorr_YMinAndMax
          )
       )
    end
-	if tiltxcorrPadsInXandY_use then
+	if tiltxcorr_PadsInXandY_use then
       command_file:write(string.format(
             'PadsInXandY %s\n',
-            tiltxcorrPadsInXandY
+            tiltxcorr_PadsInXandY
          )
       )
    end
-	if tiltxcorrTapersInXandY_use then
+	if tiltxcorr_TapersInXandY_use then
       command_file:write(string.format(
             'TapersInXandY %s\n',
-            tiltxcorrTapersInXandY
+            tiltxcorr_TapersInXandY
          )
       )
    end
-	if tiltxcorrStartingEndingViews_use then
+	if tiltxcorr_StartingEndingViews_use then
       command_file:write(string.format(
             'StartingEndingViews %s\n',
-            tiltxcorrStartingEndingViews
+            tiltxcorr_StartingEndingViews
          )
       )
    end
-	if tiltxcorrCumulativeCorrelation_use then
+	if tiltxcorr_CumulativeCorrelation_use then
       command_file:write(string.format(
             'CumulativeCorrelation\n'
          )
       )
    end
-	if tiltxcorrAbsoluteCosineStretch_use then
+	if tiltxcorr_AbsoluteCosineStretch_use then
       command_file:write(string.format(
             'AbsoluteCosineStretch\n'
          )
       )
    end
-	if tiltxcorrNoCosineStretch_use then
+	if tiltxcorr_NoCosineStretch_use then
       command_file:write(string.format(
             'NoCosineStretch\n'
          )
       )
    end
-	if tiltxcorrTestOutput_use then
-      if tiltxcorrTestOutput then
+	if tiltxcorr_TestOutput_use then
+      if tiltxcorr_TestOutput then
          command_file:write(string.format(
                'TestOutput %s\n',
-               tiltxcorrTestOutput
+               tiltxcorr_TestOutput
             )
          )
       else
@@ -248,7 +248,7 @@ local function writeTiltXCorrCom(input_filename, header)
    command_file:close()
 end
 
-local function writeXfToXgCom(input_filename)
+local function write_xftoxg(input_filename)
 	local command_filename  = 'xftoxg.com'
 	local basename = string.sub(input_filename, 1, -4)
 	local command_file = assert(io.open(command_filename, 'w'))
@@ -260,7 +260,7 @@ local function writeXfToXgCom(input_filename)
          'InputFile %s.prexf\n',
          basename
       )
-   ) 
+   )
    command_file:write(string.format(
          'GOutputFile %s.prexg\n',
          basename
@@ -268,41 +268,41 @@ local function writeXfToXgCom(input_filename)
    )
    command_file:write(string.format(
          'NumberToFit %s\n',
-         xftoxgNumberToFit
+         xftoxg_NumberToFit
       )
-   ) 
-	if xftoxgReferenceSection_use then
+   )
+	if xftoxg_ReferenceSection_use then
       command_file:write(string.format(
             'ReferenceSection %s\n',
-            xftoxgReferenceSection
+            xftoxg_ReferenceSection
          )
-      ) 
+      )
    end
-	if xftoxgOrderOfPolynomialFit_use then
+	if xftoxg_OrderOfPolynomialFit_use then
       command_file:write(string.format(
             'PolynomialFit %s\n',
-            xftoxgPolynomialFit
+            xftoxg_PolynomialFit
          )
-      ) 
+      )
    end
-	if xftoxgHybridFits_use then
+	if xftoxg_HybridFits_use then
       command_file:write(string.format(
             'HybridFits %s\n',
-            xftoxgHybridFits
+            xftoxg_HybridFits
          )
-      ) 
+      )
    end
-	if xftoxgRangeOfAnglesInAverage_use then
+	if xftoxg_RangeOfAnglesInAverage_use then
       command_file:write(string.format(
             'RangeOfAnglesInAvg %s\n',
-            xftoxgRangeOfAnglesInAvg
+            xftoxg_RangeOfAnglesInAvg
          )
-      ) 
+      )
    end
    command_file:close()
 end
 
-local function writePreNewstackCom(input_filename)
+local function write_prenewstack(input_filename)
 	local command_filename = 'prenewstack.com'
 	local basename = string.sub(input_filename, 1, -4)
 	local command_file = assert(io.open(command_filename, 'w'))
@@ -325,49 +325,49 @@ local function writePreNewstackCom(input_filename)
          basename
       )
    )
-   if prenewstackModeToOutput_use then
+   if prenewstack_ModeToOutput_use then
 	   command_file:write(string.format(
             'ModeToOutput %s\n',
-            prenewstackModeToOutput
+            prenewstack_ModeToOutput
          )
       )
    end
    command_file:write(string.format(
          'BinByFactor %s\n',
-         prenewstackBinByFactor
+         prenewstack_BinByFactor
       )
    )
    command_file:write(string.format(
          'ImagesAreBinned %s\n',
-         prenewstackImagesAreBinned
+         prenewstack_ImagesAreBinned
       )
    )
-   if prenewstackFloatDensities_use then
+   if prenewstack_FloatDensities_use then
 	   command_file:write(string.format(
             'FloatDensities %s\n',
-            prenewstackFloatDensities
+            prenewstack_FloatDensities
          )
-      ) 
+      )
    end
-	if prenewstackContrastBlackWhite_use then
+	if prenewstack_ContrastBlackWhite_use then
       command_file:write(string.format(
             'ContrastBlackWhite %s\n',
-            prenewstackContrastBlackWhite
+            prenewstack_ContrastBlackWhite
          )
-      ) 
+      )
    end
-	if prenewstackScaleMinAndMax_use then
+	if prenewstack_ScaleMinAndMax_use then
       command_file:write(string.format(
             'ScaleMinAndMax %s\n',
-            prenewstackScaleMinAndMax
+            prenewstack_ScaleMinAndMax
          )
       )
    end
    command_file:close()
 end
 
-local function writeRaptorCom(input_filename, header)
-   local command_filename = 'raptor1.com'
+local function write_RAPTOR(input_filename, header)
+   local command_filename = 'RAPTOR.com'
    local basename = string.sub(input_filename, 1,-4)
    local command_file = assert(io.open(command_filename, 'w'))
    command_file:write(string.format(
@@ -376,7 +376,7 @@ local function writeRaptorCom(input_filename, header)
    )
    command_file:write(string.format(
          'RaptorExecPath %s\n',
-         raptorExecPath
+         RAPTOR_ExecPath
       )
    )
    command_file:write(string.format(
@@ -390,19 +390,19 @@ local function writeRaptorCom(input_filename, header)
       )
    )
    command_file:write(string.format(
-         'OutputPath $s/raptor1\n',
+         'OutputPath %s/RAPTOR\n',
          lfs.currentdir()
       )
    )
    command_file:write(string.format(
          'Diameter %s\n',
-         header.fidPx
+         header.fiducial_diameter_px
       )
    )
-   if raptorMarkersPerImage_use then
+   if RAPTOR_MarkersPerImage_use then
       command_file:write(string.format(
             'MarkersPerImage %s\n',
-            raptorMarkersPerImage
+            RAPTOR_MarkersPerImage
          )
       )
    end
@@ -410,20 +410,20 @@ local function writeRaptorCom(input_filename, header)
          'TrackingOnly\n'
       )
    )
-   if raptorAnglesInHeader_use then
+   if RAPTOR_AnglesInHeader_use then
       command_file:write(string.format(
             'AnglesInHeader\n'
          )
       )
    end
-   if raptorBinning_use then
+   if RAPTOR_Binning_use then
       command_file:write(string.format(
             'Binning %s\n',
-            raptorBinning
+            RAPTOR_Binning
          )
       )
    end
-   if raptorxRay_use then
+   if RAPTOR_xRay_use then
       command_file:write(string.format(
             'xRay\n'
          )
@@ -432,7 +432,7 @@ local function writeRaptorCom(input_filename, header)
    command_file:close()
 end
 
-local function writeTiltAlignCom(input_filename, header)
+local function write_tiltalign(input_filename, header)
    local command_filename = 'tiltalign.com'
    local basename = string.sub(input_filename, 1, -4)
    local command_file = assert(io.open(command_filename, 'w'))
@@ -452,7 +452,7 @@ local function writeTiltAlignCom(input_filename, header)
    )
    command_file:write(string.format(
          'ImagesAreBinned %d\n',
-         tiltAlignImagesAreBinned
+         tiltalign_ImagesAreBinned
       )
    )
    command_file:write(string.format(
@@ -492,7 +492,7 @@ local function writeTiltAlignCom(input_filename, header)
    )
    command_file:write(string.format(
          'SeparateGroup %d-%d\n',
-         1, 
+         1,
          header.split_angle
       )
    )
@@ -501,138 +501,138 @@ local function writeTiltAlignCom(input_filename, header)
          basename
       )
    )
-   if tiltAlignAngleOffset_use then
+   if tiltalign_AngleOffset_use then
       command_file:write(string.format(
             'AngleOffset %4.2f\n',
-            tiltAlignAngleOffset
+            tiltalign_AngleOffset
          )
       )
    end
-   if tiltAlignRotOption_use then
+   if tiltalign_RotOption_use then
       command_file:write(string.format(
             'RotOption %d\n',
-            tiltAlignRotOption
+            tiltalign_RotOption
          )
       )
    end
-   if tiltAlignRotDefaultGrouping_use then
+   if tiltalign_RotDefaultGrouping_use then
       command_file:write(string.format(
             'RotDefaultGrouping %d\n',
-            tiltAlignRotDefaultGrouping
+            tiltalign_RotDefaultGrouping
          )
       )
    end
-   if tiltAlignTiltOption_use then
+   if tiltalign_TiltOption_use then
       command_file:write(string.format(
             'TiltOption %d\n',
-            tiltAlignTiltOption
+            tiltalign_TiltOption
          )
       )
    end
-   if tiltAlignTiltDefaultGrouping_use then
+   if tiltalign_TiltDefaultGrouping_use then
       command_file:write(string.format(
             'TiltDefaultGrouping %d\n',
-            tiltAlignTiltDefaultGrouping
+            tiltalign_TiltDefaultGrouping
          )
       )
    end
-   if tiltAlignMagReferenceView_use then
+   if tiltalign_MagReferenceView_use then
       command_file:write(string.format(
             'MagReferenceView %d\n',
-            tiltAlignMagReferenceView
+            tiltalign_MagReferenceView
          )
       )
    end
-   if tiltAlignMagOption_use then
+   if tiltalign_MagOption_use then
       command_file:write(string.format(
             'MagOption %d\n',
-            tiltAlignMagOption
+            tiltalign_MagOption
          )
       )
    end
-   if tiltAlignMagDefaultGrouping_use then
+   if tiltalign_MagDefaultGrouping_use then
       command_file:write(string.format(
             'MagDefaultGrouping %d\n',
-            tiltAlignMagDefaultGrouping
+            tiltalign_MagDefaultGrouping
          )
       )
    end
-   if tiltAlignXStretchOption_use then
+   if tiltalign_XStretchOption_use then
       command_file:write(string.format(
             'XStretchOption %d\n',
-            tiltAlignXStretchOption
+            tiltalign_XStretchOption
          )
       )
    end
-   if tiltAlignSkewOption_use then
+   if tiltalign_SkewOption_use then
       command_file:write(string.format(
             'SkewOption %d\n',
-            tiltAlignSkewOption
+            tiltalign_SkewOption
          )
       )
    end
-   if tiltAlignXStretchDefaultGrouping_use then
+   if tiltalign_XStretchDefaultGrouping_use then
       command_file:write(string.format(
             'XStretchDefaultGrouping %d\n',
-            tiltAlignXStretchDefaultGrouping
+            tiltalign_XStretchDefaultGrouping
          )
       )
    end
-   if tiltAlignSkewDefaultGrouping_use then
+   if tiltalign_SkewDefaultGrouping_use then
       command_file:write(string.format(
             'SkewDefaultGrouping %d\n',
-            tiltAlignSkewDefaultGrouping
+            tiltalign_SkewDefaultGrouping
          )
       )
    end
-   if tiltAlignBeamTiltOption_use then
+   if tiltalign_BeamTiltOption_use then
       command_file:write(string.format(
             'BeamTiltOption %d\n',
-            tiltAlignBeamTiltOption
+            tiltalign_BeamTiltOption
          )
       )
    end
-   if tiltAlignResidualReportCriterion_use then
+   if tiltalign_ResidualReportCriterion_use then
       command_file:write(string.format(
             'ResidualReportCriterion %4.2f\n',
-            tiltAlignResidualReportCriterion
+            tiltalign_ResidualReportCriterion
          )
       )
    end
    command_file:write(string.format(
          'SurfacesToAnalyze %d\n',
-         tiltAlignSurfacesToAnalyze
+         tiltalign_SurfacesToAnalyze
       )
    )
    command_file:write(string.format(
          'MetroFactor %4.2f\n',
-         tiltAlignMetroFactor
+         tiltalign_MetroFactor
       )
    )
    command_file:write(string.format(
          'MaximumCycles %d\n',
-         tiltAlignMaximumCycles
+         tiltalign_MaximumCycles
       )
    )
    command_file:write(string.format(
          'KFactorScaling %4.2f\n',
-         tiltAlignKFactorScaling
+         tiltalign_KFactorScaling
       )
    )
-   if tiltAlignAxisZShift_use then
+   if tiltalign_AxisZShift_use then
       command_file:write(string.format(
             'AxisZShift %4.2f\n',
-            tiltAlignAxisZShift
+            tiltalign_AxisZShift
          )
       )
    end
-   if tiltAlignShiftZFromOriginal_use then
-      command_fil :write(string.format(
+   if tiltalign_ShiftZFromOriginal_use then
+      command_file:write(string.format(
             'ShiftZFromOriginal \n'
          )
       )
    end
-   if tiltAlignLocalAlignments_use then
+   if tiltalign_LocalAlignments_use then
       command_file:write(string.format(
             'LocalAlignments\n'
          )
@@ -644,15 +644,15 @@ local function writeTiltAlignCom(input_filename, header)
       )
       command_file:write(string.format(
             'MinSizeOrOverlapXandY %s\n',
-            tiltAlignMinSizeOrOverlapXandY
+            tiltalign_MinSizeOrOverlapXandY
          )
       )
       command_file:write(string.format(
             'MinFidsTotalAndEachSurface %s\n',
-            tiltAlignMinFidsTotalAndEachSurface
+            tiltalign_MinFidsTotalAndEachSurface
          )
       )
-      if tiltAlignFixXYZCoordinates_use then
+      if tiltalign_FixXYZCoordinates_use then
          command_file:write(string.format(
                'FixXYZCoordinates\n'
             )
@@ -660,67 +660,67 @@ local function writeTiltAlignCom(input_filename, header)
       end
       command_file:write(string.format(
             'LocalOutputOptions %s\n',
-            tiltAlignLocalOutputOptions
+            tiltalign_LocalOutputOptions
          )
       )
       command_file:write(string.format(
             'LocalRotOption %d\n',
-            tiltAlignLocalRotOption
+            tiltalign_LocalRotOption
          )
       )
       command_file:write(string.format(
             'LocalRotDefaultGrouping %d\n',
-            tiltAlignLocalRotDefaultGrouping
+            tiltalign_LocalRotDefaultGrouping
          )
       )
       command_file:write(string.format(
             'LocalTiltOption %d\n',
-            tiltAlignLocalTiltOption
+            tiltalign_LocalTiltOption
          )
       )
       command_file:write(string.format(
             'LocalTiltDefaultGrouping %d\n',
-            tiltAlignLocalTiltDefaultGrouping
+            tiltalign_LocalTiltDefaultGrouping
          )
       )
       command_file:write(string.format(
             'LocalMagReferenceView %d\n',
-            tiltAlignLocalMagReferenceView
+            tiltalign_LocalMagReferenceView
          )
       )
       command_file:write(string.format(
             'LocalMagOption %d\n',
-            tiltAlignLocalMagOption
+            tiltalign_LocalMagOption
          )
       )
       command_file:write(string.format(
             'LocalMagDefaultGrouping %d\n',
-            tiltAlignLocalMagDefaultGrouping
+            tiltalign_LocalMagDefaultGrouping
          )
       )
       command_file:write(string.format(
             'LocalXStretchOption %d\n',
-            tiltAlignLocalXStretchOption
+            tiltalign_LocalXStretchOption
          )
       )
       command_file:write(string.format(
             'LocalXStretchDefaultGrouping %d\n',
-            tiltAlignLocalXStretchDefaultGrouping
+            tiltalign_LocalXStretchDefaultGrouping
          )
       )
       command_file:write(string.format(
             'LocalSkewOption %d\n',
-            tiltAlignLocalSkewOption
+            tiltalign_LocalSkewOption
          )
       )
       command_file:write(string.format(
             'LocalSkewDefaultGrouping %d\n',
-            tiltAlignLocalSkewDefaultGrouping
+            tiltalign_LocalSkewDefaultGrouping
          )
       )
       command_file:write(string.format(
             'NumberOfLocalPatchesXandY %s\n',
-            tiltAlignNumberOfLocalPatchesXandY
+            tiltalign_NumberOfLocalPatchesXandY
          )
       )
       command_file:write(string.format(
@@ -728,7 +728,7 @@ local function writeTiltAlignCom(input_filename, header)
             basename
          )
       )
-      if tiltAlignRobustFitting_use then
+      if tiltalign_RobustFitting_use then
          command_file:write(string.format(
                'RobustFitting\n'
             )
@@ -737,8 +737,8 @@ local function writeTiltAlignCom(input_filename, header)
    end
    command_file:close()
 end
-   
-local function writeXfProductCom(input_filename)
+
+local function write_xfproduct(input_filename)
    local command_filename = 'xfproduct.com'
    local basename = string.sub(input_filename, 1, -4)
    local command_file = assert(io.open(command_filename, 'w'))
@@ -764,7 +764,7 @@ local function writeXfProductCom(input_filename)
    command_file:close()
 end
 
-local function writeNewstackCom(input_filename)
+local function write_newstack(input_filename)
    local command_filename = 'newstack.com'
    local basename = string.sub(input_filename, 1, -4)
    local command_file = assert(io.open(command_filename, 'w'))
@@ -789,10 +789,10 @@ local function writeNewstackCom(input_filename)
    )
    command_file:write(string.format(
          'TaperAtFill %s\n',
-         newstackTaperAtFill
+         newstack_TaperAtFill
       )
    )
-   if newstackAdjustOrigin_use then
+   if newstack_AdjustOrigin_use then
       command_file:write(string.format(
             'AdjustOrigin\n'
          )
@@ -800,10 +800,10 @@ local function writeNewstackCom(input_filename)
    end
    command_file:write(string.format(
          'OffsetsInXandY %s\n',
-         newstackOffsetsInXandY
+         newstack_OffsetsInXandY
       )
    )
-   if newstackDistortionField_use then
+   if newstack_DistortionField_use then
       command_file:write(string.format(
             'DistortionField %s.idf\n',
             basename
@@ -812,15 +812,15 @@ local function writeNewstackCom(input_filename)
    end
    command_file:write(string.format(
          'ImagesAreBinned %d\n',
-         newstackImagesAreBinned
+         newstack_ImagesAreBinned
       )
    )
    command_file:write(string.format(
          'BinByFactor %d\n',
-         newstackBinByFactor
+         newstack_BinByFactor
       )
    )
-   if newstackGradientFile_use then
+   if newstack_GradientFile_use then
       command_file:write(string.format(
             'GradientFile %s.maggrad\n',
             basename
@@ -830,7 +830,7 @@ local function writeNewstackCom(input_filename)
    command_file:close()
 end
 
-local function writeGoldCom(input_filename)
+local function write_gold_ccderaser(input_filename)
 	local command_filename = 'gold_ccderaser.com'
 	local basename = string.sub(input_filename, 1, -4)
 	local command_file = assert(io.open(command_filename, 'w'))
@@ -855,15 +855,15 @@ local function writeGoldCom(input_filename)
    )
    command_file:write(string.format(
          'CircleObjects %s\n',
-         gccderaserCircleObjects
+         gold_ccderaser_CircleObjects
       )
    )
    command_file:write(string.format(
          'BetterRadius %s\n',
-         gccderaserBetterRadius
+         gold_ccderaser_BetterRadius
       )
    )
-	if gccderaserMergePatches then
+	if gold_ccderaser_MergePatches then
       command_file:write(string.format(
             'MergePatches\n'
          )
@@ -871,10 +871,10 @@ local function writeGoldCom(input_filename)
    end
    command_file:write(string.format(
          'PolynomialOrder %s\n',
-         gccderaserPolynomialOrder
+         gold_ccderaser_PolynomialOrder
       )
    )
-	if gccderaserExcludeAdjacent then
+	if gold_ccderaser_ExcludeAdjacent then
       command_file:write(string.format(
             'ExcludeAdjacent\n'
          )
@@ -883,7 +883,7 @@ local function writeGoldCom(input_filename)
    command_file:close()
 end
 
-local function writeTiltCom(input_filename, header, Opts)
+local function write_tilt(input_filename, header, options_table)
 	local command_filename = 'tilt.com'
 	local basename = string.sub(input_filename, 1, -4)
 	local command_file = assert(io.open(command_filename, 'w'))
@@ -903,10 +903,10 @@ local function writeTiltCom(input_filename, header, Opts)
    )
    command_file:write(string.format(
          'ActionIfGPUFails %s\n',
-         tiltActionIfGPUFails
+         tilt_ActionIfGPUFails
       )
    )
-	if tiltAdjustOrigin_use then
+	if tilt_AdjustOrigin_use then
       command_file:write(string.format(
             'AdjustOrigin \n'
          )
@@ -914,7 +914,7 @@ local function writeTiltCom(input_filename, header, Opts)
    end
    command_file:write(string.format(
          'FULLIMAGE %s %s\n',
-         header.nx, 
+         header.nx,
          header.ny
       )
    )
@@ -922,77 +922,77 @@ local function writeTiltCom(input_filename, header, Opts)
          'IMAGEBINNED 1\n'
       )
    )
-	if tiltLOG_use then
+	if tilt_LOG_use then
       command_file:write(string.format(
             'LOG %s\n',
-            tiltLOG
+            tilt_LOG
          )
       )
    end
    command_file:write(string.format(
          'MODE %s\n',
-         tiltMODE
+         tilt_MODE
       )
    )
-	if tiltOFFSET_use then
+	if tilt_OFFSET_use then
       command_file:write(string.format(
             'OFFSET %s\n',
-            tiltOFFSET
+            tilt_OFFSET
          )
       )
    end
-	if tiltPARALLEL_use then
+	if tilt_PARALLEL_use then
       command_file:write(string.format(
             'PARALLEL\n'
          )
-      ) 
-	elseif tiltPERPENDICULAR_use then
+      )
+	elseif tilt_PERPENDICULAR_use then
       command_file:write(string.format(
             'PERPENDICULAR \n'
          )
       )
-	else 
-      std.err:write(string.format(
+	else
+      error(string.format(
             'Error! Please make sure either PARALLEL or PERPENDICULAR\n\z
             is chosen in the configuration command_file not both!\n'
-         )
+         ), 0
       )
    end
    command_file:write(string.format(
          'RADIAL %s\n',
-         tiltRADIAL
+         tilt_RADIAL
       )
    )
    command_file:write(string.format(
          'SCALE %s\n',
-         tiltSCALE
+         tilt_SCALE
       )
    )
    command_file:write(string.format(
          'SHIFT %s\n',
-         tiltSHIFT
+         tilt_SHIFT
       )
    )
-	if tiltSLICE_use then
+	if tilt_SLICE_use then
       command_file:write(string.format(
             'SLICE %s\n',
-            tiltSLICE
+            tilt_SLICE
          )
       )
    end
-   if tiltSUBSETSTART_use then
+   if tilt_SUBSETSTART_use then
       command_file:write(string.format(
             'SUBSETSTART %s\n',
-            tiltSUBSETSTART
+            tilt_SUBSETSTART
          )
-      ) 
+      )
    end
-   if Opts.z_ then
-      tiltTHICKNESS = Opts.z_
+   if options_table.z_ then
+      tilt_THICKNESS = options_table.z_
    end
    command_file:write(string.format(
          'THICKNESS %s\n',
-         tiltTHICKNESS
+         tilt_THICKNESS
       )
    )
    command_file:write(string.format(
@@ -1000,45 +1000,45 @@ local function writeTiltCom(input_filename, header, Opts)
          basename
       )
    )
-   if Opts.g then
-      tiltUseGPU_use, tiltUseGPU = true, 0
+   if options_table.g then
+      tilt_UseGPU_use, tilt_UseGPU = true, 0
    end
-	if tiltUseGPU_use then
+	if tilt_UseGPU_use then
       command_file:write(string.format(
             'UseGPU %s\n',
-            tiltUseGPU
+            tilt_UseGPU
          )
       )
    end
-	if tiltWIDTH_use then
+	if tilt_WIDTH_use then
       command_file:write(string.format(
             'WIDTH %s\n',
-            tiltWIDTH
+            tilt_WIDTH
          )
       )
    end
-   if tiltLOCALFILE_use then
+   if tilt_LOCALFILE_use then
       command_file:write(string.format(
             'LOCALFILE %slocal.xf\n',
             basename
          )
       )
    end
-	if tiltXAXISTILT_use then
+	if tilt_XAXISTILT_use then
       command_file:write(string.format(
             'XAXISTILT %s\n',
-            tiltXAXISTILT
+            tilt_XAXISTILT
          )
       )
    end
-	if tiltXTILTFILE_use then
+	if tilt_XTILTFILE_use then
       command_file:write(string.format(
             'XTILTFILE %s.xtilt\n',
             basename
          )
       )
    end
-   if tiltZFACTORFILE_use then
+   if tilt_ZFACTORFILE_use then
       command_file:write(string.format(
             'ZFACTORFILE %s.zfac\n',
             basename
@@ -1048,7 +1048,7 @@ local function writeTiltCom(input_filename, header, Opts)
    command_file:close()
 end
 
-local function writeCTFPlotterCom(input_filename, header, Opts)
+local function write_ctfplotter(input_filename, header, options_table)
 	local command_filename = 'ctfplotter.com'
 	local basename = string.sub(input_filename, 1, -4)
 	local command_file = assert(io.open(command_filename, 'w'))
@@ -1066,7 +1066,7 @@ local function writeCTFPlotterCom(input_filename, header, Opts)
          basename
       )
    )
-   if ctfInvertTiltAngles_use then
+   if ctfplotter_InvertTiltAngles_use then
       command_file:write(string.format(
             'InvertTiltAngles\n'
          )
@@ -1074,7 +1074,7 @@ local function writeCTFPlotterCom(input_filename, header, Opts)
    end
    command_file:write(string.format(
          'OffsetToAdd %s\n',
-         ctfOffsetToAdd
+         ctfplotter_OffsetToAdd
       )
    )
    command_file:write(string.format(
@@ -1100,77 +1100,83 @@ local function writeCTFPlotterCom(input_filename, header, Opts)
    )
    command_file:write(string.format(
          'AngleRange %s\n',
-         ctfAngleRange
+         ctfplotter_AngleRange
       )
    )
    command_file:write(string.format(
          'AutoFitRangeAndStep %s\n',
-         ctfAutoFitRangeAndStep
+         ctfplotter_AutoFitRangeAndStep
       )
    )
    command_file:write(string.format(
          'Voltage %s\n',
-         ctfVoltage
+         ctfplotter_Voltage
       )
    )
    command_file:write(string.format(
          'SphericalAberration %s\n',
-         ctfSphericalAberration
+         ctfplotter_SphericalAberration
       )
    )
    command_file:write(string.format(
          'AmplitudeContrast %s\n',
-         ctfAmplitudeContrast
+         ctfplotter_AmplitudeContrast
       )
    )
    command_file:write(string.format(
          'DefocusTol %s\n',
-         ctfDefocusTol
+         ctfplotter_DefocusTol
       )
    )
    command_file:write(string.format(
          'PSResolution %s\n',
-         ctfPSResolution
+         ctfplotter_PSResolution
       )
    )
    command_file:write(string.format(
          'TileSize %s\n',
-         ctfTileSize
+         ctfplotter_TileSize
       )
    )
    command_file:write(string.format(
          'LeftDefTol %s\n',
-         ctfLeftDefTol
+         ctfplotter_LeftDefTol
       )
    )
    command_file:write(string.format(
          'RightDefTol %s\n',
-         ctfRightDefTol
+         ctfplotter_RightDefTol
       )
    )
    if header.fType == 'Fei' then
-      ctfConfigFile = '/usr/local/ImodCalib/CTFnoise'
-      ctfConfigFile = ctfConfigFile .. '/CCDbackground/polara-CCD-2012.ctg'
-      ctfFrequencyRangeToFit = '0.1 0.225'
+      ctfplotter_ConfigFile = string.format(
+         '%s%s\n',
+         '/usr/local/ImodCalib/CTFnoise',
+         '/CCDbackground/polara-CCD-2012.ctg'
+      )
+      ctfplotter_FrequencyRangeToFit = '0.1 0.225'
    elseif header.nx > 2000 then
-      ctfConfigFile = '/usr/local/ImodCalib/CTFnoise'
-      ctfConfigFile = ctfConfigFile .. '/CCDbackground/polara-K2-4K-2014.ctg'
-      ctfFrequencyRangeToFit = ctfFrequencyRangeToFit
+      ctfplotter_ConfigFile = string.format(
+         '%s%s\n',
+         '/usr/local/ImodCalib/CTFnoise',
+         '/CCDbackground/polara-K2-4K-2014.ctg'
+      )
+      ctfplotter_FrequencyRangeToFit = ctfplotter_FrequencyRangeToFit
    else
-      ctfConfigFile = ctfConfigFile
-      ctfFrequencyRangeToFit = ctfFrequencyRangeToFit
+      ctfplotter_ConfigFile = ctfplotter_ConfigFile
+      ctfplotter_FrequencyRangeToFit = ctfplotter_FrequencyRangeToFit
    end
    command_file:write(string.format(
          'ConfigFile ',
-         ctfConfigFile
+         ctfplotter_ConfigFile
       )
    )
    command_file:write(string.format(
          'FrequencyRangeToFit ',
-         ctfFrequencyRangeToFit
+         ctfplotter_FrequencyRangeToFit
       )
    )
-	if ctfVaryExponentInFit_use then
+	if ctfplotter_VaryExponentInFit_use then
       command_file:write(string.format(
             'VaryExponentInFit\n'
          )
@@ -1183,8 +1189,8 @@ local function writeCTFPlotterCom(input_filename, header, Opts)
    command_file:close()
 end
 
-local function writeCTFCorrectCom(input_filename, header)
-	local command_filename = 'ctfcorrection.com'
+local function write_ctfphaseflip(input_filename, header)
+	local command_filename = 'ctfphaseflip.com'
 	local basename = string.sub(input_filename,1, -4)
 	local command_file = assert(io.open(command_filename, 'w'))
    command_file:write(string.format(
@@ -1201,7 +1207,7 @@ local function writeCTFCorrectCom(input_filename, header)
          basename
       )
    )
-   if ctfInvertTiltAngles_use then
+   if ctfphaseflip_InvertTiltAngles_use then
       command_file:write(string.format(
             'InvertTiltAngles\n'
          )
@@ -1219,17 +1225,17 @@ local function writeCTFCorrectCom(input_filename, header)
    )
    command_file:write(string.format(
          'Voltage %s\n',
-         ctfVoltage
+         ctfphaseflip_Voltage
       )
    )
    command_file:write(string.format(
          'SphericalAberration %s\n',
-         ctfSphericalAberration
+         ctfphaseflip_SphericalAberration
       )
    )
    command_file:write(string.format(
          'DefocusTol %s\n',
-         ctfDefocusTol
+         ctfphaseflip_DefocusTol
       )
    )
    command_file:write(string.format(
@@ -1239,41 +1245,41 @@ local function writeCTFCorrectCom(input_filename, header)
    )
    command_file:write(string.format(
          'AmplitudeContrast %s\n',
-         ctfAmplitudeContrast
+         ctfphaseflip_AmplitudeContrast
       )
    )
    command_file:write(string.format(
          'InterpolationWidth %s\n',
-         ctfInterpolationWidth
+         ctfphaseflip_InterpolationWidth
       )
    )
    command_file:close()
 end
 
-function comWriter.write(input_filename, header, Opts)
-   if Opts.l_ then
-      localConfig = loadfile(Opts.l_)
+function COM_file_writer.write(input_filename, header, options_table)
+   if options_table.l_ then
+      localConfig = loadfile(options_table.l_)
       if localConfig then
          localConfig()
       end
    end
 
-   writeCcderaserCom(input_filename)
-   writeTiltXCorrCom(input_filename, header)
-   writeXfToXgCom(input_filename)
-   writePreNewstackCom(input_filename)
-   writeRaptorCom(input_filename, header)
-   writeTiltAlignCom(input_filename, header)
-   writeXfProductCom(input_filename)
-   writeNewstackCom(input_filename)
-   writeGoldCom(input_filename)
-   if Opts.c then
-      writeCTFPlotterCom(input_filename, header, Opts)
-      writeCTFCorrectCom(input_filename, header)
+   write_ccderaser(input_filename)
+   write_tiltxcorr(input_filename, header)
+   write_xftoxg(input_filename)
+   write_prenewstack(input_filename)
+   write_RAPTOR(input_filename, header)
+   write_tiltalign(input_filename, header)
+   write_xfproduct(input_filename)
+   write_newstack(input_filename)
+   write_gold_ccderaser(input_filename)
+   if options_table.c then
+      write_ctfplotter(input_filename, header, options_table)
+      write_ctfphaseflip(input_filename, header)
    end
-   if not Opts.t then
-      writeTiltCom(input_filename, header, Opts)
+   if not options_table.t then
+      write_tilt(input_filename, header, options_table)
    end
 end
 
-return comWriter
+return COM_file_writer

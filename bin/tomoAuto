@@ -16,12 +16,16 @@
 #===========================================================================--]]
 local tomoauto_directory = os.getenv('TOMOAUTOROOT')
 package.path   = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
-local tomoauto = require 'tomoauto'
-local yago     = require 'yago'
+
+local tomoauto     = require 'tomoauto'
+local tomoauto_lib = require 'tomoauto_lib'
+local yago         = require 'yago'
+
 local short_options  = 'c,   d_,      g,   h,    i_,   l_,     m_, '
 local long_options   = 'ctf, defocus, gpu, help, iter, config, mode, '
 short_options  = short_options .. 'p_,      s,    t,      z_'
 long_options   = long_options  .. 'procnum, SIRT, tomo3D, thickness'
+
 local status, arg, options_table = pcall(
    yago.get_options,
    arg,
@@ -31,6 +35,38 @@ local status, arg, options_table = pcall(
 if not status then
    local err = arg
    io.stderr:write(err)
-   return nil
+   os.exit(1)
 end
-tomoAuto.reconstruct(arg[1], arg[2], options_table)
+
+if options_table.h then
+   tomoauto_lib.display_help()
+   os.exit(0)
+end
+
+if options_table.m_ ~= 'reconstruct' then
+   status, err = pcall(
+      tomoauto.process,
+      arg[1],
+      arg[2],
+      options_table
+   )
+elseif options_table.m_ == 'reconstruct' then
+   status, err = pcall(
+      tomoauto.reconstruct,
+      arg[1],
+      arg[2],
+      options_table
+   )
+end
+
+if not status then
+   io.stderr:write(err)
+   local basename = string.sub(arg[1], 1, -4)
+   local clean_status, clean_err = pcall(tomoauto.clean_on_fail, basename)
+   if not clean_status then
+      io.stderr:write(clean_err)
+   end
+   os.exit(1)
+else
+   os.exit(0)
+end

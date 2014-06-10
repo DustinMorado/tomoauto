@@ -1,12 +1,16 @@
---[[==========================================================================# 
+--[[==========================================================================#
 #                               globalConfig.lua                              #
 #-----------------------------------------------------------------------------#
 # This is the central configuration file for eTomo_auto it is a long file     #
 # and it has been attempted at great lengths to document this file as         #
 # completely as possible; however, if you have any more questions, please     #
-# refer to the manpages of the desired program. This file is organized in the # 
+# refer to the manpages of the desired program. This file is organized in the #
 # manner in which eTomo_auto is run.  The defaults in this file are from the  #
 # defaults in eTomo and not necessarily the ones in the specific man pages.   #
+#-----------------------------------------------------------------------------#
+# Author:  Dustin Morado                                                      #
+# Written: June 02nd 2014                                                     #
+# Contact: Dustin.Morado@uth.tmc.edu                                          #
 #==========================================================================--]]
 --[[==========================================================================#
 # Step 1: Pre-Processing                                                      #
@@ -16,52 +20,52 @@
 -- These are the options for the ccderaser command used for pre-processing to
 -- remove x-ray abnormalities on the CCD camera.
 
--- PeakCriterion: 
+-- PeakCriterion:
 -- Number of standard deviations above local mean for erasing peak based on
 -- intensity.
-ccderaserPeakCriterion  =  10.0
+ccderaser_PeakCriterion  =  10.0
 
 -- DiffCriterion:
 -- Number of standard deviations above mean pixel-to-pixel difference for
 -- erasing a peak based on these differences.
-ccderaserDiffCriterion  =  8.0
+ccderaser_DiffCriterion  =  8.0
 
 -- GrowCriterion:
 -- Number of standard deviations above mean for adding points to the peak.
-ccderaserGrowCriterion  =  4.0
+ccderaser_GrowCriterion  =  4.0
 
 -- ScanCriterion:
 -- Number of standard deviations above the mean of the scan area used to pick
 -- out possible peaks initially.
-ccderaserScanCriterion  =  3.0
+ccderaser_ScanCriterion  =  3.0
 
 -- MaximumRadius:
 -- Maximum radius of peak area to erase.
-ccderaserMaximumRadius = 4.2
+ccderaser_MaximumRadius = 4.2
 
 -- AnnulusWidth:
 -- Difference between outer and inner radius of the annulus around a peak in
 -- which to calculate local mean and standard deviation.
-ccderaserAnnulusWidth = 2.0
+ccderaser_AnnulusWidth = 2.0
 
 -- XYScanSize:
 -- Size of regions to compute mean and standard deviation in for initial scans.
-ccderaserXYScanSize = 100
+ccderaser_XYScanSize = 100
 
 -- EdgeExclusionWidth:
 -- Width of area to exclude on all edges of image in pixels.
-ccderaserEdgeExclusionWidth = 4
+ccderaser_EdgeExclusionWidth = 4
 
 -- BorderSize:
 -- Size of border around points in patch, which contains the points which will
 -- be fit to.
-ccderaserBorderSize = 2
+ccderaser_BorderSize = 2
 
 -- PolynomialOrder:
 -- Order of polynomial fit to border points. The order can be between 0 and 3,
 -- where 0 will simply replace the pixels with the mean of the border points
 -- instead of fitting to them.
-ccderaserPolynomialOrder = 2
+ccderaser_PolynomialOrder = 2
 
 -- BigDiffCriterion:
 -- An extra-large peak will be erased only if the value for the maximum
@@ -69,23 +73,23 @@ ccderaserPolynomialOrder = 2
 -- of the pixels in the patch, exceeds this criterion, evaluated as the number
 -- of SDs above the mean absolute difference between adjacent pixels in the scan
 -- area.
-ccderaserBigDiffCriterion = 19.0
+ccderaser_BigDiffCriterion = 19.0
 
 -- GiantCriterion:
 -- Criterion # of SDs above local mean for erasing extra-large peak based on
--- intensity. 
-ccderaserGiantCriterion = 12.0
+-- intensity.
+ccderaser_GiantCriterion = 12.0
 
 -- ExtraLargeRadius:
 -- Maximum radius of extra-large peak area to erase.
-ccderaserExtraLargeRadius = 8.0
+ccderaser_ExtraLargeRadius = 8.0
 
 --[[==========================================================================#
 # Step 2: Coarse Alignment                                                    #
 #-----------------------------------------------------------------------------#
 # Commands: tiltxcorr, newstack                                               #
 #==========================================================================--]]
--- These are the options for the tiltxcorr command used to calculate the 
+-- These are the options for the tiltxcorr command used to calculate the
 -- cross-correlation to create initial transformations for the coarse alignment.
 
 -- AngleOffset:
@@ -94,86 +98,86 @@ ccderaserExtraLargeRadius = 8.0
 -- at high tilt. Sharper correlations can be obtained by adding this angle
 -- offset, which is the same as the offset needed in Tiltalign or Tilt to make
 -- the specimen flat in the reconstruction.
-tiltxcorrAngleOffset = 0.0
+tiltxcorr_AngleOffset = 0.0
 
 -- FilterRadius2:
 -- High spatial frequencies in the cross-correlation will be attenuated by a
 -- Gaussian curve that is 1 at this cutoff radius and falls off above this
 -- radius with a standard deviation specified by FilterSigma2.
-tiltxcorrFilterRadius2 = 0.25
+tiltxcorr_FilterRadius2 = 0.25
 
 -- FilterSigma1:
 -- Sigma value to filter low frequencies in the correlations with a frequency
--- and decays up to 1 with the given sigma value.  
-tiltxcorrFilterSigma1 = 0.03
+-- and decays up to 1 with the given sigma value.
+tiltxcorr_FilterSigma1 = 0.03
 
 -- FilterSigma2:
 -- Sigma value for the Gaussian rolloff below and above the cutoff frequencies
 -- specified by FilterRadius1 and FilterRadius2.
-tiltxcorrFilterSigma2 = 0.05
+tiltxcorr_FilterSigma2 = 0.05
 
 -- ExcludeCentralPeak:
 -- Exclude central correlation peak due to fixed pattern noise in the images.
 -- This option will misalign images that are already nearly aligned.
-tiltxcorrExcludeCentralPeak = nil
+tiltxcorr_ExcludeCentralPeak = nil
 
 -- BordersInXandY:
 -- Number of pixels to trim off each edge in X and in Y (the default is to use
 -- the whole image).
-tiltxcorrBordersInXandY_use = nil
-tiltxcorrBordersInXandY = '0 0'
+tiltxcorr_BordersInXandY_use = nil
+tiltxcorr_BordersInXandY = '0 0'
 
 -- XMinAndMax:
 -- Starting and ending X coordinates of a region to correlate, based on the
 -- position of the region at zero tilt.  This entry will override an X border
 -- value entered with BordersInXandY.
-tiltxcorrXMinAndMax_use = nil
-tiltxcorrXMinAndMax = '0 0'
+tiltxcorr_XMinAndMax_use = nil
+tiltxcorr_XMinAndMax = '0 0'
 
 -- YMinAndMax:
 -- Starting and ending Y coordinates of a region to correlate. This entry will
 -- override a Y border value entered with BordersInXandY.
-tiltxcorrYMinAndMax_use = nil
-tiltxcorrYMinAndMax = '0 0'
+tiltxcorr_YMinAndMax_use = nil
+tiltxcorr_YMinAndMax = '0 0'
 
 -- PadsInXandY:
 -- Number of pixels to pad images in X and in Y. The default is 5% of the image
 -- dimensions up to 20 pixels.
-tiltxcorrPadsInXandY_use = nil
-tiltxcorrPadsInXandY = '20 20' 
+tiltxcorr_PadsInXandY_use = nil
+tiltxcorr_PadsInXandY = '20 20'
 
 -- TapersInXandY: Number of pixels to taper images in X and Y. The default is 10%
 -- of the image dimensions up to 100 pixels.
-tiltxcorrTapersInXandY_use = nil
-tiltxcorrTapersInXandY = '100 100'
+tiltxcorr_TapersInXandY_use = nil
+tiltxcorr_TapersInXandY = '100 100'
 
 -- StartingEndingViews:
 -- Starting and ending view numbers, numbered from 1, for doing a subset of
 -- views.
-tiltxcorrStartingEndingViews_use = nil
-tiltxcorrStartingEndingViews = '1 129'
- 
+tiltxcorr_StartingEndingViews_use = nil
+tiltxcorr_StartingEndingViews = '1 129'
+
 -- CumulativeCorrelation:
 -- Use this option to add up previously aligned pictures to get the reference
 -- for the next alignment. Alignments will start at low tilt and work up to high
 -- tilt.
-tiltxcorrCumulativeCorrelation_use = nil
+tiltxcorr_CumulativeCorrelation_use = nil
 
 -- AbsoluteCosineStretch:
 -- Stretch each image added into the cumulative sum by 1 over the cosine of its
 -- tilt angle.
-tiltxcorrAbsoluteCosineStretch_use = nil
+tiltxcorr_AbsoluteCosineStretch_use = nil
 
 -- NoCosineStretch:
 -- Do not do any cosine stretching for correlations or for accumulating into the
 -- reference (this option overrides AbsoluteCosineStretch).
-tiltxcorrNoCosineStretch_use = nil
+tiltxcorr_NoCosineStretch_use = nil
 
 -- TestOutput:
 -- Specify a filename with this option to have two padded, tapered images and
 -- the cross-correlation saved for every pair of images that are correlated.
-tiltxcorrTestOutput_use = nil
-tiltxcorrTestOutput = nil
+tiltxcorr_TestOutput_use = nil
+tiltxcorr_TestOutput = nil
 
 -- These are the options for the xftoxg command used to take a list of xf
 -- transformations and generates a list of xg xforms to apply to align the
@@ -182,32 +186,32 @@ tiltxcorrTestOutput = nil
 -- NumberToFit:
 -- Number of adjacent sections to fit, 0 for global alignment, or 1 for fit to
 -- all sections
-xftoxgNumberToFit = 0
+xftoxg_NumberToFit = 0
 
 -- ReferenceSection:
 -- Do a global alignment to the given section; this will give the reference
 -- section a unit transform and keep it from being transformed. Sections are
 -- numbered from 1.
-xftoxgReferenceSection_use = nil
-xftoxgReferenceSection = 64
+xftoxg_ReferenceSection_use = nil
+xftoxg_ReferenceSection = 64
 
 -- OrderOfPolynomialFit:
 -- Order of the polynomial fit to the data. The default is 1 (linear fit).
-xftoxgOrderOfPolynomialFit_use = nil
-xftoxgOrderOfPolynomialFit = 1
+xftoxg_OrderOfPolynomialFit_use = nil
+xftoxg_OrderOfPolynomialFit = 1
 
 -- HybridFits:
 -- Number of parameters to eliminate trends for with a hybrid alignment: 2 for
 -- translations only, 3 for rotations also, 4 for size changes also.
-xftoxgHybridFits_use = nil
-xftoxgHybridFits = 2
+xftoxg_HybridFits_use = nil
+xftoxg_HybridFits = 2
 
 -- RangeOfAnglesInAverage:
 -- Compute the global average center position, and the center position for local
 -- fits, using the largest group of sections whose rotation angles fall within
 -- the given range.
-xftoxgRangeOfAnglesInAverage_use = nil
-xftoxgRangeofAnglesInAverage = 20.0
+xftoxg_RangeOfAnglesInAverage_use = nil
+xftoxg_RangeofAnglesInAverage = 20.0
 
 -- These are the options for the newstack command to apply the xforms produced
 -- and create a new image stack.
@@ -216,24 +220,24 @@ xftoxgRangeofAnglesInAverage = 20.0
 -- The storage mode of the output file; 0 for byte, 1 for 16-bit signed integer,
 -- 6 for 16-bit unsigned integer, or 2 for 32-bit floating point. The default is
 -- the mode of the first input file.
-prenewstackModeToOutput_use = nil
-prenewstackModeToOutput = 6
+prenewstack_ModeToOutput_use = nil
+prenewstack_ModeToOutput = 6
 
--- BinByFactor: 
+-- BinByFactor:
 -- Use oridinary binning to reduce images in size by the given factor, or use
 -- antialias filtering to reduce images by this factor.
-prenewstackBinByFactor = 1
+prenewstack_BinByFactor = 1
 
 -- ImagesAreBinned:
 -- The current binning of the images, so that the distortion field can be
 -- applied correctly.
-prenewstackImagesAreBinned = 1
+prenewstack_ImagesAreBinned = 1
 
 -- LinearInterpolation:
 -- Use linear instead of cubic interpolation to transform images. Linear
 -- interpolation is more suitable when images are very noisy, but cubic
 -- interpolation will preserve fine detail better when noise is not an issue.
-prenewstackLinearInterpolation_use = nil
+prenewstack_LinearInterpolation_use = nil
 
 -- FloatDensities:
 -- Adjust densities of sections individually.  Enter 1 for each section to fill
@@ -241,23 +245,23 @@ prenewstackLinearInterpolation_use = nil
 -- to shift sections to a common mean without scaling, or 4 to shift sections to
 -- a common mean then rescale the minimum and maximum densities to the Min and
 -- Max values specified with the -scale option.
-prenewstackFloatDensities_use = nil
-prenewstackFloatDensities = 2
+prenewstack_FloatDensities_use = nil
+prenewstack_FloatDensities = 2
 
 -- ContrastBlackWhite:
 -- Rescale densities to match the contrast seen in 3dmod with the given black
 -- and white values. This works properly only when the output file will be
 -- bytes. It will not work if the data were loaded into 3dmod with intensity
 -- scaling; use mrcbyte in that case.
-prenewstackContrastBlackWhite_use = nil
-prenewstackContrastBlackWhite = '0 255'
+prenewstack_ContrastBlackWhite_use = nil
+prenewstack_ContrastBlackWhite = '0 255'
 
 -- ScaleMinAndMax:
 -- Rescale the densities of all sections by the same factors so that the
 -- original minimum and maximum density will be mapped to the Min and Max values
 -- that are entered.
-prenewstackScaleMinAndMax_use = nil
-prenewstackScaleMinAndMax = '0 255'
+prenewstack_ScaleMinAndMax_use = nil
+prenewstack_ScaleMinAndMax = '0 255'
 
 --[[==========================================================================#
 # Step 3: RAPTOR automated fiducial model algorithm                           #
@@ -269,30 +273,30 @@ prenewstackScaleMinAndMax = '0 255'
 
 -- RaptorExecPath:
 -- Path where RAPTOR binaries are located (REQUIRED)
-raptorExecPath = '/usr/local/IMOD/bin/realbin/'
+RAPTOR_ExecPath = '/usr/local/IMOD/bin/realbin/'
 
 -- AnglesInHeader:
 -- If this option is specified, RAPTOR will extract tilt angles from the header
 -- of the input stack. Otherwise RAPTOR requires a .rawtlt file.
-raptorAnglesInHeader_use = true
+RAPTOR_AnglesInHeader_use = true
 
 -- Markers:
 -- This is the most critical parameter. Here it is set incredibly high, which
 -- makes it run very slowly, you can try lowering it to see how fast you can
 -- get it without many of the alignments failing.
-raptorMarkersPerImage_use = nil
-raptorMarkersPerImage = 50
+RAPTOR_MarkersPerImage_use = nil
+RAPTOR_MarkersPerImage = 50
 
 -- Binning:
 -- This option causes RAPTOR to bin the image stack before computing the
 -- alignment. The binning does not affect the value of Diameter.
-raptorBinning_use = nil
-raptorBinning = 2
+RAPTOR_Binning_use = nil
+RAPTOR_Binning = 2
 
 -- xRay:
 -- if this option is specified long, straight line features will be attempted to
 -- be removed to help the marker identification process.
-raptorxRay_use = nil
+RAPTOR_xRay_use = nil
 
 --[[==========================================================================#
 # Step 4: Alignment by use of fiducial model                                  #
@@ -300,241 +304,241 @@ raptorxRay_use = nil
 # Commands: tiltalign, newstack                                               #
 #==========================================================================--]]
 -- These are the options for the tiltalign command that solves for the
--- displacements, rotations, tilts and magnification differences of a tilt 
--- series. 
+-- displacements, rotations, tilts and magnification differences of a tilt
+-- series.
 
 -- ImagesAreBinned:
 -- The current binning of the images relative to the original data.
-tiltAlignImagesAreBinned = 1
+tiltalign_ImagesAreBinned = 1
 
 -- AngleOffset:
 -- Amount to add to all entered tilt angles.
-tiltAlignAngleOffset_use = nil
-tiltAlignAngleOffset = 0.0
+tiltalign_AngleOffset_use = nil
+tiltalign_AngleOffset = 0.0
 
 -- RotOption:
 -- Type of rotation solution: 0 for all rots fixed at initial angle
 -- 1 for each view having an independent rotation; 2 to enter general mapping of
 -- rotation variables; 3 or 4 for automapping; -1 single rotation variable
-tiltAlignRotOption_use = true
-tiltAlignRotOption = 1
+tiltalign_RotOption_use = true
+tiltalign_RotOption = 1
 
 -- RotDefaultGrouping:
 -- Default group size when automapping rotation variables
-tiltAlignRotDefaultGrouping_use = true
-tiltAlignRotDefaultGrouping = 5
+tiltalign_RotDefaultGrouping_use = true
+tiltalign_RotDefaultGrouping = 5
 
 -- TiltOption:
 -- Type of tilt angle solution. See tiltalign manual page.
-tiltAlignTiltOption_use = true
-tiltAlignTiltOption = 5
+tiltalign_TiltOption_use = true
+tiltalign_TiltOption = 5
 
 -- TiltDefaultGrouping:
 -- Average default group size when automapping tilt variables
-tiltAlignTiltDefaultGrouping_use = true
-tiltAlignTiltDefaultGrouping =  5
+tiltalign_TiltDefaultGrouping_use = true
+tiltalign_TiltDefaultGrouping =  5
 
 -- MagReferenceView:
 -- Number of reference view whose magnification whos magnification will be fixed
 -- at 1.0
-tiltAlignMagReferenceView_use = true
-tiltAlignMagReferenceView = 1
+tiltalign_MagReferenceView_use = true
+tiltalign_MagReferenceView = 1
 
 -- MagOption:
 -- Type of magnification solution. See tiltalign manual page.
-tiltAlignMagOption_use = true
-tiltAlignMagOption = 1
+tiltalign_MagOption_use = true
+tiltalign_MagOption = 1
 
 -- MagDefaultGrouping:
 -- Default group size when automapping magnification
-tiltAlignMagDefaultGrouping_use = true
-tiltAlignMagDefaultGrouping = 4
+tiltalign_MagDefaultGrouping_use = true
+tiltalign_MagDefaultGrouping = 4
 
--- XStretchOption: 
+-- XStretchOption:
 -- Type of X-stretch solution. See tiltalign manual page.
-tiltAlignXStretchOption_use = true
-tiltAlignXStretchOption = 3
+tiltalign_XStretchOption_use = true
+tiltalign_XStretchOption = 3
 
 -- SkewOption:
 -- Type of skew solution. See tiltalign manual.
-tiltAlignSkewOption_use = true
-tiltAlignSkewOption = 3
+tiltalign_SkewOption_use = true
+tiltalign_SkewOption = 3
 
--- XStretchDefaultGrouping: 
+-- XStretchDefaultGrouping:
 -- Default average group size when automapping X stretch variables.
-tiltAlignXStretchDefaultGrouping_use = true
-tiltAlignXStretchDefaultGrouping = 7
+tiltalign_XStretchDefaultGrouping_use = true
+tiltalign_XStretchDefaultGrouping = 7
 
 -- SkewDefaultGrouping:
 -- Default group size when automapping skew variables
-tiltAlignSkewDefaultGrouping_use = true
-tiltAlignSkewDefaultGrouping = 11
+tiltalign_SkewDefaultGrouping_use = true
+tiltalign_SkewDefaultGrouping = 11
 
 -- BeamTiltOption:
 -- Type of solution for non-perpendicularity between tilt axis and beam axis.
 -- See tiltalign manual page.
-tiltAlignBeamTiltOption_use = true
-tiltAlignBeamTiltOption = 0
+tiltalign_BeamTiltOption_use = true
+tiltalign_BeamTiltOption = 0
 
 -- ResidualReportCriterion:
 -- Criterion number of standard deviations above mean residual error that should
 -- be reported.
-tiltAlignResidualReportCriterion_use = true
-tiltAlignResidualReportCriterion = 3.0
+tiltalign_ResidualReportCriterion_use = true
+tiltalign_ResidualReportCriterion = 3.0
 
 -- SurfacesToAnalyze:
 -- 0, 1, or 2 to fit points to none, one or two surfaces. This entry has no
 -- effect on the global alignment solution.
-tiltAlignSurfacesToAnalyze = 2
+tiltalign_SurfacesToAnalyze = 2
 
 -- MetroFactor:
--- How large the variable metric minimization step 
-tiltAlignMetroFactor = 0.25
+-- How large the variable metric minimization step
+tiltalign_MetroFactor = 0.25
 
 -- MaximumCycles:
 -- Limit on the number of cycles for METRO
-tiltAlignMaximumCycles = 1000
+tiltalign_MaximumCycles = 1000
 
 -- KFactorScaling:
 -- Amount to scale the K factor that controls how many points are down-weighted
 -- in the robust fitting.
-tiltAlignKFactorScaling = 1.0
+tiltalign_KFactorScaling = 1.0
 
 -- AxisZShift:
 -- Amount to shift the tilt axis in Z, relative to the centroid in Z of the
 -- fiducial points or relative to the original Z axis.
-tiltAlignAxisZShift_use = true
-tiltAlignAxisZShift = 0.0
+tiltalign_AxisZShift_use = true
+tiltalign_AxisZShift = 0.0
 
 -- ShiftZFromOriginal:
 -- Apply Z shift relative to the original tilt axis location.
-tiltAlignShiftZFromOriginal_use = true
+tiltalign_ShiftZFromOriginal_use = true
 
 -- LocalAlignments:
 -- Do alignments with subsets of points in local areas.
-tiltAlignLocalAlignments_use = false
+tiltalign_LocalAlignments_use = false
 
 -- MinSizeOrOverlapXandY:
 -- Either the minimum size of each patch in X and Y or the minimum fractional
 -- overlap between patches.
-tiltAlignMinSizeOrOverlapXandY = '0.5,0.5'
+tiltalign_MinSizeOrOverlapXandY = '0.5,0.5'
 
 -- MinFidsTotalAndEachSurface:
 -- Minimum total number of fiducials, and minimum present on each surface if two
 -- surfaces are assumed.
-tiltAlignMinFidsTotalAndEachSurface = '8,3'
+tiltalign_MinFidsTotalAndEachSurface = '8,3'
 
 -- FixXYZCoordinates:
 -- Fix the coordinates of the fiducials at their values from the global
 -- solution.
-tiltAlignFixXYZCoordinates_use = nil
+tiltalign_FixXYZCoordinates_use = nil
 
 -- LocalOutputOptions:
 -- These three entries control the output of results for each local alignment.
 -- See tilt align manual page.
-tiltAlignLocalOutputOptions = '1,0,1'
+tiltalign_LocalOutputOptions = '1,0,1'
 
 -- LocalRotOption:
 -- Type of local rotation solution.
-tiltAlignLocalRotOption = 3
+tiltalign_LocalRotOption = 3
 
 -- LocalRotDefaultGrouping:
 -- Default group size when automapping local rotation variables
-tiltAlignLocalRotDefaultGrouping = 6
+tiltalign_LocalRotDefaultGrouping = 6
 
 -- LocalTiltOption:
 -- Type of local tilt angle solution; have same meanings as for global solution.
-tiltAlignLocalTiltOption = 5
+tiltalign_LocalTiltOption = 5
 
 -- LocalTiltDefaultGrouping:
 -- Average default group size when automapping local tilt variables.
-tiltAlignLocalTiltDefaultGrouping = 6
+tiltalign_LocalTiltDefaultGrouping = 6
 
 -- LocalMagReferenceView:
 -- Number of reference view whose local mag will be fixed at 1.0.
-tiltAlignLocalMagReferenceView = 1
+tiltalign_LocalMagReferenceView = 1
 
 -- LocalMagOption:
 -- Type of local magnification solution. Same as for global solution.
-tiltAlignLocalMagOption = 3
+tiltalign_LocalMagOption = 3
 
 -- LocalMagDefaultGrouping:
 -- Default group size when automapping local magnification variables.
-tiltAlignLocalMagDefaultGrouping = 7
+tiltalign_LocalMagDefaultGrouping = 7
 
 -- LocalXStretchOption:
 -- Type of local X-stretch solution. Same as for global solution.
-tiltAlignLocalXStretchOption = 3
+tiltalign_LocalXStretchOption = 3
 
 -- LocalXStretchDefaultGrouping:
 -- Default average group size when automapping local X stretch variables.
-tiltAlignLocalXStretchDefaultGrouping = 11
+tiltalign_LocalXStretchDefaultGrouping = 11
 
 -- LocalSkewOption:
 -- Type of local skew solution. Same as for global solution.
-tiltAlignLocalSkewOption = 3
+tiltalign_LocalSkewOption = 3
 
 -- LocalSkewDefaultGrouping:
-tiltAlignLocalSkewDefaultGrouping = 11
+tiltalign_LocalSkewDefaultGrouping = 11
 
 -- NumberOfLocalPatchesXandY:
 -- Number of local patches in X and in Y in which to obtain a solution from the
 -- fiducials located in that patch.
-tiltAlignNumberOfLocalPatchesXandY = '5,5'
+tiltalign_NumberOfLocalPatchesXandY = '5,5'
 
 -- RobustFitting
 -- Use a robust fitting method that gives less weight to points with residuals
 -- higher than the median residuals, and no weight to the most extreme points.
-tiltAlignRobustFitting_use = true
+tiltalign_RobustFitting_use = true
 
 -- These are the options for the newstack command which create the aligned stack
 -- from the aligned transformations produced above.
 
--- TaperAtFill: 
+-- TaperAtFill:
 -- To taper an output image at a border between real image and
 -- a filled area, just as is done with Mrctaper, enter this option with two
--- values: 1) the distance over which to taper or 1 for a default distance, 
+-- values: 1) the distance over which to taper or 1 for a default distance,
 -- and 2) a 0 for tapering outside or 1 for tapering inside the border.  The
 -- default distance is 1% of the mean of the X and Y sizes of the output image,
 -- but at least 16 pixels and no more than 127.  The program will exit with an
 -- error if there is not enough memory to hold the entire output image.
-newstackTaperAtFill = '1,0'
+newstack_TaperAtFill = '1,0'
 
 -- AdjustOrigin:
 -- Adjust the origin values in the image file header for changes in
 -- image size or the centering of a subarea.
-newstackAdjustOrigin_use = true
+newstack_AdjustOrigin_use = true
 
 -- OffsetsInXandY:
 -- X and Y center offsets for each section.
-newstackOffsetsInXandY = '0.0,0.0'
+newstack_OffsetsInXandY = '0.0,0.0'
 
 -- DistortionField:
 -- Image distortion field file to use for undistorting images.  The
 -- undistortion is applied before any transformations.
-newstackDistortionField_use = nil
+newstack_DistortionField_use = nil
 
 -- ImagesAreBinned:
 -- The current binning of the images, so that the distortion field can be
 -- applied correctly.
-newstackImagesAreBinned = 1
+newstack_ImagesAreBinned = 1
 
 -- BinByFactor:
 -- Use ordinary binning to reduce images in size by the given factor, or use
 -- antialias filtering to reduce images by this factor if the -antialias option
 -- is entered and -shrink is not.
-newstackBinByFactor = 1
+newstack_BinByFactor = 1
 
 -- GradientFile:
 -- File with magnification gradients to be applied for each image.
-newstackGradientFile_use = nil
+newstack_GradientFile_use = nil
 
 --[[==========================================================================#
 # Step 4: CTF Correction                                                      #
 #-----------------------------------------------------------------------------#
 # Commands: CTFplotter, CTFphaseflip                                          #
 #==========================================================================--]]
--- These are the options for the CTFplotter command used to estimate the      
+-- These are the options for the CTFplotter command used to estimate the
 -- defocus and CTF curve to later correct for phase flipping.
 
 -- InvertTiltAngles:
@@ -543,7 +547,7 @@ newstackGradientFile_use = nil
 -- the tilt axis rotation angle are such that reconstructions are generated with
 -- inverted hand-edness, then this option is needed to keep power spectra for
 -- off-center tiles from being shifted in the wrong direction.
-ctfInvertTiltAngles_use = nil
+ctfplotter_InvertTiltAngles_use = nil
 
 -- OffsetToAdd:
 -- A Floating point number such that the program must analyze data values where
@@ -551,33 +555,36 @@ ctfInvertTiltAngles_use = nil
 -- to add to your input stack that will make values positive and proportional to
 -- recorded electrons.  The value will not be added to noise files; they are
 -- required to be positive.
-ctfOffsetToAdd = 0.0
+ctfplotter_OffsetToAdd = 0.0
 
 -- ConfigFile:
 -- The configure file specifies the noise files used to estimate the noise
 -- floor, one file per line.  The files can be specified with either absolute
 -- paths or with paths relative to the loca- tion of the configure file itself.
-ctfConfigFile = '/usr/local/ImodCalib/CTFnoise/K22Kbackground/polara-K2-2k-2013.ctg'
+ctfplotter_ConfigFile = string.format(
+   '%s\n',
+   '/usr/local/ImodCalib/CTFnoise/K22Kbackground/polara-K2-2k-2013.ctg'
+)
 
 -- PSResolution:
 -- The number of points over which CTF will be computed.  The Nyquist frequency
 -- is divided into equal intervals delineated by these points.  The default is
 -- 101.
-ctfPSResolution = 101
+ctfplotter_PSResolution = 101
 
 -- TileSize:
 -- The tile size each strip will be tessellated into.  The size is in pixels and
 -- the tiles are square.  Each view is first divided into strips that are
 -- considered to have constant defocus.  The deafult is 256.
-ctfTileSize = 256
+ctfplotter_TileSize = 256
 
 -- Voltage:
 -- Microscope voltage in kV.
-ctfVoltage = 300
+ctfplotter_Voltage = 300
 
 -- SphericalAberration:
 -- Microscope spherical aberration in millimeters
-ctfSphericalAberration = 2.0
+ctfplotter_SphericalAberration = 2.0
 
 -- DefocusTol:
 -- Defocus tolerance in nanometers defining the center strips.  The center
@@ -586,31 +593,31 @@ ctfSphericalAberration = 2.0
 -- views within AngleRange are considered to have a constant defocus and are
 -- used to compute the initial CTF after being further tessellated into tiles.
 -- The default is 200.
-ctfDefocusTol = 200
+ctfplotter_DefocusTol = 200
 
 -- AmplitudeContrast:
 -- The fraction of amplitude contrast. For Cryo-EM, it should be between 0.07
 -- and 0.14.  The default is 0.07.
-ctfAmplitudeContrast = 0.07
+ctfplotter_AmplitudeContrast = 0.07
 
 -- LeftDefTol:
 -- Defocus tolerance in nanometers for strips to the left of the center strip.
 -- When non-center strips are included in the aver- age, strips to the left of
 -- center are included if their defocus difference is less than the given value.
 -- The default is 2000.
-ctfLeftDefTol = 2000
+ctfplotter_LeftDefTol = 2000
 
 -- RightDefTol:
 -- Defocus tolerance in nanometers for strips to the right of the center strip.
 -- When non-center strips are included in the aver- age, strips to the right of
 -- center are included if their defocus difference is less than the given value.
 -- The default is 2000.
-ctfRightDefTol = 2000
+ctfplotter_RightDefTol = 2000
 
 -- AngleRange:
 -- When -autoFit is entered, this entry sets the extent over which steps will be
 -- taken in autofitting.
-ctfAngleRange = '-40.0 40.0'
+ctfplotter_AngleRange = '-40.0 40.0'
 
 -- AutoFitRangeAndStep:
 -- Do initial autofitting over the whole tilt series with the given range of
@@ -623,17 +630,17 @@ ctfAngleRange = '-40.0 40.0'
 -- estimate used for the next two iterations.  3) The size of the range is
 -- determined by the parameter entered here, not by the starting and ending
 -- angles entered with the -range option.
-ctfAutoFitRangeAndStep = '10.0 10.0'
+ctfplotter_AutoFitRangeAndStep = '10.0 10.0'
 
 -- FrequencyRangeToFit:
 -- Starting and ending frequencies of range to fit in power spec- trum.  The two
 -- values will be used to set the 'X1 starts' and 'X2 ends' fields in the
 -- fitting dialog.
-ctfFrequencyRangeToFit = '0.05 0.225'
+ctfplotter_FrequencyRangeToFit = '0.05 0.225'
 
 -- VaryExponentInFit:
 -- Vary exponent of CTF function when fitting a CTF-like curve
-ctfVaryExponentInFit_use = 1
+ctfplotter_VaryExponentInFit_use = true
 
 -- SaveAndExit:
 -- Save defocus values to file and exit after autofitting.  The program will not
@@ -648,85 +655,33 @@ ctfVaryExponentInFit_use = 1
 -- strips. As the two strips are corrected separately, that pixel will have 2
 -- corrected values. The final value for that pixel is a linear interpolation of
 -- the 2 cor- rected values.
-ctfInterpolationWidth = 20
- 
+ctfphaseflip_InterpolationWidth = 20
+
+-- InvertTiltAngles:
+-- See InvertTiltAngles above for ctfplotter
+ctfphaseflip_InvertTiltAngles_use = nil
+
+-- Voltage:
+-- See Voltage above for ctfplotter
+ctfphaseflip_Voltage = 300
+
+-- SphericalAberration:
+-- See SphericalAberration above for ctfplotter
+ctfphaseflip_SphericalAberration = 2.0
+
+-- DefocusTol:
+-- See DefocusTol above for ctfplotter
+ctfphaseflip_DefocusTol = 200
+
+-- AmplitudeContrast:
+-- See AmplitudeContrast above for ctfplotter
+ctfphaseflip_AmplitudeContrast = 0.07
+
 --[[==========================================================================#
 # Step 5: Erase Gold                                                          #
 #-----------------------------------------------------------------------------#
-# Commands: model2point, point2model, ccderaser                               #
+# Commands: ccderaser                                                         #
 #==========================================================================--]]
--- These are the options for the model2point command used to make a point file
--- of the model 
-
--- FloatingPoint:
--- Output model coordinates as floating point; otherwise the nearest integer
--- value is output.
-model2pointFloatingPoint_use = nil
-
--- ScaledCoordinates:
--- Output coordinates in model coordinate system, scaled by the pixel size and
--- offset by origin values.  The default is to output index coordinates
--- corresponding to the pixel coordinates in the image.
-model2pointScaledCoordinates_use = 1
-
--- ObjectAndContour:
--- Output object and contour numbers for each point (numbered from 1)
-model2pointObjectAndContour_use = 1
-
--- Contour:
--- Output contour number for each point (numbered from 1)
-model2pointContour_use = nil
-
--- NumberedFromZero:
--- Output object and contour numbers starting from 0 instead of 1
-model2pointNumberedFromZero_use = nil
-
--- These are the options for the point2model command used to make a model file
--- from the just generated point file
-
--- OpenContours:
--- The default is to make all objects be closed contour type.  This option and
--- -scat can be used to make all objects be open or scattered, respectively.
-point2modelOpenContours_use = nil
-
--- ScatteredPoints:
--- Make objects be scattered point type
-point2modelScatteredPoints_use = 1
-
--- PointsPerContour:
--- Maximum number of points per contour.  The default is to put all points into
--- one contour.  This option is not allowed if the point file has contour
--- numbers.
-point2modelPointsPerContour_use = nil
-point2modelPointsPerContour = 1
-
--- PlanarContours:
--- Start a new contour at each new Z value encountered when reading sequentially
--- through the lines of input.  This option is not allowed if the point file has
--- contour numbers.
-point2modelPlanarContours_use = nil
-
--- NumberedFromZero:
--- Objects and contours are numbered from 0 instead of 1
-point2modelNumberedFromZero_use = nil
-
--- CircleSize:
--- Turn on display of circles of this size (radius) at each point.  If the
--- points form open contours that progress through Z, this option will let you
--- see them in the Zap window of 3dmod without having to edit the object.
-point2modelCircleSize = 3
-
--- SphereRadius:
--- Turn on display of spheres of this radius at each point.  Use this option to
--- see scattered points in 3dmod without having to edit the object.
-point2modelSphereRadius_use = 1 point2modelSphereRadius = 2
-
--- ColorOfObject:
--- Color to make an object; enter red, green, and blue values ranging from 0 to
--- 255.  To assign colors to multiple objects, enter this option multiple times.
--- (Successive entries accumulate)
-point2modelColorOfObject = '0 255 0'
-
 -- These are the options for the ccderaser command used to erase the fiducial
 -- markers from the aligned stack
 
@@ -735,7 +690,7 @@ point2modelColorOfObject = '0 255 0'
 -- circle around each point.  The sphere radius, which can be an individual
 -- value for each point, is used to indicate the size of circle to replace.
 -- Ranges can be entered, and / to specify all objects.
-gccderaserCircleObjects = '/'
+gold_ccderaser_CircleObjects = '/'
 
 -- BetterRadius:
 -- For circle objects, this entry specifies a radius to use for points without
@@ -743,7 +698,7 @@ gccderaserCircleObjects = '/'
 -- entry is floating point and can be used to overcome the limitations of having
 -- an integer default sphere radius.  If there are multiple circle objects,
 -- enter one value to apply to all objects or a value for each object.
-gccderaserBetterRadius = 13.25
+gold_ccderaser_BetterRadius = 13.25
 
 -- MergePatches:
 -- Merge patches in the model if they touch each other, as long as the resulting
@@ -751,27 +706,27 @@ gccderaserBetterRadius = 13.25
 -- be replaced on all sections are ignored. This option should be used if an
 -- output model from automatic peak finding is modified and used as an input
 -- model.
-gccderaserMergePatches = 1
+gold_ccderaser_MergePatches = 1
 
 -- PolynomialOrder:
 -- Order of polynomial fit to border points. The order can be between 0 and 3,
 -- where 0 will simply replace the pixels with the mean of the border points
 -- instead of fitting to them.
-gccderaserPolynomialOrder = 0
+gold_ccderaser_PolynomialOrder = 0
 
 -- ExcludeAdjacent:
 -- Exclude points adjacent to patch points from the fit; in other words, compute
 -- the polynomial fit to points that do not touch the ones being replaced.
-gccderaserExcludeAdjacent = 1
+gold_ccderaser_ExcludeAdjacent = 1
 
 --[[==========================================================================#
 # Step 6: Tomogram Generation                                                 #
-#-----------------------------------------------------------------------------# 
+#-----------------------------------------------------------------------------#
 # Commands: tilt                                                              #
 #==========================================================================--]]
 -- These are the options for the tilt command used to create a tomographic
 -- reconstruction from the R-weighted backprojection. It can be split and ran in
--- parallel on multiple CPUs or on the GPU.  
+-- parallel on multiple CPUs or on the GPU.
 
 -- ActionIfGPUFails:
 -- The action to take when the GPU cannot be used after being requested: 0 to
@@ -779,7 +734,7 @@ gccderaserExcludeAdjacent = 1
 -- with an error.  Enter 2 numbers: the first for the action when the GPU is
 -- requested by the UseGPU option; the second for the action when the GPU is
 -- requested only by the environment variable IMOD_USE_GPU.
-tiltActionIfGPUFails = '1, 2'
+tilt_ActionIfGPUFails = '1, 2'
 
 -- AdjustOrigin:
 -- Adjust origin for shifts with the SHIFT option and size changes with WIDTH
@@ -791,7 +746,7 @@ tiltActionIfGPUFails = '1, 2'
 -- projection stack (e.g., with the -origin option to Newstack).  The default is
 -- to produce legacy origin values that are not adjusted for these operations,
 -- with the origin in X and Y in the center of the volume.
-tiltAdjustOrigin_use = 1
+tilt_AdjustOrigin_use = 1
 
 -- FULLIMAGE:
 -- Use this entry to specify the full size in X and Y of the original stack of
@@ -805,19 +760,19 @@ tiltAdjustOrigin_use = 1
 -- Values entered with SHIFT, OFFSET, THICKNESS, WIDTH, FULLIMAGESIZE, SLICE,
 -- and SUBSETSTART will be scaled. These entries thus do not need to be changed
 -- when the input binning is changed.
-tiltIMAGEBINNED = 1
+tilt_IMAGEBINNED = 1
 
 -- LOG:
 -- This entry allows one to generate a reconstruction using the logarithm of the
 -- densities in the input file, with the entered value added before taking the
 -- logarithm.
-tiltLOG_use = 1 tiltLOG = 0.0
+tilt_LOG_use = 1 tiltLOG = 0.0
 
 -- MODE:
 -- This entry allows one to specify the data mode of the output file, which is 2
 -- by default.  Be sure to use an appropriate SCALE entry so that data will be
 -- scaled to the proper range.
-tiltMODE = 1
+tilt_MODE = 1
 
 -- OFFSET:
 -- This entry can contain two numbers, DELANG and DELXX.  An offset of DELANG
@@ -831,21 +786,21 @@ tiltMODE = 1
 -- non-centered subset with the tilt axis centered in them, then using this
 -- entry together with SUBSETSTART and FULLIMAGE should produce a correct
 -- result.
-tiltOFFSET_use = nil tiltOFFSET = '0.0 0.0'
+tilt_OFFSET_use = nil tiltOFFSET = '0.0 0.0'
 
 -- PARALLEL:
 -- Output slices parallel to the plane of the zero tilt projection.  This option
 -- cannot be used with direct writing of data to a single output file from
 -- parallel Tilt runs.  It inverts the handedness of the reconstruction.
-tiltPARALLEL_use = nil
+tilt_PARALLEL_use = nil
 
 -- PERPENDICULAR:
 -- Output slices perpendicular to the plane of the specimen. This output is the
 -- default since it corresponds to the way in which slices are computed.
-if tiltPARALLEL_use then 
-   tiltPERPENDICULAR_use = nil 
-else 
-   tiltPERPENDICULAR_use = 1 
+if tilt_PARALLEL_use then
+   tilt_PERPENDICULAR_use = nil
+else
+   tilt_PERPENDICULAR_use = 1
 end
 
 -- RADIAL:
@@ -856,14 +811,14 @@ end
 -- great than 1 the distances are interpreted as pixels in Fourier space;
 -- otherwise they are treated as frequencies in cycles/pixel, which range from 0
 -- to 0.5.
-tiltRADIAL = '0.35 0.05'
+tilt_RADIAL = '0.35 0.05'
 
 -- SCALE:
 -- With this entry, the values in the reconstruction will be scaled by adding
 -- the first value then multiplying by the second one. The default is 0,1. After
 -- the reconstruction is complete, the program will output the scale values that
 -- would make the data range from 10 to 245.
-tiltSCALE = '0.0 700.0'
+tilt_SCALE = '0.0 700.0'
 
 -- SHIFT:
 -- This entry allows one to shift the reconstructed slice in X or Z before it is
@@ -871,15 +826,15 @@ tiltSCALE = '0.0 700.0'
 -- and the output will contain the left part of the whole potentially
 -- reconstructable area.  If the Z shift is positive, the slice is shifted
 -- upward.  The Z entry is optional and defaults to 0 when omitted.
-tiltSHIFT = '0.0 0.0'
+tilt_SHIFT = '0.0 0.0'
 
 -- SLICE:
 -- Starting and ending slice number to reconstruct, and interval between slices.
 -- The numbers refer to slices in the X/Z plane and correspond to Y coordinates
 -- in the projection images.  Slices are numbered from 0.  The interval entry is
 -- optional, must be positive, and defaults to 1 when omitted.
-tiltSLICE_use = nil
-tiltSLICE = '0 2048 1'
+tilt_SLICE_use = nil
+tilt_SLICE = '0 2048 1'
 
 -- SUBSETSTART:
 -- If the aligned stack contains a subset of the area in the original images,
@@ -888,25 +843,25 @@ tiltSLICE = '0 2048 1'
 -- coordinates (numbered from 0) of the lower left corner of the subset within
 -- the original images. A FULLIMAGE entry must also be included. If the aligned
 -- stack is larger than the original images, use negative values.
-tiltSUBSETSTART_use = true
-tiltSUBSETSTART = '0 0'
+tilt_SUBSETSTART_use = true
+tilt_SUBSETSTART = '0 0'
 
 -- THICKNESS:
 -- Thickness in Z of reconstructed volume, in pixels
-tiltTHICKNESS = 1200
+tilt_THICKNESS = 1200
 
 -- UseGPU:
 -- Use the GPU (graphical processing unit) for computations if possible; enter 0
 -- to use the best GPU on the system, or the number of a specific GPU (numbered
 -- from 1).  The GPU can be used for all types of operations as long as there is
 -- sufficient memory.
-tiltUseGPU_use = nil
-tiltUseGPU = 0
+tilt_UseGPU_use = nil
+tilt_UseGPU = 0
 
 -- WIDTH:
 -- The width of the output image; the default is the width of the input image.
-tiltWIDTH_use = nil
-tiltWIDTH = 2048
+tilt_WIDTH_use = nil
+tilt_WIDTH = 2048
 
 -- XAXISTILT:
 -- This entry allows one to rotate the reconstruction around the X axis, so that
@@ -916,20 +871,20 @@ tiltWIDTH = 2048
 -- reconstruction extends 500 slices, and the section is 5 pixels below the
 -- middle in the first slice and 5 pixels above the middle in the last slice,
 -- the angle should be 1.1 (the arc sine of 10/500).
-tiltXAXISTILT_use = true
-tiltXAXISTILT = 0.0
+tilt_XAXISTILT_use = true
+tilt_XAXISTILT = 0.0
 
 -- XTILTFILE:
 -- Use this entry to specify a file containing a list of tilts to be applied
 -- around the X axis for the individual views.  A global tilt specified by the
 -- XAXISTILT entry, if any, will be subtracted from these tilts. If this file
 -- contains all zeros, the program runs the same as if the file was not entered.
-tiltXTILTFILE_use = true
+tilt_XTILTFILE_use = true
 
 -- LOCALFILE:
 -- Use this entry to specify a file containing solutions to local alignments.
-tiltLOCALFILE_use = true
+tilt_LOCALFILE_use = true
 
 -- ZFACTORFILE:
 -- Use this entry to specify a file containing zfactors
-tiltZFACTORFILE_use = true
+tilt_ZFACTORFILE_use = true

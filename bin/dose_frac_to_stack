@@ -154,11 +154,15 @@ local function dose_fractioned_to_stack(log)
       extended_header[i].a_tilt = new_tilt_angle_table[i]
    end
 
-   local status, err = pcall(os.execute, string.format(
-      'newstack -filei %s %s &> /dev/null', file_list, new_stack_file))
-   if not status then
-      io.stderr:write(err)
-      return nil
+   local success, exit, signal = os.execute(
+      string.format(
+         'newstack -filei %s %s &> /dev/null',
+         file_list,
+         new_stack_file
+      )
+   )
+   if not success or signal ~= 0 then
+      error('\nError: dose_frac_to_stack newstack failed.\n\n', 0)
    end
 
    initial_driftcorr_header = MRC_IO_lib.get_header(new_stack_file)
@@ -178,19 +182,19 @@ local function dose_fractioned_to_stack(log)
    initial_driftcorr_header = nil
 
    MRC_IO_lib.set_header(new_stack_file, 'temp.st', header, extended_header)
-   status, err = pcall(
-      os.execute,
-      string.format('mv temp.st %s', new_stack_file)
+   success, exit, signal = os.execute(
+      string.format(
+         'mv temp.st %s',
+         new_stack_file
+      )
    )
-   if not status then
-      io.stderr:write(err)
-      return nil
+   if not success or signal ~= 0 then
+      error('\nError: dose_frac_to_stack mv temp.st failed.\n\n', 0)
    end
 
-   status, err = pcall(os.execute, string.format('rm %s', file_list))
-   if not status then
-      io.stderr:write(err)
-      return nil
+   success, exit, signal = os.execute(string.format('rm %s', file_list))
+   if not success or signal ~= 0 then
+      error('\nError: dose_frac_to_stack clean failed.\n\n', 0)
    end
    return true
 end
@@ -198,11 +202,11 @@ end
 -- Run dose_fractioned_to_stack for all of the logs in the current directory
 for log_file in lfs.dir('.') do
    if log_file:find('%w+%.%log$') then
-      local status, runString = pcall(dose_fractioned_to_stack, log_file)
+      local status, err = pcall(dose_fractioned_to_stack, log_file)
       if not status then
-         local err = runString
          io.stderr:write(err)
          os.exit(1)
       end
    end
 end
+os.exit(0)

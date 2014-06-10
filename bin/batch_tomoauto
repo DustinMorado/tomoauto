@@ -1,6 +1,6 @@
 #!/usr/bin/env lua
 --[[===========================================================================#
-#                                batchTomoauto                                 #
+#                                batch_tomoauto                                #
 #------------------------------------------------------------------------------#
 # This is a program to run tomoAuto in batch to align and reconstruct a large  #
 # number of raw image stacks.                                                  #
@@ -31,7 +31,7 @@ local status, arg, options_table = pcall(
 if not status then
    local err = arg
    io.stderr:write(err)
-   return nil
+   os.exit(1)
 end
 
 local fiducial_diameter = options_table.f_

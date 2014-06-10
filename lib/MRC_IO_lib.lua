@@ -181,7 +181,7 @@ end
 function MRC_IO_lib.get_extended_header(input_filename)
    local extended_header = {}
    local input_file = assert(io.open(input_filename, 'rb'))
-   local header     = MRC_IO_lib.get_header(input_input_filename)
+   local header     = MRC_IO_lib.get_header(input_filename)
    local nz         = header.nz
    local Next       = header.Next
    local nint       = header.nint
@@ -342,11 +342,11 @@ end
 #            output_filename: [optional] Output file <string>                  #
 #===========================================================================--]]
 function MRC_IO_lib.get_tilt_angles(input_filename, output_filename)
-   local mdoc_filename   = inputfile_name .. '.mdoc'
-   local header          = MRC_IO_lib.get_header(inputfile_name)
-   local extended_header = MRC_IO_lib.get_extended_header(inputfile_name)
+   local mdoc_filename   = input_filename .. '.mdoc'
+   local header          = MRC_IO_lib.get_header(input_filename)
+   local extended_header = MRC_IO_lib.get_extended_header(input_filename)
    local nz              = header.nz
-   local file = io.stdout
+   local output_file     = io.stdout
    header = nil
    if output_filename then
       output_file = io.open(output_filename, 'w')
@@ -356,7 +356,7 @@ function MRC_IO_lib.get_tilt_angles(input_filename, output_filename)
          if not extended_header[i].a_tilt then
             error(string.format(
                   'Error: No tilt angle for %s section %d.\n',
-                  inputoutput_file_name,
+                  input_filename,
                   i
                ), 0
             )
@@ -389,7 +389,7 @@ function MRC_IO_lib.get_tilt_angles(input_filename, output_filename)
       else
          error(string.format(
                'Error: No tilt angles found in %s\'s extend header\n',
-               inputoutput_file_name
+               input_filename
             ), 0
          )
       end

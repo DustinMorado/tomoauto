@@ -187,4 +187,10 @@ local function print_header(input_filename)
    return true
 end
 
-print_header(arg[1])
+local status, err = pcall(print_header, arg[1])
+if not status then
+   io.stderr:write(err)
+   os.exit(1)
+else
+   os.exit(0)
+end
