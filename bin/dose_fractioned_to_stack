@@ -1,0 +1,241 @@
+#!/usr/bin/env lua
+--[[===========================================================================#
+#                           dose_fractioned_to_stack                           #
+#------------------------------------------------------------------------------#
+# This is a program to take a set of dose fraction, drift-corrected sum images #
+# and creates an MRC image stack. It also fixes the header information which   #
+# is currently erased by Yifan Cheng's dosefgpu_driftcorr program.             #
+#                                                                              #
+# NOTE: This currently handles a bug in the beta version of SerialEM 3.4       #
+#------------------------------------------------------------------------------#
+# Author:  Dustin Morado                                                       #
+# Written: June 06th 2014                                                      #
+# Contact: Dustin.Morado@uth.tmc.edu                                           #
+#------------------------------------------------------------------------------#
+# Arguments: basename: basename of the original stack and log file <string>    #
+#===========================================================================--]]
+local tomoauto_directory = os.getenv('TOMOAUTOROOT')
+package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
+
+local MRC_IO_lib   = require 'MRC_IO_lib'
+local tomoauto_lib = require 'tomoauto_lib'
+local lfs          = require 'lfs'
+local io, string, table = io, string, table
+
+local function dose_fractioned_to_stack(basename)
+   local stack_filename       = basename .. '.st'
+   local log_filename         = basename .. '.log'
+   local new_stack_filename   = basename .. '_driftcorr.st'
+   local filelist_name        = basename .. '_filelist'
+   local temporary_filename   = basename .. '_temp.st'
+   local number_of_sections   = nil
+   local shift                = 0
+   local MRC_table            = {}
+   local new_MRC_table        = {}
+   local tilt_angle_table     = {}
+   local new_tilt_angle_table = {}
+   local header               = {}
+   local extended_header      = {}
+
+   tomoauto_lib.is_file(log_filename)
+   tomoauto_lib.is_file(stack_filename)
+
+   local log_file = io.open(log_filename, 'r')
+   for line in log_file:lines('*l') do
+      local true_start    = string.match(line, 'Opened')
+      local mrc_filename  = string.match(line, '[%w%-%_%.]+%.mrc')
+      local is_data_loss  = string.find(line, 'This%sRecord[%s%w]+data%sloss')
+      local is_low_count  = string.find(line, 'sufficient%scount')
+      local tilt_angle    = string.match(line, 'Tilt%s=%s([%-%d%.]+)')
+      local is_terminated = string.find(line, 'TERMINATING')
+
+      if true_start then
+         MRC_table = {}
+         tilt_angle_table = {}
+      end
+
+      if mrc_filename then
+         local basename   = string.sub(mrc_filename, 1, -5)
+         local new_mrc_filename = string.format('%s_driftcorr.mrc', basename)
+         table.insert(MRC_table, new_mrc_filename)
+      end
+
+      if is_data_loss then
+         if #MRC_table ~= #tilt_angle_table then
+            table.remove(MRC_table)
+         end
+      end
+
+      if is_low_count then
+         if #MRC_table ~= #tilt_angle_table then
+            table.remove(MRC_table)
+         end
+      end
+
+      if tilt_angle then
+         table.insert(tilt_angle_table, tonumber(tilt_angle))
+      end
+
+      if is_terminated then
+         error(string.format(
+               '\nError: Original stack %s terminated so we will too.\n\n',
+               stack_filename
+            ), 0
+         )
+      end
+   end
+   log_file:close()
+
+   if #MRC_table ~= #tilt_angle_table then
+      error(string.format(
+         '\nError: %s has unequal file and tilt angle references.\n\n',
+         log_filename
+      ), 0
+   )
+   else
+      number_of_sections = #MRC_table
+   end
+
+   for i = 1, number_of_sections do
+      local file = io.open(MRC_table[i], 'r')
+      if file ~= nil then
+         file:close()
+         local last_index = #new_tilt_angle_table
+         if last_index == 0 then
+            table.insert(
+               new_tilt_angle_table,
+               tilt_angle_table[i]
+            )
+            table.insert(
+               new_MRC_table,
+               MRC_table[i]
+            )
+         elseif tilt_angle_table[i] > new_tilt_angle_table[1] then
+            table.insert(
+               new_tilt_angle_table, 
+               1, 
+               tilt_angle_table[i]
+            )
+            table.insert(
+               new_MRC_table, 
+               1, 
+               MRC_table[i]
+            )
+         elseif tilt_angle_table[i] < new_tilt_angle_table[last_index] then
+            table.insert(
+               new_tilt_angle_table, 
+               tilt_angle_table[i]
+            )
+            table.insert(
+               new_MRC_table, 
+               MRC_table[i]
+            )
+         else
+            error(
+               string.format(
+                  '\nError: %s has unordered or duplicate tilt angles.\n\n',
+                  log
+               ), 0
+            )
+         end
+      else
+         io.stderr:write(string.format(
+            'Warning: Dosefgpu_driftcorr did not process %s.\n',
+            MRC_table[i]
+         ))
+      end
+   end
+   number_of_sections = #new_MRC_table
+
+   local filelist = io.open(filelist_name, 'w')
+   filelist:write(string.format('%d\n', number_of_sections))
+
+   for i = 1, number_of_sections do
+      filelist:write(string.format('%s\n0\n', new_MRC_table[i]))
+   end
+   filelist:close()
+
+   local success, exit, signal = os.execute(
+      string.format(
+         'newstack -filei %s %s &> /dev/null',
+         filelist_name,
+         new_stack_filename
+      )
+   )
+   if not success or signal ~= 0 then
+      error('\nError: dose_frac_to_stack newstack failed.\n\n', 0)
+   end
+   tomoauto_lib.is_file(new_stack_filename)
+
+   header          = MRC_IO_lib.get_header(stack_filename)
+   extended_header = MRC_IO_lib.get_extended_header(stack_filename)
+   
+   ---[[SerialEM beta 3.4 bug work around
+   for i = 1, number_of_sections do 
+      if math.floor(new_tilt_angle_table[i]) == -2 then
+         table.insert(extended_header, i, {})
+         for k,v in pairs(extended_header[i - 1]) do
+            extended_header[i][k] = v
+         end
+      end
+      extended_header[i].a_tilt = new_tilt_angle_table[i]
+   end
+   --]]
+
+   local initial_driftcorr_header = MRC_IO_lib.get_header(new_stack_filename)
+   local pixel_spacing = header.xlen / header.mx
+
+   header.nx    = initial_driftcorr_header.nx
+   header.ny    = initial_driftcorr_header.ny
+   header.nz    = number_of_sections
+
+   header.mode  = 2
+
+   header.mx    = initial_driftcorr_header.nx
+   header.my    = initial_driftcorr_header.ny
+   header.mz    = number_of_sections
+
+   header.xlen  = pixel_spacing * header.mx
+   header.ylen  = pixel_spacing * header.my
+   header.zlen  = pixel_spacing * header.mz
+
+   header.amin  = initial_driftcorr_header.amin
+   header.amax  = initial_driftcorr_header.amax
+   header.amean = initial_driftcorr_header.amean
+
+   initial_driftcorr_header = nil
+
+   MRC_IO_lib.set_header(
+      new_stack_filename, 
+      temporary_filename, 
+      header, extended_header
+   )
+   success, exit, signal = os.execute(
+      string.format(
+         'mv %s %s',
+         temporary_filename,
+         new_stack_filename
+      )
+   )
+   if not success or signal ~= 0 then
+      error('\nError: dose_frac_to_stack mv temporary file failed.\n\n', 0)
+   end
+
+   success, exit, signal = os.execute(string.format('rm %s', filelist_name))
+   if not success or signal ~= 0 then
+      error('\nError: dose_frac_to_stack clean failed.\n\n', 0)
+   end
+   return true
+end
+
+if not arg[1] then
+   error('\nError: Please enter a file basename.\n\n', 0)
+end
+
+local status, err = pcall(dose_fractioned_to_stack, arg[1])
+if not status then
+   io.stderr:write(err)
+   os.exit(1)
+else
+   os.exit(0)
+end

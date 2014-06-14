@@ -38,11 +38,6 @@ if not status then
    os.exit(1)
 end
 
-if options_table.h then
-   tomoauto_lib.display_help()
-   os.exit(0)
-end
-
 if options_table.m_ ~= 'reconstruct' then
    status, err = pcall(
       tomoauto.process,

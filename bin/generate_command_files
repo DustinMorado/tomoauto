@@ -16,7 +16,7 @@
 #===========================================================================--]]
 local tomoauto_directory = os.getenv('TOMOAUTOROOT')
 package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
-local COM_file_writer = require 'COM_file_writer'
+local COM_file_lib    = require 'COM_file_lib'
 local yago            = require 'yago'
 local MRC_IO_lib      = require 'MRC_IO_lib'
 local lfs, os, string = lfs, os, string
@@ -70,7 +70,7 @@ function generate_command_files(
       error(err, 0)
    end
 
-   COM_file_writer.write(input_filename, header, options_table)
+   COM_file_lib.write(input_filename, header, options_table)
 end
 
 local short_options = 'c,   d_,       g,   h,    i_,   l_,    '

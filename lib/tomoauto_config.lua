@@ -119,7 +119,7 @@ tiltxcorr_FilterSigma2 = 0.05
 -- ExcludeCentralPeak:
 -- Exclude central correlation peak due to fixed pattern noise in the images.
 -- This option will misalign images that are already nearly aligned.
-tiltxcorr_ExcludeCentralPeak = nil
+tiltxcorr_ExcludeCentralPeak_use = nil
 
 -- BordersInXandY:
 -- Number of pixels to trim off each edge in X and in Y (the default is to use
@@ -416,7 +416,7 @@ tiltalign_ShiftZFromOriginal_use = true
 
 -- LocalAlignments:
 -- Do alignments with subsets of points in local areas.
-tiltalign_LocalAlignments_use = false
+tiltalign_LocalAlignments_use = nil
 
 -- MinSizeOrOverlapXandY:
 -- Either the minimum size of each patch in X and Y or the minimum fractional
@@ -562,8 +562,9 @@ ctfplotter_OffsetToAdd = 0.0
 -- floor, one file per line.  The files can be specified with either absolute
 -- paths or with paths relative to the loca- tion of the configure file itself.
 ctfplotter_ConfigFile = string.format(
-   '%s\n',
-   '/usr/local/ImodCalib/CTFnoise/K22Kbackground/polara-K2-2k-2013.ctg'
+   '%s%s',
+   '/usr/local/ImodCalib/CTFnoise',
+   '/K22Kbackground/polara-K2-2k-2013.ctg'
 )
 
 -- PSResolution:
@@ -706,7 +707,7 @@ gold_ccderaser_BetterRadius = 13.25
 -- be replaced on all sections are ignored. This option should be used if an
 -- output model from automatic peak finding is modified and used as an input
 -- model.
-gold_ccderaser_MergePatches = 1
+gold_ccderaser_MergePatches_use = true
 
 -- PolynomialOrder:
 -- Order of polynomial fit to border points. The order can be between 0 and 3,
@@ -717,7 +718,7 @@ gold_ccderaser_PolynomialOrder = 0
 -- ExcludeAdjacent:
 -- Exclude points adjacent to patch points from the fit; in other words, compute
 -- the polynomial fit to points that do not touch the ones being replaced.
-gold_ccderaser_ExcludeAdjacent = 1
+gold_ccderaser_ExcludeAdjacent_use = true
 
 --[[==========================================================================#
 # Step 6: Tomogram Generation                                                 #
@@ -746,7 +747,7 @@ tilt_ActionIfGPUFails = '1, 2'
 -- projection stack (e.g., with the -origin option to Newstack).  The default is
 -- to produce legacy origin values that are not adjusted for these operations,
 -- with the origin in X and Y in the center of the volume.
-tilt_AdjustOrigin_use = 1
+tilt_AdjustOrigin_use = true
 
 -- FULLIMAGE:
 -- Use this entry to specify the full size in X and Y of the original stack of
@@ -766,7 +767,8 @@ tilt_IMAGEBINNED = 1
 -- This entry allows one to generate a reconstruction using the logarithm of the
 -- densities in the input file, with the entered value added before taking the
 -- logarithm.
-tilt_LOG_use = 1 tiltLOG = 0.0
+tilt_LOG_use = true 
+tiltLOG = 0.0
 
 -- MODE:
 -- This entry allows one to specify the data mode of the output file, which is 2
@@ -786,7 +788,8 @@ tilt_MODE = 1
 -- non-centered subset with the tilt axis centered in them, then using this
 -- entry together with SUBSETSTART and FULLIMAGE should produce a correct
 -- result.
-tilt_OFFSET_use = nil tiltOFFSET = '0.0 0.0'
+tilt_OFFSET_use = nil 
+tiltOFFSET = '0.0 0.0'
 
 -- PARALLEL:
 -- Output slices parallel to the plane of the zero tilt projection.  This option
@@ -800,7 +803,7 @@ tilt_PARALLEL_use = nil
 if tilt_PARALLEL_use then
    tilt_PERPENDICULAR_use = nil
 else
-   tilt_PERPENDICULAR_use = 1
+   tilt_PERPENDICULAR_use = true
 end
 
 -- RADIAL:

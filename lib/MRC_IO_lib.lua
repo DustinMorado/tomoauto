@@ -413,25 +413,18 @@ function MRC_IO_lib.set_header(
    extended_header
 )
    local input_header    = MRC_IO_lib.get_header(input_filename)
-   local input_file      = io.open(input_filename, 'rb')
    local jump            = 1024 + input_header.Next
-   local filesize        = input_header.nx * input_header.ny * input_header.nz
    local pixel_data_size = 1
 
    if input_header.mode == 0 then
-      size     = 1
+      pixel_data_size     = 1
    elseif input_header.mode == 1 then
-      size     = 2
+      pixel_data_size     = 2
    elseif input_header.mode == 2 then
-      size     = 4
+      pixel_data_size     = 4
    elseif input_header.mode == 6 then
-      size     = 2
+      pixel_data_size     = 2
    end
-   filesize = filesize * size
-   input_file:seek('set', jump)
-   local MRC_data = input_file:read(filesize)
-   input_file:close()
-   input_file = nil
    input_header = nil
 
    local output_file = assert(io.open(output_filename, 'wb'))
@@ -655,7 +648,18 @@ function MRC_IO_lib.set_header(
          end
       end
    end
-   output_file:write(MRC_data)
+
+   local input_file  = io.open(input_filename, 'rb')
+   input_file:seek('set', jump)
+   while true do
+      local block_size = 1024
+      local data_block = input_file:read(block_size)
+      if not data_block then
+         break
+      end
+      output_file:write(data_block)
+   end
+   input_file:close()
    output_file:close()
 end
 --[[===========================================================================#
@@ -780,16 +784,21 @@ end
 #            fiducial_diameter: Fiducial diameter in nanometers <integer>      #
 #===========================================================================--]]
 function MRC_IO_lib.get_required_header(input_filename, fiducial_diameter)
+
    local   header = MRC_IO_lib.get_header(input_filename)
    local  extended_header = MRC_IO_lib.get_extended_header(input_filename)
-   header.fType = string.sub(header.labels[1], 1, 3)
-   if header.fType == 'Fei' then
-      header.tilt_axis  = -1 * extended_header[1].tilt_axis
+
+   header.file_type = string.sub(header.labels[1], 1, 3)
+
+   if header.file_type == 'Fei' then
+      header.tilt_axis  = -1  * extended_header[1].tilt_axis
       header.pixel_size = 1e9 * extended_header[1].pixel_size
-   elseif header.fType == 'TF3' then
+
+   elseif header.file_type == 'TF3' then
       header.tilt_axis  = extended_header[1].tilt_axis
       header.pixel_size = extended_header[1].pixel_size / 10
-   elseif header.fType == 'Ser' then
+
+   elseif header.file_type == 'Ser' then
       header.tilt_axis = string.match(
          header.labels[2],
          'Tilt%saxis%sangle%s=%s(%-?%d+%.?%d+)'
@@ -802,10 +811,12 @@ function MRC_IO_lib.get_required_header(input_filename, fiducial_diameter)
          )
       )
    end
+
    -- Calculate the Fiducial size in pixels
    header.fiducial_diameter_px = math.floor(
       fiducial_diameter / header.pixel_size + 0.5
    )
+
    -- Find the section at 0 degrees to split alignments
    for i = 1, header.nz do
       if math.floor(extended_header[i].a_tilt) == 0 then
@@ -821,4 +832,5 @@ function MRC_IO_lib.get_required_header(input_filename, fiducial_diameter)
    end
    return header
 end
+
 return MRC_IO_lib

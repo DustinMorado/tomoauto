@@ -2,38 +2,70 @@ local tomoauto_directory = os.getenv('TOMOAUTOROOT')
 package.cpath = package.cpath .. ';' .. tomoauto_directory .. '/lib/?.so;'
 package.path  = package.path  .. ';' ..tomoauto_directory .. '/lib/?.lua;'
 local MRC_IO_lib = require 'MRC_IO_lib'
-local lfs = require 'lfs'
+local lfs        = require 'lfs'
 
---[[==========================================================================#
-#                              Local Functions                                #
-#==========================================================================--]]
 local tomoauto_lib = {}
---[[==========================================================================#
-#                                 display_help                                #
-#-----------------------------------------------------------------------------#
-# A function that displays the usage and options of tomoAuto                  #
-#==========================================================================--]]
-function tomoauto_lib.display_help()
-   io.write(
-   '\nUsage: \n\z
-   tomoAuto [OPTIONS] <file> <fidNm>\n\z
-   Automates the alignment of tilt series and the reconstruction of\n\z
-   these series into 3D tomograms.\n\n\z
-   -c, --CTF      \tApplies CTF correction to the aligned stack\n\z
-   -d, --defocus  \tUses this as estimated defocus for ctfplotter\n\z
-   -g, --GPU      \tUses GPGPU methods to speed up the reconstruction\n\z
-   -h, --help     \tPrints this information and exits\n\z
-   -i, --iter     \tThe number of SIRT iterations to run [default 30]\n\z
-   -l, --config   \tSources a local config file\n\z
-   -m, --mode     \tSelect which mode you want to operate\n\z
-   --continued:   \tavailable modes (erase, align, reconstruct).\n\z  
-   -p, --procnum  \tUses <int> processors to speed up tilt\n\z
-   -s, --SIRT     \tUse SIRT to reconstruct [default WBP]\n\z
-   -t, --tomo3d   \tUse the TOMO3D to compute reconstruction\n\z
-   -z, --thickness\tCreate a tomogram with <int> thickness\n'
-   )
-   return true
+
+--[[===========================================================================#
+#                                clean_on_fail                                 #
+#------------------------------------------------------------------------------#
+# This is a function that removes all the generated intermediate files in case #
+# tomoauto fails to finish correctly.                                          #
+#------------------------------------------------------------------------------#
+# Arguments: basename: Image stack filename base <string>                      #
+#===========================================================================--]]
+function tomoauto_lib.clean_on_fail(basename)
+   local final_files_directory = basename .. '/final_files_' .. basename
+   local log_filename          = 'tomoauto_' .. basename .. '.log'
+   local err_log_filename      = 'tomoauto_' .. basename .. '.err.log'
+
+   if string.match(lfs.currentdir(), '.*/(.*)') == basename then
+      if lfs.attributes(log_filename) then
+         os.execute('mv ' .. log_filename .. ' ..')
+      end
+      if lfs.attributes(err_log_filename) then
+         os.execute('mv ' .. err_log_filename .. ' ..')
+      end
+      lfs.chdir('..')
+      if lfs.attributes(final_files_directory) then
+         os.execute('mv ' .. final_files_directory .. '/* .')
+      end
+   end
 end
+
+--[[===========================================================================#
+#                                     run                                      #
+#------------------------------------------------------------------------------#
+# This is a function that runs IMOD commands in a protected environment.       #
+#------------------------------------------------------------------------------#
+# Arguments: program:  programn to run <string>                                #
+#            basename: Image stack basename <string>                           #
+#===========================================================================--]]
+function tomoauto_lib.run(program, basename)
+
+   local success, exit, signal = os.execute(
+      string.format(
+         '%s 1>> tomoauto_%s.log 2>> tomoauto_%s.err.log',
+         program,
+         basename,
+         basename
+      )
+   )
+
+   if not success or signal ~= 0 then
+      tomoauto_lib.clean_on_fail(basename)
+      error(
+         string.format(
+            '\nError: %s failed for %s.\n\n',
+            program,
+            basename
+         ), 0
+      )
+   else
+      return success, exit, signal
+   end
+end
+
 --[[==========================================================================#
 #                               check_free_space                              #
 #-----------------------------------------------------------------------------#
@@ -61,6 +93,7 @@ function tomoauto_lib.check_free_space()
       )
    end
 end
+
 --[[==========================================================================#
 #                                   is_file                                   #
 #-----------------------------------------------------------------------------#
@@ -77,12 +110,13 @@ function tomoauto_lib.is_file(filename)
    else
       error(
          string.format(
-            '\nError: %s was not produced or found.\n\n',
+            '\nError: File %s not found.\n\n',
             filename
          ), 0
       )
    end
 end
+
 --[[==========================================================================#
 #                              scale_RAPTOR_model                             #
 #-----------------------------------------------------------------------------#
@@ -127,6 +161,7 @@ function tomoauto_lib.scale_RAPTOR_model(
    input_file:close()
    output_file:close()
 end
+
 --[[==========================================================================#
 #                               check_alignment                               #
 #-----------------------------------------------------------------------------#
@@ -148,38 +183,71 @@ function tomoauto_lib.check_alignment(input_filename, original_nz)
       error('\nError: RAPTOR has cut too many sections.\n\n',0)
    end
 end
+
 --[[==========================================================================#
 #                                  write_log                                  #
 #-----------------------------------------------------------------------------#
 #  A fuction that writes the tomoauto log file                                #
 #-----------------------------------------------------------------------------#
-# Arguments: input_filename: image filename <string>                          #
+# Arguments: basename: image file basename <string>                           #
 #==========================================================================--]]
-function tomoauto_lib.write_log(input_filename)
-   local logfile = assert(io.open('tomoauto_IMOD.log', 'w'))
+function tomoauto_lib.write_log(basename)
+   local logfile = assert(
+      io.open(
+         string.format(
+            'tomoauto_%s.log',
+            basename
+         ),
+         'a+'
+      )
+   )
 
-   local ccderaser_logfile = io.open('ccderaser.log', 'r')
+   local ccderaser_logfile = io.open(
+      string.format(
+         '%s_ccderaser.log',
+         basename
+      ),
+      'r'
+   )
    if ccderaser_logfile then
       local ccderaser_log = ccderaser_logfile:read('*a')
       ccderaser_logfile:close();
       logfile:write(ccderaser_log, '\n')
    end
 
-   local tiltxcorr_logfile = io.open('tiltxcorr.log', 'r')
+   local tiltxcorr_logfile = io.open(
+      string.format(
+         '%s_tiltxcorr.log',
+         basename
+      ),
+      'r'
+   )
    if tiltxcorr_logfile then
       local tiltxcorr_log = tiltxcorr_logfile:read('*a')
       tiltxcorr_logfile:close();
       logfile:write(tiltxcorr_log, '\n')
    end
 
-   local xftoxg_logfile = io.open('xftoxg.log', 'r')
+   local xftoxg_logfile = io.open(
+      string.format(
+         '%s_xftoxg.log',
+         basename
+      ),
+      'r'
+   )
    if xftoxg_logfile then
       local xftoxg_log = xftoxg_logfile:read('*a')
       xftoxg_logfile:close()
       logfile:write(xftoxg_log, '\n')
    end
 
-   local prenewstack_logfile = io.open('prenewstack.log', 'r')
+   local prenewstack_logfile = io.open(
+      string.format(
+         '%s_prenewstack.log',
+         basename
+      ),
+      'r'
+   )
    if prenewstack_logfile then
       local prenewstack_log = prenewstack_logfile:read('*a')
       prenewstack_logfile:close()
@@ -189,7 +257,7 @@ function tomoauto_lib.write_log(input_filename)
    local RAPTOR_logfile = io.open(
       string.format(
          'RAPTOR/align/%s_RAPTOR.log',
-         filename
+         basename
       ),
       'r'
    )
@@ -199,49 +267,91 @@ function tomoauto_lib.write_log(input_filename)
       logfile:write(RAPTOR_log, '\n')
    end
 
-   local tiltalign_logfile = io.open('tiltalign.log', 'r')
+   local tiltalign_logfile = io.open(
+      string.format(
+         '%s_tiltalign.log',
+         basename
+      ),
+      'r'
+   )
    if tiltalign_logfile then
       local tiltalign_log = tiltalign_logfile:read('*a')
       tiltalign_logfile:close()
       logfile:write(tiltalign_log, '\n')
    end
 
-   local xfproduct_logfile = io.open('xfproduct.com', 'r')
+   local xfproduct_logfile = io.open(
+      string.format(
+         '%s_xfproduct.com',
+         basename
+      ),
+      'r'
+   )
    if xfproduct_logfile then
       local xfproduct_log = xfproduct_logfile:read('*a')
       xfproduct_logfile:close()
       logfile:write(xfproduct_log, '\n')
    end
 
-   local newstack_logfile = io.open('newstack.com', 'r')
+   local newstack_logfile = io.open(
+      string.format(
+         '%s_newstack.com',
+         basename
+      ),
+      'r'
+   )
    if newstack_logfile then
       local newstack_log = newstack_logfile:read('*a')
       newstack_logfile:close()
       logfile:write(newstack_log, '\n')
    end
 
-   local ctfplotter_logfile = io.open('ctfplotter.log', 'r')
+   local ctfplotter_logfile = io.open(
+      string.format(
+         '%s_ctfplotter.log',
+         basename
+      ),
+      'r'
+   )
    if ctfplotter_logfile then
       local ctfplotter_log = ctfplotter_logfile:read('*a')
       ctfplotter_logfile:close()
       logfile:write(ctfplotter_log, '\n')
    end
 
-   local ctfphaseflip_logfile = io.open('ctfphaseflip.log', 'r')
+   local ctfphaseflip_logfile = io.open(
+      string.format(
+         '%s_ctfphaseflip.log',
+         basename
+      ),
+      'r'
+   )
    if ctfphaseflip_logfile then
       local ctfphaseflip_log = ctfphaseflip_logfile:read('*a')
       ctfphaseflip_logfile:close()
       logfile:write(ctfphaseflip_log, '\n')
    end
 
-   local gold_ccderaser_logfile = io.open('gold_ccderaser.log', 'r')
+   local gold_ccderaser_logfile = io.open(
+      string.format(
+         '%s_gold_ccderaser.log',
+         basename
+      ),
+      'r'
+   )
    if gold_ccderaser_logfile then
       local gold_ccderaser_log = gold_ccderaser_logfile:read('*a')
       gold_ccderaser_logfile:close()
       logfile:write(gold_ccderaser_log, '\n')
    end
 
-   local tilt_logfile = io.open('tilt.log', 'r')
+   local tilt_logfile = io.open(
+      string.format(
+         '%s_tilt.log',
+         basename
+      ),
+      'r'
+   )
    if tilt_logfile then
       local tilt_log = tilt_logfile:read('*a')
       tilt_logfile:close()
@@ -251,28 +361,6 @@ function tomoauto_lib.write_log(input_filename)
    logfile:close()
 end
 
---[[===========================================================================#
-#                              modify_ctfplotter                               #
-#------------------------------------------------------------------------------#
-# A function that fixes the ctfplotter.com file so that it can be checked.     #
-#===========================================================================--]]
-function tomoauto_lib.modify_ctfplotter()
-   local file = io.open('ctfplotter.com', 'r')
-   local temp = io.open('tmp.com', 'w')
-   for line in file:lines('*l') do
-      line = string.gsub(line, 'SaveAndExit', '#SaveAndExit')
-      line = string.gsub(line, 'AutoFitRangeAndStep', '#AutoFitRangeAndStep')
-      temp:write(line, '\n')
-   end
-   file:close()
-   temp:close()
-   local success, exit, signal = os.execute('mv tmp.com ctfplotter.com')
-   if not success or signal ~= 0 then
-      error('\nError: mv tmp.com ctfplotter.com failed.\n\n', 0)
-   else
-      return true
-   end
-end
 --[[===========================================================================#
 #                                median_filter                                 #
 #------------------------------------------------------------------------------#

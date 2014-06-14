@@ -1,0 +1,30 @@
+#!/usr/bin/env lua
+--[[===========================================================================#
+#                               get_tilt_angles                                #
+#------------------------------------------------------------------------------#
+# This is a program that prints the tilt angles from the header or .mdoc file  #
+# to the screen or an output file, this can be used as the '.rawtlt' file seen #
+# in IMOD programs.                                                            #
+#------------------------------------------------------------------------------#
+# Author:  Dustin Morado                                                       #
+# Written: June 02nd 2014                                                      #
+# Contact: Dustin.Morado@uth.tmc.edu                                           #
+#------------------------------------------------------------------------------#
+# Arguments: input_filename:  Image stack filename <string>                    #
+#            output_filename: [optional] Output filename <string>              #
+#===========================================================================--]]
+local tomoauto_directory = os.getenv('TOMOAUTOROOT')
+package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
+local MRC_IO_lib = require 'MRC_IO_lib'
+local header = MRC_IO_lib.get_header(arg[1])
+local extended_header = MRC_IO_lib.get_extended_header(arg[1])
+
+header.nint = header.nint - 6
+header.nreal = header.nreal - 2
+header.Next = header.nint * header.nz
+
+for index, value in ipairs(extended_header) do
+   extended_header[index].mon = nil
+end
+
+MRC_IO_lib.set_header(arg[1], arg[2], header, extended_header)

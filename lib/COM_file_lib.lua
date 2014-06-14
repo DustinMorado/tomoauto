@@ -1,5 +1,5 @@
 --[[==========================================================================#
-#                               COM_file_writer                               #
+#                               COM_file_lib                                  #
 #-----------------------------------------------------------------------------#
 # This is a lua module for tomoruto that is responsible for writing all of    #
 # the command (COM) files for the various programs in IMOD. It is largely     #
@@ -20,11 +20,21 @@ package.path  = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 local lfs = require 'lfs'
 local tomoauto_config = require 'tomoauto_config'
 
-local COM_file_writer = {}
+local COM_file_lib = {}
+
+--[[===========================================================================#
+#                               write_ccderaser                                #
+#------------------------------------------------------------------------------#
+# Writes ccderaser command file                                                #
+#===========================================================================--]]
 local function write_ccderaser(input_filename)
-	local command_filename = 'ccderaser.com'
 	local basename = string.sub(input_filename, 1, -4)
+   local command_filename = string.format(
+      '%s_ccderaser.com',
+      basename
+   )
 	local command_file = assert(io.open(command_filename, 'w'))
+
    command_file:write(string.format(
          '$ccderaser -StandardInput\n'
       )
@@ -116,10 +126,19 @@ local function write_ccderaser(input_filename)
    command_file:close()
 end
 
+--[[===========================================================================#
+#                               write_tiltxcorr                                #
+#------------------------------------------------------------------------------#
+# Writes the tiltxcorr command file.                                           #
+#===========================================================================--]]
 local function write_tiltxcorr(input_filename, header)
-	local command_filename = 'tiltxcorr.com'
 	local basename = string.sub(input_filename, 1, -4)
+	local command_filename = string.format(
+      '%s_tiltxcorr.com',
+      basename
+   )
 	local command_file = assert(io.open(command_filename, 'w'))
+
    command_file:write(string.format(
          '$tiltxcorr -StandardInput\n'
       )
@@ -164,7 +183,7 @@ local function write_tiltxcorr(input_filename, header)
          tiltxcorr_FilterSigma2
       )
    )
-	if tiltxcorr_ExcludeCentralPeak then
+	if tiltxcorr_ExcludeCentralPeak_use then
       command_file:write(string.format(
             'ExcludeCentralPeak\n'
          )
@@ -248,10 +267,19 @@ local function write_tiltxcorr(input_filename, header)
    command_file:close()
 end
 
+--[[===========================================================================#
+#                                 write_xftoxg                                 #
+#------------------------------------------------------------------------------#
+# Writes a command file for xftoxg.                                            #
+#===========================================================================--]]
 local function write_xftoxg(input_filename)
-	local command_filename  = 'xftoxg.com'
 	local basename = string.sub(input_filename, 1, -4)
+	local command_filename  = string.format(
+      '%s_xftoxg.com',
+      basename
+   )
 	local command_file = assert(io.open(command_filename, 'w'))
+
    command_file:write(string.format(
          '$xftoxg -StandardInput\n'
       )
@@ -302,10 +330,19 @@ local function write_xftoxg(input_filename)
    command_file:close()
 end
 
+--[[===========================================================================#
+#                            write_prenewstack                                 #
+#------------------------------------------------------------------------------#
+# Writes a command file for newstack for coarse alignment.                     #
+#===========================================================================--]]
 local function write_prenewstack(input_filename)
-	local command_filename = 'prenewstack.com'
 	local basename = string.sub(input_filename, 1, -4)
+	local command_filename = string.format(
+      '%s_prenewstack.com',
+      basename
+   )
 	local command_file = assert(io.open(command_filename, 'w'))
+
    command_file:write(string.format(
          '$newstack -StandardInput\n'
       )
@@ -366,10 +403,19 @@ local function write_prenewstack(input_filename)
    command_file:close()
 end
 
+--[[===========================================================================#
+#                                 write_RAPTOR                                 #
+#------------------------------------------------------------------------------#
+# Writes a command file for RAPTOR                                             #
+#===========================================================================--]]
 local function write_RAPTOR(input_filename, header)
-   local command_filename = 'RAPTOR.com'
    local basename = string.sub(input_filename, 1,-4)
+   local command_filename = string.format(
+      '%s_RAPTOR.com',
+      basename
+   )
    local command_file = assert(io.open(command_filename, 'w'))
+
    command_file:write(string.format(
          '$RAPTOR -StandardInput\n'
       )
@@ -432,10 +478,19 @@ local function write_RAPTOR(input_filename, header)
    command_file:close()
 end
 
+--[[===========================================================================#
+#                               write_tiltalign                                #
+#------------------------------------------------------------------------------#
+# Writes a command file for tiltalign                                          #
+#===========================================================================--]]
 local function write_tiltalign(input_filename, header)
-   local command_filename = 'tiltalign.com'
    local basename = string.sub(input_filename, 1, -4)
+   local command_filename = string.format(
+      '%s_tiltalign.com',
+      basename
+   )
    local command_file = assert(io.open(command_filename, 'w'))
+
    command_file:write(string.format(
          '$tiltalign -StandardInput\n'
       )
@@ -738,10 +793,19 @@ local function write_tiltalign(input_filename, header)
    command_file:close()
 end
 
+--[[===========================================================================#
+#                               write_xfproduct                                #
+#------------------------------------------------------------------------------#
+# Write the command file to run xfproduct.                                     #
+#===========================================================================--]]
 local function write_xfproduct(input_filename)
-   local command_filename = 'xfproduct.com'
    local basename = string.sub(input_filename, 1, -4)
+   local command_filename = string.format(
+      '%s_xfproduct.com',
+      basename
+   )
    local command_file = assert(io.open(command_filename, 'w'))
+
    command_file:write(string.format(
          '$xfproduct -StandardInput\n'
       )
@@ -764,10 +828,19 @@ local function write_xfproduct(input_filename)
    command_file:close()
 end
 
+--[[===========================================================================#
+#                                write_newstack                                #
+#------------------------------------------------------------------------------#
+# Write the command file to run newstack for the final alignment.              #
+#===========================================================================--]]
 local function write_newstack(input_filename)
-   local command_filename = 'newstack.com'
    local basename = string.sub(input_filename, 1, -4)
+   local command_filename = string.format(
+      '%s_newstack.com',
+      basename
+   )
    local command_file = assert(io.open(command_filename, 'w'))
+
    command_file:write(string.format(
          '$newstack -StandardInput\n'
       )
@@ -830,12 +903,281 @@ local function write_newstack(input_filename)
    command_file:close()
 end
 
-local function write_gold_ccderaser(input_filename)
-	local command_filename = 'gold_ccderaser.com'
+--[[===========================================================================#
+#                               write_ctfplotter                               #
+#------------------------------------------------------------------------------#
+# Write a command file to run ctfplotter.                                      #
+#===========================================================================--]]
+local function write_ctfplotter(input_filename, header, options_table)
 	local basename = string.sub(input_filename, 1, -4)
+	local command_filename = string.format(
+      '%s_ctfplotter.com',
+      basename
+   )
 	local command_file = assert(io.open(command_filename, 'w'))
+
    command_file:write(string.format(
-         '$ccderaser -StandardInput\n'
+         '$ctfplotter -StandardInput\n'
+      )
+   )
+   command_file:write(string.format(
+         'InputStack %s\n',
+         input_filename
+      )
+   )
+   command_file:write(string.format(
+         'AngleFile %s.tlt\n',
+         basename
+      )
+   )
+   if ctfplotter_InvertTiltAngles_use then
+      command_file:write(string.format(
+            'InvertTiltAngles\n'
+         )
+      )
+   end
+   command_file:write(string.format(
+         'OffsetToAdd %s\n',
+         ctfplotter_OffsetToAdd
+      )
+   )
+   command_file:write(string.format(
+         'DefocusFile %s.defocus\n',
+         basename
+      )
+   )
+   command_file:write(string.format(
+         'AxisAngle %s\n',
+         header.tilt_axis
+      )
+   )
+   command_file:write(string.format(
+         'PixelSize %s\n',
+         header.pixel_size
+      )
+   )
+	header.defocus = header.defocus * 1000
+   command_file:write(string.format(
+         'ExpectedDefocus %s\n',
+         header.defocus
+      )
+   )
+   command_file:write(string.format(
+         'AngleRange %s\n',
+         ctfplotter_AngleRange
+      )
+   )
+   command_file:write(string.format(
+         'AutoFitRangeAndStep %s\n',
+         ctfplotter_AutoFitRangeAndStep
+      )
+   )
+   command_file:write(string.format(
+         'Voltage %s\n',
+         ctfplotter_Voltage
+      )
+   )
+   command_file:write(string.format(
+         'SphericalAberration %s\n',
+         ctfplotter_SphericalAberration
+      )
+   )
+   command_file:write(string.format(
+         'AmplitudeContrast %s\n',
+         ctfplotter_AmplitudeContrast
+      )
+   )
+   command_file:write(string.format(
+         'DefocusTol %s\n',
+         ctfplotter_DefocusTol
+      )
+   )
+   command_file:write(string.format(
+         'PSResolution %s\n',
+         ctfplotter_PSResolution
+      )
+   )
+   command_file:write(string.format(
+         'TileSize %s\n',
+         ctfplotter_TileSize
+      )
+   )
+   command_file:write(string.format(
+         'LeftDefTol %s\n',
+         ctfplotter_LeftDefTol
+      )
+   )
+   command_file:write(string.format(
+         'RightDefTol %s\n',
+         ctfplotter_RightDefTol
+      )
+   )
+   if header.file_type == 'Fei' then
+      ctfplotter_ConfigFile = string.format(
+         '%s%s',
+         '/usr/local/ImodCalib/CTFnoise',
+         '/CCDbackground/polara-CCD-2012.ctg'
+      )
+      ctfplotter_FrequencyRangeToFit = '0.1 0.225'
+   elseif header.nx > 3000 then
+      ctfplotter_ConfigFile = string.format(
+         '%s%s',
+         '/usr/local/ImodCalib/CTFnoise',
+         '/K24Kbackground/polara-K2-4K-2014.ctg'
+      )
+      ctfplotter_FrequencyRangeToFit = ctfplotter_FrequencyRangeToFit
+   else
+      ctfplotter_ConfigFile = ctfplotter_ConfigFile
+      ctfplotter_FrequencyRangeToFit = ctfplotter_FrequencyRangeToFit
+   end
+   command_file:write(string.format(
+         'ConfigFile %s\n',
+         ctfplotter_ConfigFile
+      )
+   )
+   command_file:write(string.format(
+         'FrequencyRangeToFit %s\n',
+         ctfplotter_FrequencyRangeToFit
+      )
+   )
+	if ctfplotter_VaryExponentInFit_use then
+      command_file:write(string.format(
+            'VaryExponentInFit\n'
+         )
+      )
+   end
+   command_file:write(string.format(
+         'SaveAndExit\n'
+      )
+   )
+   command_file:close()
+end
+
+--[[===========================================================================#
+#                              modify_ctfplotter                               #
+#------------------------------------------------------------------------------#
+# A function that fixes the ctfplotter.com file so that it can be checked.     #
+#------------------------------------------------------------------------------#
+# Arguments: basename: Image stack file basename <string>                      #
+#===========================================================================--]]
+function COM_file_lib.modify_ctfplotter(basename)
+   local file = io.open(
+      string.format(
+         '%s_ctfplotter.com',
+         basename
+      ),
+      'r'
+   )
+   local temp = io.open('tmp.com', 'w')
+
+   for line in file:lines('*l') do
+      line = string.gsub(line, 'SaveAndExit', '#SaveAndExit')
+      line = string.gsub(line, 'AutoFitRangeAndStep', '#AutoFitRangeAndStep')
+      temp:write(line, '\n')
+   end
+
+   file:close()
+   temp:close()
+
+   local success, exit, signal = os.execute('mv tmp.com ctfplotter.com')
+   if not success or signal ~= 0 then
+      error('\nError: mv tmp.com ctfplotter.com failed.\n\n', 0)
+   else
+      return true
+   end
+end
+
+--[[===========================================================================#
+#                              write_ctfphaseflip                              #
+#------------------------------------------------------------------------------#
+# A function to write the command file to run ctfphaseflip.                    #
+#===========================================================================--]]
+local function write_ctfphaseflip(input_filename, header)
+	local basename = string.sub(input_filename,1, -4)
+	local command_filename = string.format(
+      '%s_ctfphaseflip.com',
+      basename
+   )
+	local command_file = assert(io.open(command_filename, 'w'))
+
+   command_file:write(string.format(
+         '$ctfphaseflip -StandardInput\n'
+      )
+   )
+   command_file:write(string.format(
+         'InputStack %s.ali\n',
+         basename
+      )
+   )
+   command_file:write(string.format(
+         'AngleFile %s.tlt\n',
+         basename
+      )
+   )
+   if ctfphaseflip_InvertTiltAngles_use then
+      command_file:write(string.format(
+            'InvertTiltAngles\n'
+         )
+      )
+   end
+   command_file:write(string.format(
+         'OutputFileName %s_ctfcorr.ali\n',
+         basename
+      )
+   )
+   command_file:write(string.format(
+         'DefocusFile %s.defocus\n',
+         basename
+      )
+   )
+   command_file:write(string.format(
+         'Voltage %s\n',
+         ctfphaseflip_Voltage
+      )
+   )
+   command_file:write(string.format(
+         'SphericalAberration %s\n',
+         ctfphaseflip_SphericalAberration
+      )
+   )
+   command_file:write(string.format(
+         'DefocusTol %s\n',
+         ctfphaseflip_DefocusTol
+      )
+   )
+   command_file:write(string.format(
+         'PixelSize %s\n',
+         header.pixel_size
+      )
+   )
+   command_file:write(string.format(
+         'AmplitudeContrast %s\n',
+         ctfphaseflip_AmplitudeContrast
+      )
+   )
+   command_file:write(string.format(
+         'InterpolationWidth %s\n',
+         ctfphaseflip_InterpolationWidth
+      )
+   )
+   command_file:close()
+end
+
+--[[===========================================================================#
+#                             write_gold_ccderaser                             #
+#------------------------------------------------------------------------------#
+# A function to write the command file to run ccderaser to erase gold.         #
+#===========================================================================--]]
+local function write_gold_ccderaser(input_filename)
+	local basename = string.sub(input_filename, 1, -4)
+	local command_filename = string.format(
+      '%s_gold_ccderaser.com',
+      basename
+   )
+   local command_file = assert(io.open(command_filename, 'w'))
+
+   command_file:write(string.format(
+   '$ccderaser -StandardInput\n'
       )
    )
    command_file:write(string.format(
@@ -863,7 +1205,7 @@ local function write_gold_ccderaser(input_filename)
          gold_ccderaser_BetterRadius
       )
    )
-	if gold_ccderaser_MergePatches then
+   if gold_ccderaser_MergePatches_use then
       command_file:write(string.format(
             'MergePatches\n'
          )
@@ -874,7 +1216,7 @@ local function write_gold_ccderaser(input_filename)
          gold_ccderaser_PolynomialOrder
       )
    )
-	if gold_ccderaser_ExcludeAdjacent then
+   if gold_ccderaser_ExcludeAdjacent_use then
       command_file:write(string.format(
             'ExcludeAdjacent\n'
          )
@@ -883,10 +1225,19 @@ local function write_gold_ccderaser(input_filename)
    command_file:close()
 end
 
+--[[===========================================================================#
+#                                  write_tilt                                  #
+#------------------------------------------------------------------------------#
+# A function to write the command file to run tilt.                            #
+#===========================================================================--]]
 local function write_tilt(input_filename, header, options_table)
-	local command_filename = 'tilt.com'
 	local basename = string.sub(input_filename, 1, -4)
+	local command_filename = string.format(
+      '%s_tilt.com',
+      basename
+   )
 	local command_file = assert(io.open(command_filename, 'w'))
+
    command_file:write(string.format(
          '$tilt -StandardInput\n'
       )
@@ -1048,215 +1399,17 @@ local function write_tilt(input_filename, header, options_table)
    command_file:close()
 end
 
-local function write_ctfplotter(input_filename, header, options_table)
-	local command_filename = 'ctfplotter.com'
-	local basename = string.sub(input_filename, 1, -4)
-	local command_file = assert(io.open(command_filename, 'w'))
-   command_file:write(string.format(
-         '$ctfplotter -StandardInput\n'
-      )
-   )
-   command_file:write(string.format(
-         'InputStack %s\n',
-         input_filename
-      )
-   )
-   command_file:write(string.format(
-         'AngleFile %s.tlt\n',
-         basename
-      )
-   )
-   if ctfplotter_InvertTiltAngles_use then
-      command_file:write(string.format(
-            'InvertTiltAngles\n'
-         )
-      )
-   end
-   command_file:write(string.format(
-         'OffsetToAdd %s\n',
-         ctfplotter_OffsetToAdd
-      )
-   )
-   command_file:write(string.format(
-         'DefocusFile %s.defocus\n',
-         basename
-      )
-   )
-   command_file:write(string.format(
-         'AxisAngle %s\n',
-         header.tilt_axis
-      )
-   )
-   command_file:write(string.format(
-         'PixelSize %s\n',
-         header.pixel_size
-      )
-   )
-	header.defocus = header.defocus * 1000
-   command_file:write(string.format(
-         'ExpectedDefocus %s\n',
-         header.defocus
-      )
-   )
-   command_file:write(string.format(
-         'AngleRange %s\n',
-         ctfplotter_AngleRange
-      )
-   )
-   command_file:write(string.format(
-         'AutoFitRangeAndStep %s\n',
-         ctfplotter_AutoFitRangeAndStep
-      )
-   )
-   command_file:write(string.format(
-         'Voltage %s\n',
-         ctfplotter_Voltage
-      )
-   )
-   command_file:write(string.format(
-         'SphericalAberration %s\n',
-         ctfplotter_SphericalAberration
-      )
-   )
-   command_file:write(string.format(
-         'AmplitudeContrast %s\n',
-         ctfplotter_AmplitudeContrast
-      )
-   )
-   command_file:write(string.format(
-         'DefocusTol %s\n',
-         ctfplotter_DefocusTol
-      )
-   )
-   command_file:write(string.format(
-         'PSResolution %s\n',
-         ctfplotter_PSResolution
-      )
-   )
-   command_file:write(string.format(
-         'TileSize %s\n',
-         ctfplotter_TileSize
-      )
-   )
-   command_file:write(string.format(
-         'LeftDefTol %s\n',
-         ctfplotter_LeftDefTol
-      )
-   )
-   command_file:write(string.format(
-         'RightDefTol %s\n',
-         ctfplotter_RightDefTol
-      )
-   )
-   if header.fType == 'Fei' then
-      ctfplotter_ConfigFile = string.format(
-         '%s%s\n',
-         '/usr/local/ImodCalib/CTFnoise',
-         '/CCDbackground/polara-CCD-2012.ctg'
-      )
-      ctfplotter_FrequencyRangeToFit = '0.1 0.225'
-   elseif header.nx > 2000 then
-      ctfplotter_ConfigFile = string.format(
-         '%s%s\n',
-         '/usr/local/ImodCalib/CTFnoise',
-         '/CCDbackground/polara-K2-4K-2014.ctg'
-      )
-      ctfplotter_FrequencyRangeToFit = ctfplotter_FrequencyRangeToFit
-   else
-      ctfplotter_ConfigFile = ctfplotter_ConfigFile
-      ctfplotter_FrequencyRangeToFit = ctfplotter_FrequencyRangeToFit
-   end
-   command_file:write(string.format(
-         'ConfigFile ',
-         ctfplotter_ConfigFile
-      )
-   )
-   command_file:write(string.format(
-         'FrequencyRangeToFit ',
-         ctfplotter_FrequencyRangeToFit
-      )
-   )
-	if ctfplotter_VaryExponentInFit_use then
-      command_file:write(string.format(
-            'VaryExponentInFit\n'
-         )
-      )
-   end
-   command_file:write(string.format(
-         'SaveAndExit\n'
-      )
-   )
-   command_file:close()
-end
-
-local function write_ctfphaseflip(input_filename, header)
-	local command_filename = 'ctfphaseflip.com'
-	local basename = string.sub(input_filename,1, -4)
-	local command_file = assert(io.open(command_filename, 'w'))
-   command_file:write(string.format(
-         '$ctfphaseflip -StandardInput\n'
-      )
-   )
-   command_file:write(string.format(
-         'InputStack %s.ali\n',
-         basename
-      )
-   )
-   command_file:write(string.format(
-         'AngleFile %s.tlt\n',
-         basename
-      )
-   )
-   if ctfphaseflip_InvertTiltAngles_use then
-      command_file:write(string.format(
-            'InvertTiltAngles\n'
-         )
-      )
-   end
-   command_file:write(string.format(
-         'OutputFileName %s_ctfcorr.ali\n',
-         basename
-      )
-   )
-   command_file:write(string.format(
-         'DefocusFile %s.defocus\n',
-         basename
-      )
-   )
-   command_file:write(string.format(
-         'Voltage %s\n',
-         ctfphaseflip_Voltage
-      )
-   )
-   command_file:write(string.format(
-         'SphericalAberration %s\n',
-         ctfphaseflip_SphericalAberration
-      )
-   )
-   command_file:write(string.format(
-         'DefocusTol %s\n',
-         ctfphaseflip_DefocusTol
-      )
-   )
-   command_file:write(string.format(
-         'PixelSize %s\n',
-         header.pixel_size
-      )
-   )
-   command_file:write(string.format(
-         'AmplitudeContrast %s\n',
-         ctfphaseflip_AmplitudeContrast
-      )
-   )
-   command_file:write(string.format(
-         'InterpolationWidth %s\n',
-         ctfphaseflip_InterpolationWidth
-      )
-   )
-   command_file:close()
-end
-
-function COM_file_writer.write(input_filename, header, options_table)
+--[[===========================================================================#
+#                                    write                                     #
+#------------------------------------------------------------------------------#
+# A function that uses all of the above local functions and writes all of the  #
+# command files needed to process a tilt series.                               #
+#------------------------------------------------------------------------------#
+# Author:  Dustin Morado                                                       #
+# Written: February 28th 2014                                                  #
+# Contact: Dustin.Morado@uth.tmc.edu                                           #
+#===========================================================================--]]
+function COM_file_lib.write(input_filename, header, options_table)
    if options_table.l_ then
       localConfig = loadfile(options_table.l_)
       if localConfig then
@@ -1282,4 +1435,34 @@ function COM_file_writer.write(input_filename, header, options_table)
    end
 end
 
-return COM_file_writer
+--[[===========================================================================#
+#                             write_reconstruction                             #
+#------------------------------------------------------------------------------#
+# A function that uses the above local functions and writes all of the command #
+# files needed to only reconstruct an aligned tilt series.                     #
+#------------------------------------------------------------------------------#
+# Author:  Dustin Morado                                                       #
+# Written: June 11th 2014                                                      #
+# Contact: Dustin.Morado@uth.tmc.edu                                           #
+#===========================================================================--]]
+function COM_file_lib.write_reconstruction(
+   input_filename,
+   header,
+   options_table
+)
+   if options_table.l_ then
+      localConfig = loadfile(options_table.l_)
+      if localConfig then
+         localConfig()
+      end
+   end
+   write_gold_ccderaser(input_filename)
+   if options_table.c then
+      write_ctfphaseflip(input_filename, header)
+   end
+   if not options_table.t then
+      write_tilt(input_filename, header, options_table)
+   end
+end
+
+return COM_file_lib

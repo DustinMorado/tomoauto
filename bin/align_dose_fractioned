@@ -26,14 +26,12 @@ local number_to_fit = 0
 local mode_to_output  = 2
 local float_densities = 2
 
-local function write_xfalign(input_filename)
-   local command_filename  = 'xfalign.com'
-   local basename          = input_filename:sub(1, -5)
-   local command_file      = assert(io.open(command_filename, 'w'))
+local function write_xfalign(basename)
+   local command_file = assert(io.open('xfalign.com', 'w'))
    command_file:write(string.format('$xfalign -StandardInput\n'))
    command_file:write(string.format(
-      'InputImageFile %s\n',
-      input_filename
+      'InputImageFile %s.mrc\n',
+      basename 
    ))
    command_file:write(string.format(
       'OutputTransformFile %s.xf\n',
@@ -51,10 +49,8 @@ local function write_xfalign(input_filename)
    command_file:close()
 end
 
-local function write_xftoxg(input_filename)
-   local command_filename  = 'xftoxg.com'
-   local basename          = input_filename:sub(1, -5)
-   local command_file      = assert(io.open(command_filename, 'w'))
+local function write_xftoxg(basename)
+   local command_file = assert(io.open('xftoxg.com', 'w'))
    command_file:write(string.format('$xftoxg -StandardInput\n'))
    command_file:write(string.format(
       'InputFile %s.xf\n',
@@ -71,14 +67,12 @@ local function write_xftoxg(input_filename)
    command_file:close()
 end
 
-local function write_newstack(input_fiilename)
-   local command_filename  = 'newstack.com'
-   local basename          = input_filename:sub(1, -5)
-   local command_file      = assert(io.open(command_filename, 'w'))
+local function write_newstack(basename)
+   local command_file = assert(io.open('newstack.com', 'w'))
    command_file:write(string.format('$newstack -StandardInput\n'))
    command_file:write(string.format(
-      'InputFile %s\n',
-      input_filename
+      'InputFile %s.mrc\n',
+      basename
    ))
    command_file:write(string.format(
       'OutputFile %s.ali\n',
@@ -109,7 +103,7 @@ local function run(program, basename)
          basename
       )
    )
-   if (not success) or (signal ~= 0) then
+   if signal ~= 0 then
       error(
          string.format(
             '\nError: %s failed for %s.\n\n',
@@ -124,11 +118,11 @@ end
 
 function align_dose_fractioned(input_filename)
    local basename  = input_filename:sub(1, -5)
-   write_xfalign(input_filename)
-   write_xftoxg(input_filename)
-   write_newstack(input_filename)
+   write_xfalign(basename)
+   write_xftoxg(basename)
+   write_newstack(basename)
    run(
-      'submfg -s -t xfalign.com xftoxg.com newstack.com',
+      'submfg -s xfalign.com xftoxg.com newstack.com',
       basename
    )
    run(
@@ -141,7 +135,7 @@ function align_dose_fractioned(input_filename)
    )
    run(
       string.format(
-         'rm *.com *.log *.xf *.xg %s.ali',
+         'rm *.com *.log *.x* %s.ali',
          basename
       ),
       basename
