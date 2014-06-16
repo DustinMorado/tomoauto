@@ -1148,7 +1148,7 @@ end
 #------------------------------------------------------------------------------#
 # Write a command file to run ctfplotter.                                      #
 #===========================================================================--]]
-function write_final_ctfplotter(input_filename, header)
+function COM_file_lib.write_final_ctfplotter(input_filename, header)
 	local basename = string.sub(input_filename, 1, -4)
 	local command_filename = string.format(
       '%s_ctfplotter.com',
