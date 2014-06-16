@@ -436,8 +436,9 @@ local function write_RAPTOR(input_filename, header)
       )
    )
    command_file:write(string.format(
-         'OutputPath %s/RAPTOR\n',
-         lfs.currentdir()
+         'OutputPath %s/%s_RAPTOR\n',
+         lfs.currentdir(),
+         basename
       )
    )
    command_file:write(string.format(
@@ -472,6 +473,93 @@ local function write_RAPTOR(input_filename, header)
    if RAPTOR_xRay_use then
       command_file:write(string.format(
             'xRay\n'
+         )
+      )
+   end
+   command_file:close()
+end
+
+--[[===========================================================================#
+#                               write_beadtrack                                #
+#------------------------------------------------------------------------------#
+# Writes a command file for beadtrack                                          #
+#===========================================================================--]]
+local function write_beadtrack(input_filename, header)
+   local basename = string.sub(input_filename, 1, -4)
+   local command_filename = string.format(
+      '%s_beadtrack.com',
+      basename
+   )
+   local command_file = assert(io.open(command_filename, 'w'))
+
+   command_file:write(string.format(
+         '$beadtrack -StandardInput\n'
+      )
+   )
+   command_file:write(string.format(
+         'InputSeedModel %s.fid\n',
+         basename
+      )
+   )
+   command_file:write(string.format(
+         'OutputModel %s_beadtrack.fid\n',
+         basename
+      )
+   )
+   command_file:write(string.format(
+         'ImageFile %s.preali\n',
+         basename
+      )
+   )
+   command_file:write(string.format(
+         'RotationAngle %4.1f\n',
+         header.tilt_axis 
+      )
+   )
+   command_file:write(string.format(
+         'TiltFile %s.rawtlt\n',
+         basename
+      )
+   )
+   command_file:write(string.format(
+         'BeadDiameter %s\n',
+         header.fiducial_diameter_px
+      )
+   )
+   command_file:write(string.format(
+         'RoundsOfTracking %d\n',
+         beadtrack_RoundsOfTracking
+      )
+   )
+   command_file:write(string.format(
+         'TiltDefaultGrouping %d\n',
+         beadtrack_TiltDefaultGrouping
+      )
+   )
+   command_file:write(string.format(
+         'MagDefaultGrouping %d\n',
+         beadtrack_MagDefaultGrouping
+      )
+   )
+   command_file:write(string.format(
+         'BoxSizeXandY %s\n',
+         beadtrack_BoxSizeXandY
+      )
+   )
+   if beadtrack_FillGaps_use then
+      command_file:write(string.format(
+            'FillGaps\n'
+         )
+      )
+   end
+   if beadtrack_SobelFilterCentering_use then
+      command_file:write(string.format(
+            'SobelFilterCentering\n'
+         )
+      )
+      command_file:write(string.format(
+            'KernelSigmaForSobel %5.2f\n',
+            beadtrack_KernelSigmaForSobel
          )
       )
    end
@@ -545,12 +633,14 @@ local function write_tiltalign(input_filename, header)
          header.tilt_axis
       )
    )
+   ---[[
    command_file:write(string.format(
          'SeparateGroup %d-%d\n',
          1,
          header.split_angle
       )
    )
+   --]]
    command_file:write(string.format(
          'TiltFile %s.rawtlt\n',
          basename
@@ -908,7 +998,7 @@ end
 #------------------------------------------------------------------------------#
 # Write a command file to run ctfplotter.                                      #
 #===========================================================================--]]
-local function write_ctfplotter(input_filename, header, options_table)
+local function write_ctfplotter(input_filename, header)
 	local basename = string.sub(input_filename, 1, -4)
 	local command_filename = string.format(
       '%s_ctfplotter.com',
@@ -1054,37 +1144,144 @@ local function write_ctfplotter(input_filename, header, options_table)
 end
 
 --[[===========================================================================#
-#                              modify_ctfplotter                               #
+#                               write_final_ctfplotter                         #
 #------------------------------------------------------------------------------#
-# A function that fixes the ctfplotter.com file so that it can be checked.     #
-#------------------------------------------------------------------------------#
-# Arguments: basename: Image stack file basename <string>                      #
+# Write a command file to run ctfplotter.                                      #
 #===========================================================================--]]
-function COM_file_lib.modify_ctfplotter(basename)
-   local file = io.open(
-      string.format(
-         '%s_ctfplotter.com',
-         basename
-      ),
-      'r'
+function write_final_ctfplotter(input_filename, header)
+	local basename = string.sub(input_filename, 1, -4)
+	local command_filename = string.format(
+      '%s_ctfplotter.com',
+      basename
    )
-   local temp = io.open('tmp.com', 'w')
+	local command_file = assert(io.open(command_filename, 'w'))
 
-   for line in file:lines('*l') do
-      line = string.gsub(line, 'SaveAndExit', '#SaveAndExit')
-      line = string.gsub(line, 'AutoFitRangeAndStep', '#AutoFitRangeAndStep')
-      temp:write(line, '\n')
+   command_file:write(string.format(
+         '$ctfplotter -StandardInput\n'
+      )
+   )
+   command_file:write(string.format(
+         'InputStack %s\n',
+         input_filename
+      )
+   )
+   command_file:write(string.format(
+         'AngleFile %s.tlt\n',
+         basename
+      )
+   )
+   if ctfplotter_InvertTiltAngles_use then
+      command_file:write(string.format(
+            'InvertTiltAngles\n'
+         )
+      )
    end
-
-   file:close()
-   temp:close()
-
-   local success, exit, signal = os.execute('mv tmp.com ctfplotter.com')
-   if not success or signal ~= 0 then
-      error('\nError: mv tmp.com ctfplotter.com failed.\n\n', 0)
+   command_file:write(string.format(
+         'OffsetToAdd %s\n',
+         ctfplotter_OffsetToAdd
+      )
+   )
+   command_file:write(string.format(
+         'DefocusFile %s.defocus\n',
+         basename
+      )
+   )
+   command_file:write(string.format(
+         'AxisAngle %s\n',
+         header.tilt_axis
+      )
+   )
+   command_file:write(string.format(
+         'PixelSize %s\n',
+         header.pixel_size
+      )
+   )
+	header.defocus = header.defocus * 1000
+   command_file:write(string.format(
+         'ExpectedDefocus %s\n',
+         header.defocus
+      )
+   )
+   command_file:write(string.format(
+         'AngleRange %s\n',
+         ctfplotter_AngleRange
+      )
+   )
+   command_file:write(string.format(
+         'Voltage %s\n',
+         ctfplotter_Voltage
+      )
+   )
+   command_file:write(string.format(
+         'SphericalAberration %s\n',
+         ctfplotter_SphericalAberration
+      )
+   )
+   command_file:write(string.format(
+         'AmplitudeContrast %s\n',
+         ctfplotter_AmplitudeContrast
+      )
+   )
+   command_file:write(string.format(
+         'DefocusTol %s\n',
+         ctfplotter_DefocusTol
+      )
+   )
+   command_file:write(string.format(
+         'PSResolution %s\n',
+         ctfplotter_PSResolution
+      )
+   )
+   command_file:write(string.format(
+         'TileSize %s\n',
+         ctfplotter_TileSize
+      )
+   )
+   command_file:write(string.format(
+         'LeftDefTol %s\n',
+         ctfplotter_LeftDefTol
+      )
+   )
+   command_file:write(string.format(
+         'RightDefTol %s\n',
+         ctfplotter_RightDefTol
+      )
+   )
+   if header.file_type == 'Fei' then
+      ctfplotter_ConfigFile = string.format(
+         '%s%s',
+         '/usr/local/ImodCalib/CTFnoise',
+         '/CCDbackground/polara-CCD-2012.ctg'
+      )
+      ctfplotter_FrequencyRangeToFit = '0.1 0.225'
+   elseif header.nx > 3000 then
+      ctfplotter_ConfigFile = string.format(
+         '%s%s',
+         '/usr/local/ImodCalib/CTFnoise',
+         '/K24Kbackground/polara-K2-4K-2014.ctg'
+      )
+      ctfplotter_FrequencyRangeToFit = ctfplotter_FrequencyRangeToFit
    else
-      return true
+      ctfplotter_ConfigFile = ctfplotter_ConfigFile
+      ctfplotter_FrequencyRangeToFit = ctfplotter_FrequencyRangeToFit
    end
+   command_file:write(string.format(
+         'ConfigFile %s\n',
+         ctfplotter_ConfigFile
+      )
+   )
+   command_file:write(string.format(
+         'FrequencyRangeToFit %s\n',
+         ctfplotter_FrequencyRangeToFit
+      )
+   )
+	if ctfplotter_VaryExponentInFit_use then
+      command_file:write(string.format(
+            'VaryExponentInFit\n'
+         )
+      )
+   end
+   command_file:close()
 end
 
 --[[===========================================================================#
@@ -1422,12 +1619,13 @@ function COM_file_lib.write(input_filename, header, options_table)
    write_xftoxg(input_filename)
    write_prenewstack(input_filename)
    write_RAPTOR(input_filename, header)
+   write_beadtrack(input_filename, header)
    write_tiltalign(input_filename, header)
    write_xfproduct(input_filename)
    write_newstack(input_filename)
    write_gold_ccderaser(input_filename)
    if options_table.c then
-      write_ctfplotter(input_filename, header, options_table)
+      write_ctfplotter(input_filename, header)
       write_ctfphaseflip(input_filename, header)
    end
    if not options_table.t then

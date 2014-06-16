@@ -61,13 +61,23 @@ end
 #            options_table:     Options as returned by yago <table>            #
 #===========================================================================--]]
 function tomoauto.process(input_filename, fiducial_diameter, options_table)
+
    if options_table.h then
       display_help()
       return true
    end
-   if not fiducial_diameter then
-      error('\nError: Please enter a fiducial size.\n\n', 0)
+
+   if not input_filename then
+      display_help()
+      return true
    end
+
+   if not fiducial_diameter then
+      io.stderr:write('\nError: Please enter a fiducial size.\n\n')
+      display_help()
+      return true
+   end
+
    -- These are all of the files created and used throughout
    local basename                       = string.sub(input_filename, 1, -4)
    local raw_tilt_filename              = basename .. '.rawtlt'
@@ -78,6 +88,7 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
    local aligned_bin4_filename          = basename .. '.ali.bin4'
    local tilt_filename                  = basename .. '.tlt'
    local fiducial_model_filename        = basename .. '.fid'
+   local fiducial_model_fixed_filename  = basename .. '_beadtrack.fid'
    local fiducial_text_model_filename   = basename .. '.fid.txt'
    local fiducial_xf_filename           = basename .. '_fid.xf'
    local xf_filename                    = basename .. '.xf'
@@ -93,9 +104,8 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
    local bin4_filename                  = basename .. '.bin4'
    local log_file                       = 'tomoauto_' .. basename .. '.log'
    local error_log_file                 = 'tomoauto_' .. basename .. '.err.log'
-   local final_files_directory          = 'final_files_' .. basename
-   local RAPTOR_fiducial_model_filename = 'RAPTOR/IMOD/' .. basename
-                                          .. '.fid.txt'
+   local RAPTOR_fiducial_model_filename = basename .. '_RAPTOR/IMOD/' 
+                                          .. basename .. '.fid.txt'
 
    -- Multiple times throughout we will check for enough disk space
    tomoauto_lib.check_free_space()
@@ -112,45 +122,17 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
       if options_table.d_ then
          header.defocus = options_table.d_
       elseif not header.defocus then
-         error(
-            'You need to enter an approximate defocus to run \z
-            with CTF correction.\n',
-            0
+         io.stderr:write(
+            string.format(
+               '%s %s\n',
+               'You need to enter an approximate defocus to run',
+               'with CTF correction.'
+            )
          )
+         display_help()
+         return true
       end
    end
-
-   -- Environment setup, make folder with file basename
-   local success, err = lfs.mkdir(basename)
-   if not success then
-      error(err, 0)
-   end
-
-   tomoauto_lib.run(string.format(
-         'mv %s %s',
-         input_filename,
-         basename
-      ),
-      basename
-   )
-
-   if options_table.l_ then
-      tomoauto_lib.run(string.format(
-            'cp %s %s',
-            options_table.l_,
-            basename
-         ),
-         basename
-      )
-   end
-
-   os.execute('rm -f ' .. log_file)
-   os.execute('rm -f ' .. error_log_file)
-   success, err = lfs.chdir(basename)
-   if not success then
-      error(err, 0)
-   end
-   local start_directory = lfs.currentdir()
 
    tomoauto_lib.run(string.format(
          'touch %s %s',
@@ -166,20 +148,6 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
    -- Here we extract the tilt angles from the header
    MRC_IO_lib.get_tilt_angles(input_filename, raw_tilt_filename)
    tomoauto_lib.is_file(raw_tilt_filename)
-
-   -- We create this directory as a backup for the original stack
-   success, err = lfs.mkdir(final_files_directory)
-   if not success then
-      error(err, 0)
-   end
-
-   tomoauto_lib.run(string.format(
-         'cp %s %s',
-         input_filename,
-         final_files_directory
-      ),
-      basename
-   )
 
    -- We should always remove the Xrays from the image using ccderaser
    tomoauto_lib.run(
@@ -212,42 +180,12 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
    if options_table.m_ == 'erase' then
       tomoauto_lib.run(
          string.format(
-            'mv %s %s tomoauto*.log %s',
-            input_filename,
-            original_filename,
-            final_files_directory
-         ),
-         basename
-      )
-
-      tomoauto_lib.run(
-         string.format(
-            'rm -rf *.com *.log %s*',
+            'rm -rf %s*.com %s*.log',
+            basename,
             basename
          ),
          basename
       )
-
-      tomoauto_lib.run(
-         string.format(
-            'mv %s/* .',
-            final_files_directory
-         ),
-         basename
-      )
-
-      tomoauto_lib.run(
-         string.format(
-            'rmdir %s',
-            final_files_directory
-         ),
-         basename
-      )
-
-      success, err = lfs.chdir('..')
-      if not success then
-         error(err, 0)
-      end
       return true
    end
 
@@ -276,7 +214,7 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
 
    tomoauto_lib.run(
       string.format(
-         'cp %s .',
+         'mv %s .',
          RAPTOR_fiducial_model_filename
       ),
       basename
@@ -287,11 +225,20 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
       header,
       fiducial_model_filename
    )
+
    tomoauto_lib.run(
       string.format(
-         'cp %s %s',
-         fiducial_model_filename,
-         final_files_directory
+         'submfg -s %s_beadtrack.com',
+         basename
+      ),
+      basename
+   )
+
+   tomoauto_lib.run(
+      string.format(
+         'mv %s %s',
+         fiducial_model_fixed_filename,
+         fiducial_model_filename
       ),
       basename
    )
@@ -311,16 +258,6 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
          'cp %s %s',
          fiducial_xf_filename,
          xf_filename
-      ),
-      basename
-   )
-
-   tomoauto_lib.run(
-      string.format(
-         'cp %s %s %s',
-         tilt_filename,
-         tilt_xf_filename,
-         final_files_directory
       ),
       basename
    )
@@ -352,16 +289,6 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
       basename
    )
 
-   tomoauto_lib.run(
-      string.format(
-         'cp %s %s %s',
-         aligned_filename,
-         aligned_bin4_filename,
-         final_files_directory
-      ),
-      basename
-   )
-
    tomoauto_lib.check_alignment(aligned_filename, header.nz)
 
    -- Ok for the new stuff here we add CTF correction
@@ -377,54 +304,10 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
          basename
       )
       tomoauto_lib.is_file(defocus_filename)
-      COM_file_lib.modify_ctfplotter(basename)
-
-      tomoauto_lib.run(
-         string.format(
-            'cp %s ctfplotter.com %s',
-            defocus_filename,
-            final_files_directory
-         ),
-         basename
-      )
 
       if options_table.m_ == 'align' then
-         tomoauto_lib.run(
-            string.format(
-               'mv tomoauto*.log %s',
-               final_files_directory
-            ),
-            basename
-         )
-
-         tomoauto_lib.run(
-            string.format(
-               'rm -rf *.com *.log %s* RAPTOR',
-               basename
-            ),
-            basename
-         )
-
-         tomoauto_lib.run(
-            string.format(
-               'mv %s/* .',
-               final_files_directory
-            ),
-            basename
-         )
-
-         tomoauto_lib.run(
-            string.format(
-               'rmdir %s',
-               final_files_directory
-            ),
-            basename
-         )
-
-         success, err = lfs.chdir('..')
-         if not success then
-            error(err, 0)
-         end
+         tomoauto_lib.clean_up(basename)
+         COM_file_lib.write_final_ctfplotter(input_filename, header)
          return true
       end
 
@@ -451,15 +334,6 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
             'mv %s %s',
             ctf_corrected_aligned_filename,
             aligned_filename
-         ),
-         basename
-      )
-
-      tomoauto_lib.run(
-         string.format(
-            'cp %s %s',
-            aligned_filename,
-            final_files_directory
          ),
          basename
       )
@@ -504,12 +378,11 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
    )
 
    -- Finally we compute the reconstruction
+   tomoauto_lib.check_free_space()
    if not options_table.t then -- Using IMOD to handle the reconstruction.
-      tomoauto_lib.check_free_space()
 
       if not options_table.s then -- Using Weighted Back Projection method.
          reconstruction_filename = basename .. '_full.rec'
-
          tomoauto_lib.run(
             string.format(
                'submfg -s %s_tilt.com',
@@ -517,7 +390,6 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
             ),
             basename
          )
-
       else                 -- Using S.I.R.T method
          tomoauto_lib.run(
             string.format(
@@ -525,7 +397,6 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
             ),
             basename
          )
-
          tomoauto_lib.run(
             string.format(
                'processchunks localhost tilt_sirt'
@@ -613,50 +484,8 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
       basename
    )
 
-   tomoauto_lib.run(string.format(
-         'rm %s~',
-         bin4_filename
-      ),
-      basename
-   )
-
-   tomoauto_lib.run(string.format(
-         'mv %s %s tomoauto*.log %s',
-         reconstruction_filename,
-         bin4_filename,
-         final_files_directory
-      ),
-      basename
-   )
-
-   tomoauto_lib.run(
-      string.format(
-         'rm -rf *.com *.log %s* raptor*',
-         basename
-      ),
-      basename
-   )
-
-   tomoauto_lib.run(
-      string.format(
-         'mv %s/* .',
-         final_files_directory
-      ),
-      basename
-   )
-
-   tomoauto_lib.run(
-      string.format(
-         'rmdir %s',
-         final_files_directory
-      ),
-      basename
-   )
-
-   success, err = lfs.chdir('..')
-   if not success then
-      error(err, 0)
-   end
+   tomoauto_lib.clean_up(basename)
+   COM_file_lib.write_final_ctfplotter(input_filename, header)
    return true
 end
 --[[===========================================================================#
@@ -687,7 +516,6 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
    local bin4_filename                  = basename .. '.bin4'
    local log_file                       = 'tomoauto_' .. basename .. '.log'
    local error_log_file                 = 'tomoauto_' .. basename .. '.err.log'
-   local final_files_directory          = 'final_files_' .. basename
 
    if options_table.h then
       display_help()
@@ -700,52 +528,6 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
       input_filename,
       fiducial_diameter
    )
-
-   local success, err = lfs.mkdir(basename)
-   if not success then
-      error(err, 0)
-   end
-
-   tomoauto_lib.run(
-      string.format(
-         'mv %s %s %s %s %s %s',
-         input_filename,
-         tilt_filename,
-         tilt_xf_filename,
-         fiducial_model_filename,
-         aligned_filename,
-         basename
-      ),
-      basename
-   )
-
-   if options_table.c then
-      tomoauto_lib.run(
-         string.format(
-            'mv %s %s',
-            defocus_filename,
-            basename
-         ),
-         basename
-      )
-   end
-
-   if options_table.l_ then
-      tomoauto_lib.run(
-         string.format(
-            'cp %s %s',
-            options_table.l_,
-            basename
-         ),
-         basename
-      )
-   end
-
-   success, err = lfs.chdir(basename)
-   if not success then
-      error(err, 0)
-   end
-   local start_directory = lfs.currentdir()
 
    tomoauto_lib.run(
       string.format(
@@ -762,26 +544,8 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
       options_table
    )
 
-   -- We create this directory as a backup for the original stack
-   success, err = lfs.mkdir(final_files_directory)
-   if not success then
-      error(err, 0)
-   end
-
-   tomoauto_lib.run(
-      string.format(
-         'cp %s %s',
-         input_filename,
-         final_files_directory
-      ),
-      basename
-   )
-
    if options_table.c then
-      tomoauto_lib.check_free_space()
-
       tomoauto_lib.is_file(defocus_filename)
-
       tomoauto_lib.run(
          string.format(
             'submfg -s %s_ctfphaseflip.com',
@@ -808,7 +572,6 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
          ),
          basename
       )
-
    end
 
    -- Now we erase the gold
@@ -861,17 +624,9 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
       )
    )
 
-   tomoauto_lib.run(
-      string.format(
-         'cp %s %s',
-         aligned_bin4_filename,
-         final_files_directory
-      ),
-      basename
-   )
    -- Finally we compute the reconstruction
+   tomoauto_lib.check_free_space()
    if not options_table.t then -- Using IMOD to handle the reconstruction.
-      tomoauto_lib.check_free_space()
 
       if not options_table.s then -- Using Weighted Back Projection method.
          reconstruction_filename = basename .. '_full.rec'
@@ -976,47 +731,9 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
       basename
    )
 
-   tomoauto_lib.run(string.format(
-         'rm -f %s~',
-         bin4_filename
-      ),
-      basename
-   )
-
-   tomoauto_lib.run(string.format(
-         'mv %s %s tomoauto*.log %s',
-         reconstruction_filename,
-         bin4_filename,
-         final_files_directory
-      ),
-      basename
-   )
-
-   tomoauto_lib.run(
-      string.format(
-         'rm -rf *.com *.log %s* raptor*',
-         basename
-      ),
-      basename
-   )
-
-   tomoauto_lib.run(
-      string.format(
-         'mv %s/* .',
-         final_files_directory
-      ),
-      basename
-   )
-
-   tomoauto_lib.run(
-      string.format(
-         'rmdir %s',
-         final_files_directory
-      ),
-      basename
-   )
-
-   lfs.chdir('..')
+   tomoauto_lib.clean_up(basename)
+   COM_file_lib.write_final_ctfplotter(input_filename, header)
    return true
 end
+
 return tomoauto

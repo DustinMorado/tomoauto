@@ -7,181 +7,78 @@ local lfs        = require 'lfs'
 local tomoauto_lib = {}
 
 --[[===========================================================================#
-#                                clean_on_fail                                 #
+#                                   clean_up                                   #
 #------------------------------------------------------------------------------#
 # This is a function that removes all the generated intermediate files in case #
-# tomoauto fails to finish correctly.                                          #
+# tomoauto fails to finish correctly, or when it finishes.                     #
 #------------------------------------------------------------------------------#
 # Arguments: basename: Image stack filename base <string>                      #
 #===========================================================================--]]
-function tomoauto_lib.clean_on_fail(basename)
-   local final_files_directory = basename .. '/final_files_' .. basename
-   local log_filename          = 'tomoauto_' .. basename .. '.log'
-   local err_log_filename      = 'tomoauto_' .. basename .. '.err.log'
+function tomoauto_lib.clean_up(basename)
+   local image_stack_filename           = basename .. '.st'
+   local raw_tilt_filename              = basename .. '.rawtlt'
+   local ccd_erased_filename            = basename .. '_fixed.st'
+   local peak_model_filename            = basename .. '_peak.mod'
+   local original_filename              = basename .. '_orig.st'
+   local pre_xf_filename                = basename .. '.prexf'
+   local pre_xg_filename                = basename .. '.prexg'
+   local pre_aligned_filename           = basename .. '.preali'
+   local fiducial_model_fixed_filename  = basename .. '_beadtrack.fid'
+   local three_d_model_filename         = basename .. '.3dmod'
+   local fiducial_xyz_filename          = basename .. 'fid.xyz'
+   local residual_model_filename        = basename .. '.resid'
+   local fiducial_text_model_filename   = basename .. '.fid.txt'
+   local fiducial_xf_filename           = basename .. '_fid.xf'
+   local xf_filename                    = basename .. '.xf'
+   local fiducial_tilt_filename         = basename .. '_fid.tlt'
+   local defocus_filename               = basename .. '.defocus'
+   local first_aligned_filename         = basename .. '_first.ali'
+   local ctf_corrected_aligned_filename = basename .. '_ctfcorr.ali'
+   local xtilt_filename                 = basename .. '.xtilt'
+   local gold_erase_model_filename      = basename .. '_erase.fid'
+   local gold_erase_filename            = basename .. '_erase.ali'
+   local second_aligned_filename        = basename .. '_second.ali'
+   local RAPTOR_directory_name          = basename .. '_RAPTOR'
+   local com_filenames                  = basename .. '_*.com'
+   local log_filenames                  = basename .. '_*.log'
+   local temporary_filenames            = basename .. '*~'
 
-   if string.match(lfs.currentdir(), '.*/(.*)') == basename then
-      if lfs.attributes(log_filename) then
-         os.execute('mv ' .. log_filename .. ' ..')
-      end
-      if lfs.attributes(err_log_filename) then
-         os.execute('mv ' .. err_log_filename .. ' ..')
-      end
-      lfs.chdir('..')
-      if lfs.attributes(final_files_directory) then
-         os.execute('mv ' .. final_files_directory .. '/* .')
-      end
-   end
-end
-
---[[===========================================================================#
-#                                     run                                      #
-#------------------------------------------------------------------------------#
-# This is a function that runs IMOD commands in a protected environment.       #
-#------------------------------------------------------------------------------#
-# Arguments: program:  programn to run <string>                                #
-#            basename: Image stack basename <string>                           #
-#===========================================================================--]]
-function tomoauto_lib.run(program, basename)
-
-   local success, exit, signal = os.execute(
-      string.format(
-         '%s 1>> tomoauto_%s.log 2>> tomoauto_%s.err.log',
-         program,
-         basename,
-         basename
+   pcall(os.execute, string.format(
+         'rm -rf' .. string.rep(' %s ', 25),
+         image_stack_filename,
+         raw_tilt_filename,
+         ccd_erased_filename,
+         peak_model_filename,
+         pre_xf_filename,
+         pre_xg_filename,
+         pre_aligned_filename,
+         fiducial_model_fixed_filename,
+         three_d_model_filename,
+         fiducial_xyz_filename,
+         residual_model_filename,
+         fiducial_text_model_filename,
+         fiducial_xf_filename,
+         xf_filename,
+         fiducial_tilt_filename,
+         first_aligned_filename,
+         ctf_corrected_aligned_filename,
+         xtilt_filename,
+         gold_erase_model_filename,
+         gold_erase_filename,
+         second_aligned_filename,
+         RAPTOR_directory_name,
+         com_filenames,
+         log_filenames,
+         temporary_filenames
       )
    )
 
-   if not success or signal ~= 0 then
-      tomoauto_lib.clean_on_fail(basename)
-      error(
-         string.format(
-            '\nError: %s failed for %s.\n\n',
-            program,
-            basename
-         ), 0
+   os.execute(string.format(
+         'mv %s %s',
+         original_filename,
+         image_stack_filename
       )
-   else
-      return success, exit, signal
-   end
-end
-
---[[==========================================================================#
-#                               check_free_space                              #
-#-----------------------------------------------------------------------------#
-# A function to check that there is enough free space to successfully run     #
-# some of the more data heavy IMOD routines                                   #
-#==========================================================================--]]
-function tomoauto_lib.check_free_space()
-   local file = io.popen(
-      string.format(
-         'df -h %s',
-         lfs.currentdir()
-         ),
-         'r'
-      )
-   local contents = file:read('*a')
-	file:close()
-   local space = tonumber(string.match(contents, '(%d+)%%'))
-   if space <= 98 then
-      return true
-   else
-      error(string.format(
-            '\nError: Disk usage in %s is above 98%%.\n',
-            Directory
-         ), 0
-      )
-   end
-end
-
---[[==========================================================================#
-#                                   is_file                                   #
-#-----------------------------------------------------------------------------#
-# A function to check if file exists, since older versions of IMOD have a     #
-# funny way of handling exit codes in case of errors.                         #
-#-----------------------------------------------------------------------------#
-# Arguments: filename = filename to check <string>                            #
-#==========================================================================--]]
-function tomoauto_lib.is_file(filename)
-   local file = io.open(filename, 'r')
-   if file ~= nil then
-      io.close(file)
-      return true
-   else
-      error(
-         string.format(
-            '\nError: File %s not found.\n\n',
-            filename
-         ), 0
-      )
-   end
-end
-
---[[==========================================================================#
-#                              scale_RAPTOR_model                             #
-#-----------------------------------------------------------------------------#
-# A function that fixes the fiducial model generated by RAPTOR in how its     #
-# drawn and scaled.                                                           #
-#-----------------------------------------------------------------------------#
-# Arguments: input_filename  = RAPTOR generated fid model <string>            #
-#            header          = Image stack header <table>                     #
-#            output_filename = Output file <string>                           #
-#==========================================================================--]]
-function tomoauto_lib.scale_RAPTOR_model(
-   input_filename,
-   header,
-   output_filename
-)
-   local input_file  = assert(io.open(input_filename, 'r'))
-   local output_file = assert(io.open(output_filename, 'w'))
-
-   local refcurscale_string = string.format(
-      'refcurscale %5.3f %5.3f %5.3f',
-      header.xlen / header.mx,
-      header.ylen / header.my,
-      header.zlen / header.mz
    )
-
-   for line in input_file:lines('*l') do
-      line = string.gsub(
-         line,
-         'drawmode%s+%d+',
-         'drawmode\t1\n\z
-         symbol\t\t0\n\z
-         symsize\t\t7'
-      )
-      line = string.gsub(
-         line,
-         'symbol%s+circle',
-         refcurscale_string
-      )
-      line = string.gsub(line, '^size%s+%d+', '')
-      output_file:write(line,'\n')
-   end
-   input_file:close()
-   output_file:close()
-end
-
---[[==========================================================================#
-#                               check_alignment                               #
-#-----------------------------------------------------------------------------#
-# A function that checks the final alignment to make sure that too many high  #
-# tilt sections were not cut by newstack or RAPTOR. If more than 10% of the   #
-# original sections are missing, we abort the reconstruction                  #
-#-----------------------------------------------------------------------------#
-# Arguments: input_filename: Aligned Image Stack filename  <string>           #
-#            original_nz:    Number of original sections <integer>            #
-#==========================================================================--]]
-function tomoauto_lib.check_alignment(input_filename, original_nz)
-   local header = MRC_IO_lib.get_header(input_filename)
-   local aligned_nz = header.nz
-   header = nil
-   local cut_sections = original_nz - aligned_nz
-   if (aligned_nz / original_nz) >= 0.9 then
-      return true
-   else
-      error('\nError: RAPTOR has cut too many sections.\n\n',0)
-   end
 end
 
 --[[==========================================================================#
@@ -359,6 +256,158 @@ function tomoauto_lib.write_log(basename)
    end
 
    logfile:close()
+end
+
+--[[===========================================================================#
+#                                     run                                      #
+#------------------------------------------------------------------------------#
+# This is a function that runs IMOD commands in a protected environment.       #
+#------------------------------------------------------------------------------#
+# Arguments: program:  programn to run <string>                                #
+#            basename: Image stack basename <string>                           #
+#===========================================================================--]]
+function tomoauto_lib.run(program, basename)
+
+   local success, exit, signal = os.execute(
+      string.format(
+         '%s 1>> tomoauto_%s.log 2>> tomoauto_%s.err.log',
+         program,
+         basename,
+         basename
+      )
+   )
+
+   if not success or signal ~= 0 then
+      tomoauto_lib.write_log(basename)
+      tomoauto_lib.clean_up(basename)
+      error(
+         string.format(
+            '\nError: %s failed for %s.\n\n',
+            program,
+            basename
+         ), 0
+      )
+   else
+      return success, exit, signal
+   end
+end
+
+--[[==========================================================================#
+#                               check_free_space                              #
+#-----------------------------------------------------------------------------#
+# A function to check that there is enough free space to successfully run     #
+# some of the more data heavy IMOD routines                                   #
+#==========================================================================--]]
+function tomoauto_lib.check_free_space()
+   local file = io.popen(
+      string.format(
+         'df -h %s',
+         lfs.currentdir()
+         ),
+         'r'
+      )
+   local contents = file:read('*a')
+	file:close()
+   local space = tonumber(string.match(contents, '(%d+)%%'))
+   if space <= 98 then
+      return true
+   else
+      error(string.format(
+            '\nError: Disk usage in %s is above 98%%.\n',
+            Directory
+         ), 0
+      )
+   end
+end
+
+--[[==========================================================================#
+#                                   is_file                                   #
+#-----------------------------------------------------------------------------#
+# A function to check if file exists, since older versions of IMOD have a     #
+# funny way of handling exit codes in case of errors.                         #
+#-----------------------------------------------------------------------------#
+# Arguments: filename = filename to check <string>                            #
+#==========================================================================--]]
+function tomoauto_lib.is_file(filename)
+   local file = io.open(filename, 'r')
+   if file ~= nil then
+      io.close(file)
+      return true
+   else
+      error(
+         string.format(
+            '\nError: File %s not found.\n\n',
+            filename
+         ), 0
+      )
+   end
+end
+
+--[[==========================================================================#
+#                              scale_RAPTOR_model                             #
+#-----------------------------------------------------------------------------#
+# A function that fixes the fiducial model generated by RAPTOR in how its     #
+# drawn and scaled.                                                           #
+#-----------------------------------------------------------------------------#
+# Arguments: input_filename  = RAPTOR generated fid model <string>            #
+#            header          = Image stack header <table>                     #
+#            output_filename = Output file <string>                           #
+#==========================================================================--]]
+function tomoauto_lib.scale_RAPTOR_model(
+   input_filename,
+   header,
+   output_filename
+)
+   local input_file  = assert(io.open(input_filename, 'r'))
+   local output_file = assert(io.open(output_filename, 'w'))
+
+   local refcurscale_string = string.format(
+      'refcurscale %5.3f %5.3f %5.3f',
+      header.xlen / header.mx,
+      header.ylen / header.my,
+      header.zlen / header.mz
+   )
+
+   for line in input_file:lines('*l') do
+      line = string.gsub(
+         line,
+         'drawmode%s+%d+',
+         'drawmode\t1\n\z
+         symbol\t\t0\n\z
+         symsize\t\t7'
+      )
+      line = string.gsub(
+         line,
+         'symbol%s+circle',
+         refcurscale_string
+      )
+      line = string.gsub(line, '^size%s+%d+', '')
+      output_file:write(line,'\n')
+   end
+   input_file:close()
+   output_file:close()
+end
+
+--[[==========================================================================#
+#                               check_alignment                               #
+#-----------------------------------------------------------------------------#
+# A function that checks the final alignment to make sure that too many high  #
+# tilt sections were not cut by newstack or RAPTOR. If more than 10% of the   #
+# original sections are missing, we abort the reconstruction                  #
+#-----------------------------------------------------------------------------#
+# Arguments: input_filename: Aligned Image Stack filename  <string>           #
+#            original_nz:    Number of original sections <integer>            #
+#==========================================================================--]]
+function tomoauto_lib.check_alignment(input_filename, original_nz)
+   local header = MRC_IO_lib.get_header(input_filename)
+   local aligned_nz = header.nz
+   header = nil
+   local cut_sections = original_nz - aligned_nz
+   if (aligned_nz / original_nz) >= 0.9 then
+      return true
+   else
+      error('\nError: RAPTOR has cut too many sections.\n\n',0)
+   end
 end
 
 --[[===========================================================================#
