@@ -1,7 +1,7 @@
 #tomoAuto
 ---
 
-### Version 0.1.03
+### Version 0.2.00
 ---
 
 ### About
@@ -16,6 +16,21 @@ command line calls and configurations. It has been running in some form or
 fashion in our lab for the last 3 years with good results. 
 
 It is a very rough release and has many TODOs that have yet to be implemented.  
+
+### Change Log
+## 0.2.0
+ * Added mode option to stop at alignment, ccderase, or to only perform
+   reconstruction
+ * Stopped using RAPTOR to generate the alignment, now it only produces the
+   fiducial seed model and then IMOD performs the alignment.
+ * No longer using a folder with the basename which helps keep things clean and
+   organized when using the align and then the reconstruct mode.
+ * Removed all batch commands, handle them yourself with the shell.
+ * Added programs to create a newstack from drift-corrected images collected by
+   dose-fractionation.
+ * Added a pretty substantial lua module to handle MRC files.
+ * Most of the IMOD commands handle multi-core automatically so removed -p
+   option.
 
 ---
 
