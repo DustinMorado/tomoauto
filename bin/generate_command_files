@@ -32,6 +32,7 @@ function generate_command_files(
       error('\nError: No fiducial size entered.\n\n', 0)
    end
 
+   local basename = string.sub(input_filename, 1, -4)
    local header = MRC_IO_lib.get_required_header(
       input_filename,
       fiducial_diameter
@@ -46,37 +47,17 @@ function generate_command_files(
       end
    end
 
-   local basename = string.sub(input_filename, 1, -4)
-   local command_file_directory = basename .. '_COMs'
-
-   local success, err = lfs.mkdir(command_file_directory)
-   if not success then
-      error(err, 0)
+   if options_table.m_ == 'reconstruct' then
+      COM_file_lib.write_reconstruction(input_filename, header, options_table)
+   else
+      COM_file_lib.write(input_filename, header, options_table)
    end
-
-   local success, exit, signal = os.execute(
-      string.format(
-         'mv %s %s',
-         input_filename,
-         command_file_directory
-      )
-   )
-   if not success or signal ~= 0 then
-      error('\nError: generate_command_files mv failed.\n\n', 0)
-   end
-   
-   success, err = lfs.chdir(command_file_directory)
-   if not success then
-      error(err, 0)
-   end
-
-   COM_file_lib.write(input_filename, header, options_table)
 end
 
 local short_options = 'c,   d_,       g,   h,    i_,   l_,    '
 local long_options  = 'ctf, defoucus, gpu, help, iter, config '
-short_options = short_options .. 'p_,      s,    t,      z_'
-long_options  = long_options  .. 'procnum, SIRT, tomo3d, thickness'
+short_options = short_options .. 'm_,   p_,      s,    t,      z_'
+long_options  = long_options  .. 'mode, procnum, SIRT, tomo3d, thickness'
 local status, arg, options_table = pcall(
    yago.get_options,
    arg,
