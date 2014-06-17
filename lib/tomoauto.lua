@@ -737,9 +737,6 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
    )
 
    tomoauto_lib.clean_up(basename)
-   if options_table.c then
-      COM_file_lib.write_final_ctfplotter(input_filename, header)
-   end
    return true
 end
 
