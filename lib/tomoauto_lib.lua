@@ -73,7 +73,7 @@ function tomoauto_lib.clean_up(basename)
       )
    )
 
-   os.execute(string.format(
+   pcall(os.execute, string.format(
          'mv %s %s',
          original_filename,
          image_stack_filename
