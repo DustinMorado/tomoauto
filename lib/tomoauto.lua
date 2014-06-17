@@ -529,7 +529,7 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
    tomoauto_lib.check_free_space()
 
    local header = MRC_IO_lib.get_required_header(
-      aligned_filename,
+      input_filename,
       fiducial_diameter
    )
 
