@@ -529,7 +529,7 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
    tomoauto_lib.check_free_space()
 
    local header = MRC_IO_lib.get_required_header(
-      input_filename,
+      aligned_filename,
       fiducial_diameter
    )
 
@@ -538,7 +538,8 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
          'touch %s %s',
          log_file,
          error_log_file
-      )
+      ),
+      basename
    )
 
    -- Here we write all of the needed command files.
