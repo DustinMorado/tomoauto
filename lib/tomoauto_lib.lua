@@ -44,8 +44,7 @@ function tomoauto_lib.clean_up(basename)
    local temporary_filenames            = basename .. '*~'
 
    pcall(os.execute, string.format(
-         'rm -rf' .. string.rep(' %s ', 25),
-         image_stack_filename,
+         'rm -rf' .. string.rep(' %s ', 24),
          raw_tilt_filename,
          ccd_erased_filename,
          peak_model_filename,
