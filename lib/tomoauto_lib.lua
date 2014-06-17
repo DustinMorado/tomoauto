@@ -73,12 +73,16 @@ function tomoauto_lib.clean_up(basename)
       )
    )
 
-   pcall(os.execute, string.format(
-         'mv %s %s',
-         original_filename,
-         image_stack_filename
+   is_original_filename = io.open(original_filename, 'r')
+   if is_original_filename then
+      is_original_filename:close()
+      pcall(os.execute, string.format(
+            'mv %s %s',
+            original_filename,
+            image_stack_filename
+         )
       )
-   )
+   end
 end
 
 --[[==========================================================================#
