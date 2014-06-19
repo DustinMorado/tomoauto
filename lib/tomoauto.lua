@@ -94,12 +94,10 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
    local xf_filename                    = basename .. '.xf'
    local fiducial_tilt_filename         = basename .. '_fid.tlt'
    local defocus_filename               = basename .. '.defocus'
-   local first_aligned_filename         = basename .. '_first.ali'
    local ctf_corrected_aligned_filename = basename .. '_ctfcorr.ali'
    local tilt_xf_filename               = basename .. '.tltxf'
    local gold_erase_model_filename      = basename .. '_erase.fid'
    local gold_erase_filename            = basename .. '_erase.ali'
-   local second_aligned_filename        = basename .. '_second.ali'
    local reconstruction_filename        = basename .. '_full.rec'
    local bin4_filename                  = basename .. '.bin4'
    local log_file                       = 'tomoauto_' .. basename .. '.log'
@@ -325,15 +323,6 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
       tomoauto_lib.run(
          string.format(
             'mv %s %s',
-            aligned_filename,
-            first_aligned_filename
-         ),
-         basename
-      )
-
-      tomoauto_lib.run(
-         string.format(
-            'mv %s %s',
             ctf_corrected_aligned_filename,
             aligned_filename
          ),
@@ -360,15 +349,6 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
       basename
    )
    tomoauto_lib.is_file(gold_erase_filename)
-
-   tomoauto_lib.run(
-      string.format(
-         'mv %s %s',
-         aligned_filename,
-         second_aligned_filename
-      ),
-      basename
-   )
 
    tomoauto_lib.run(
       string.format(
@@ -515,7 +495,6 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
    local tilt_xf_filename               = basename .. '.tltxf'
    local gold_erase_model_filename      = basename .. '_erase.fid'
    local gold_erase_filename            = basename .. '_erase.ali'
-   local second_aligned_filename        = basename .. '_second.ali'
    local reconstruction_filename        = basename .. '_full.rec'
    local bin4_filename                  = basename .. '.bin4'
    local log_file                       = 'tomoauto_' .. basename .. '.log'
@@ -563,15 +542,6 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
       tomoauto_lib.run(
          string.format(
             'mv %s %s',
-            aligned_filename,
-            first_aligned_filename
-         ),
-         basename
-      )
-
-      tomoauto_lib.run(
-         string.format(
-            'mv %s %s',
             ctf_corrected_aligned_filename,
             aligned_filename
          ),
@@ -602,15 +572,6 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
       basename
    )
    tomoauto_lib.is_file(gold_erase_filename)
-
-   tomoauto_lib.run(
-      string.format(
-         'mv %s %s',
-         aligned_filename,
-         second_aligned_filename
-      ),
-      basename
-   )
 
    tomoauto_lib.run(
       string.format(

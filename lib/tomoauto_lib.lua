@@ -32,19 +32,17 @@ function tomoauto_lib.clean_up(basename)
    local xf_filename                    = basename .. '.xf'
    local fiducial_tilt_filename         = basename .. '_fid.tlt'
    local defocus_filename               = basename .. '.defocus'
-   local first_aligned_filename         = basename .. '_first.ali'
    local ctf_corrected_aligned_filename = basename .. '_ctfcorr.ali'
    local xtilt_filename                 = basename .. '.xtilt'
    local gold_erase_model_filename      = basename .. '_erase.fid'
    local gold_erase_filename            = basename .. '_erase.ali'
-   local second_aligned_filename        = basename .. '_second.ali'
    local RAPTOR_directory_name          = basename .. '_RAPTOR'
    local com_filenames                  = basename .. '_*.com'
    local log_filenames                  = basename .. '_*.log'
    local temporary_filenames            = basename .. '*~'
 
    pcall(os.execute, string.format(
-         'rm -rf' .. string.rep(' %s ', 24),
+         'rm -rf' .. string.rep(' %s ', 22),
          raw_tilt_filename,
          ccd_erased_filename,
          peak_model_filename,
@@ -59,12 +57,10 @@ function tomoauto_lib.clean_up(basename)
          fiducial_xf_filename,
          xf_filename,
          fiducial_tilt_filename,
-         first_aligned_filename,
          ctf_corrected_aligned_filename,
          xtilt_filename,
          gold_erase_model_filename,
          gold_erase_filename,
-         second_aligned_filename,
          RAPTOR_directory_name,
          com_filenames,
          log_filenames,
