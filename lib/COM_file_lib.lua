@@ -1046,10 +1046,9 @@ local function write_ctfplotter(input_filename, header)
          header.pixel_size
       )
    )
-	header.defocus = header.defocus * 1000
    command_file:write(string.format(
-         'ExpectedDefocus %s\n',
-         header.defocus
+         'ExpectedDefocus %d\n',
+         header.defocus * 1000
       )
    )
    command_file:write(string.format(
@@ -1196,10 +1195,9 @@ function COM_file_lib.write_final_ctfplotter(input_filename, header)
          header.pixel_size
       )
    )
-	header.defocus = header.defocus * 1000
    command_file:write(string.format(
-         'ExpectedDefocus %s\n',
-         header.defocus
+         'ExpectedDefocus %d\n',
+         header.defocus * 1000
       )
    )
    command_file:write(string.format(
