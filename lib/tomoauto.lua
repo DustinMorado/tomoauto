@@ -328,6 +328,12 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
          ),
          basename
       )
+   
+   else
+      if options_table.m_ == 'align' then
+         tomoauto_lib.clean_up(basename)
+      end
+      return true
    end
 
    -- Now we erase the gold
