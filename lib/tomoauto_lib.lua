@@ -361,7 +361,7 @@ function tomoauto_lib.scale_RAPTOR_model(
    local output_file = assert(io.open(output_filename, 'w'))
 
    local refcurscale_string = string.format(
-      'refcurscale %5.3f %5.3f %5.3f',
+      '#refcurscale %5.3f %5.3f %5.3f',
       header.xlen / header.mx,
       header.ylen / header.my,
       header.zlen / header.mz
