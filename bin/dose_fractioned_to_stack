@@ -155,8 +155,7 @@ local function dose_fractioned_to_stack(basename)
    end
    filelist:close()
 
-   local success, exit, signal = tomoauto_lib.run(
-      string.format(
+   tomoauto_lib.run(string.format(
          'newstack -filei %s %s',
          filelist_name,
          new_stack_filename
@@ -208,7 +207,7 @@ local function dose_fractioned_to_stack(basename)
       temporary_filename, 
       header, extended_header
    )
-   success, exit, signal = tomoauto_lib.run(
+   tomoauto_lib.run(
       string.format(
          'mv %s %s',
          temporary_filename,
@@ -217,9 +216,9 @@ local function dose_fractioned_to_stack(basename)
       basename
    )
 
-   success, exit, signal = tomoauto_lib.run(
+   tomoauto_lib.run(
       string.format(
-         'rm %s', 
+         'rm -f %s', 
          filelist_name
       ),
       basename

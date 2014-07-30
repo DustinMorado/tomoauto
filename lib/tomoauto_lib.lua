@@ -30,6 +30,54 @@ function tomoauto_lib.is_file(filename)
 end
 
 --[[===========================================================================#
+#                                     run                                      #
+#------------------------------------------------------------------------------#
+# This is a function that runs IMOD commands in a protected environment.       #
+#------------------------------------------------------------------------------#
+# Arguments: program:  programn to run <string>                                #
+#            basename: Image stack basename <string>                           #
+#===========================================================================--]]
+function tomoauto_lib.run(program, basename)
+
+   if not pcall(tomoauto_lib.is_file,
+         string.format('tomoauto_%s.log', basename))
+   then
+      local file = io.open(string.format('tomoauto_%s.log', basename), 'w')
+      file:close()
+   end
+
+   if not pcall(tomoauto_lib.is_file,
+         string.format('tomoauto_%s.err.log', basename)) 
+   then
+      local file = io.open(string.format('tomoauto_%s.err.log', basename), 'w')
+      file:close()
+   end
+
+   local success, exit, signal = os.execute(
+      string.format(
+         '%s 1>> tomoauto_%s.log 2>> tomoauto_%s.err.log',
+         program,
+         basename,
+         basename
+      )
+   )
+
+   if not success or signal ~= 0 then
+      tomoauto_lib.write_log(basename)
+      tomoauto_lib.clean_up(basename)
+      error(
+         string.format(
+            '\nError: %s failed for %s.\n\n',
+            program,
+            basename
+         ), 0
+      )
+   else
+      return success, exit, signal
+   end
+end
+
+--[[===========================================================================#
 #                                   clean_up                                   #
 #------------------------------------------------------------------------------#
 # This is a function that removes all the generated intermediate files in case #
@@ -278,48 +326,6 @@ function tomoauto_lib.write_log(basename)
    end
 
    logfile:close()
-end
-
---[[===========================================================================#
-#                                     run                                      #
-#------------------------------------------------------------------------------#
-# This is a function that runs IMOD commands in a protected environment.       #
-#------------------------------------------------------------------------------#
-# Arguments: program:  programn to run <string>                                #
-#            basename: Image stack basename <string>                           #
-#===========================================================================--]]
-function tomoauto_lib.run(program, basename)
-
-   if not tomoauto_lib.is_file(string.format('tomoauto_%s.log', basename)) then
-      lfs.touch(string.format('tomoauto_%s.log'), basename)
-   end
-
-   if not tomoauto_lib.is_file(string.format('tomoauto_%s.err.log', basename)) then
-      lfs.touch(string.format('tomoauto_%s.err.log'), basename)
-   end
-
-   local success, exit, signal = os.execute(
-      string.format(
-         '%s 1>> tomoauto_%s.log 2>> tomoauto_%s.err.log',
-         program,
-         basename,
-         basename
-      )
-   )
-
-   if not success or signal ~= 0 then
-      tomoauto_lib.write_log(basename)
-      tomoauto_lib.clean_up(basename)
-      error(
-         string.format(
-            '\nError: %s failed for %s.\n\n',
-            program,
-            basename
-         ), 0
-      )
-   else
-      return success, exit, signal
-   end
 end
 
 --[[==========================================================================#
