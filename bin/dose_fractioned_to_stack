@@ -155,16 +155,14 @@ local function dose_fractioned_to_stack(basename)
    end
    filelist:close()
 
-   local success, exit, signal = os.execute(
+   local success, exit, signal = tomoauto_lib.run(
       string.format(
-         'newstack -filei %s %s &> /dev/null',
+         'newstack -filei %s %s',
          filelist_name,
          new_stack_filename
-      )
+      ),
+      basename
    )
-   if not success or signal ~= 0 then
-      error('\nError: dose_frac_to_stack newstack failed.\n\n', 0)
-   end
    tomoauto_lib.is_file(new_stack_filename)
 
    header          = MRC_IO_lib.get_header(stack_filename)
@@ -210,21 +208,22 @@ local function dose_fractioned_to_stack(basename)
       temporary_filename, 
       header, extended_header
    )
-   success, exit, signal = os.execute(
+   success, exit, signal = tomoauto_lib.run(
       string.format(
          'mv %s %s',
          temporary_filename,
          new_stack_filename
-      )
+      ),
+      basename
    )
-   if not success or signal ~= 0 then
-      error('\nError: dose_frac_to_stack mv temporary file failed.\n\n', 0)
-   end
 
-   success, exit, signal = os.execute(string.format('rm %s', filelist_name))
-   if not success or signal ~= 0 then
-      error('\nError: dose_frac_to_stack clean failed.\n\n', 0)
-   end
+   success, exit, signal = tomoauto_lib.run(
+      string.format(
+         'rm %s', 
+         filelist_name
+      ),
+      basename
+   )
    return true
 end
 

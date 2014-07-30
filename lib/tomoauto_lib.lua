@@ -6,6 +6,29 @@ local lfs        = require 'lfs'
 
 local tomoauto_lib = {}
 
+--[[==========================================================================#
+#                                   is_file                                   #
+#-----------------------------------------------------------------------------#
+# A function to check if file exists, since older versions of IMOD have a     #
+# funny way of handling exit codes in case of errors.                         #
+#-----------------------------------------------------------------------------#
+# Arguments: filename = filename to check <string>                            #
+#==========================================================================--]]
+function tomoauto_lib.is_file(filename)
+   local file = io.open(filename, 'r')
+   if file ~= nil then
+      io.close(file)
+      return true
+   else
+      error(
+         string.format(
+            '\nError: File %s not found.\n\n',
+            filename
+         ), 0
+      )
+   end
+end
+
 --[[===========================================================================#
 #                                   clean_up                                   #
 #------------------------------------------------------------------------------#
@@ -267,6 +290,14 @@ end
 #===========================================================================--]]
 function tomoauto_lib.run(program, basename)
 
+   if not tomoauto_lib.is_file(string.format('tomoauto_%s.log', basename)) then
+      lfs.touch(string.format('tomoauto_%s.log'), basename)
+   end
+
+   if not tomoauto_lib.is_file(string.format('tomoauto_%s.err.log', basename)) then
+      lfs.touch(string.format('tomoauto_%s.err.log'), basename)
+   end
+
    local success, exit, signal = os.execute(
       string.format(
          '%s 1>> tomoauto_%s.log 2>> tomoauto_%s.err.log',
@@ -314,29 +345,6 @@ function tomoauto_lib.check_free_space()
       error(string.format(
             '\nError: Disk usage in %s is above 98%%.\n',
             Directory
-         ), 0
-      )
-   end
-end
-
---[[==========================================================================#
-#                                   is_file                                   #
-#-----------------------------------------------------------------------------#
-# A function to check if file exists, since older versions of IMOD have a     #
-# funny way of handling exit codes in case of errors.                         #
-#-----------------------------------------------------------------------------#
-# Arguments: filename = filename to check <string>                            #
-#==========================================================================--]]
-function tomoauto_lib.is_file(filename)
-   local file = io.open(filename, 'r')
-   if file ~= nil then
-      io.close(file)
-      return true
-   else
-      error(
-         string.format(
-            '\nError: File %s not found.\n\n',
-            filename
          ), 0
       )
    end
