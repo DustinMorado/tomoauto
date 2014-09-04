@@ -1,9 +1,5 @@
 #tomoAuto
----
-
-### Version 0.2.00
----
-
+## Version 0.2.10
 ### About
 tomoAuto is a Lua program to automate the alignment, correction and
 recontstruction of cryo-electron tomography (Cryo-ET) data. Coupled with
@@ -18,7 +14,12 @@ fashion in our lab for the last 3 years with good results.
 It is a very rough release and has many TODOs that have yet to be implemented.  
 
 ### Change Log
-## 0.2.0
+#### 0.2.10
+ * Changed final files kept to save space and rely on options available in 3dmod
+ * As of IMOD 4.7.9 autofidseed works better than RAPTOR to generate the
+   fiducial seed model and is now default. RAPTOR can still be used by passing
+   the appropriate option (see tomoauto --help).
+#### 0.2.0
  * Added mode option to stop at alignment, ccderase, or to only perform
    reconstruction
  * Stopped using RAPTOR to generate the alignment, now it only produces the
@@ -64,14 +65,6 @@ methods that preserve resolution. J. Struct. Biol. 120:343-352.
 
 [PubMed](http://www.ncbi.nlm.nih.gov/pubmed/9441937)
 
-**Nonlinear Anisotropic Diffusion**
-
-Frangakis, A., and Hegerl, R. (2001) Noise reduction in electron tomographic 
-reconstructions using nonlinear anisotropic diffusion.
-J. Struct. Biol. 135: 239-205
-
-[PubMed](http://www.ncbi.nlm.nih.gov/pubmed/11722164)
-
 **RAPTOR**
 
 F. Amat, F. Moussavi,L.R. Comolli, G. Elidan, K.H. Downing, M. Horowitz (2008) 
@@ -95,19 +88,3 @@ tomography. J. Struct. Biol. 170:570-575.
 
 JI Agulleiro, JJ Fernandez. (2012) Evaluation of a multicore-optimized
 implementation for tomographic reconstruction. PLoS ONE  7(11):e48261.
-
-[PubMed](http://www.ncbi.nlm.nih.gov/pubmed/23139768)
-
-J.J. Fernandez, S. Li, R.A. Crowther (2006) CTF determination and correction in
-electron cryotomography. Ultramicroscopy 106:587-596.
-
-[PubMed](http://www.ncbi.nlm.nih.gov/pubmed/16616422)
-
-J.J. Fernandez, S. Li, V. Lucic. (2007) Three-dimensional anisotropic noise
-reduction with automated parameter tuning. Application to electron
-cryotomography. Lecture Notes in Computer Science 4788:60-67.
-
-J.J. Fernandez. (2009) TOMOBFLOW: Feature-preserving noise filtering for
-electron tomography. BMC Bioinformatics 10:178.
-
-[PubMed](http://www.ncbi.nlm.nih.gov/pubmed/19523199)

@@ -41,6 +41,7 @@ local function display_help()
    -l, --config   \tSources a local config file\n\z
    -m, --mode     \tSelect which mode you want to operate\n\z
       continued:  \tavailable modes (erase, align, reconstruct).\n\z  
+   -n, --new      \tUses autofidseed as opposed to RAPTOR.\n\z
    -p, --procnum  \tUses <int> processors to speed up tilt\n\z
    -s, --SIRT     \tUse SIRT to reconstruct [default WBP]\n\z
    -t, --tomo3d   \tUse the TOMO3D to compute reconstruction\n\z
@@ -85,10 +86,9 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
    local original_filename              = basename .. '_orig.st'
    local pre_aligned_filename           = basename .. '.preali'
    local aligned_filename               = basename .. '.ali'
-   local aligned_bin4_filename          = basename .. '.ali.bin4'
    local tilt_filename                  = basename .. '.tlt'
+   local seed_filename                  = basename .. '.seed'
    local fiducial_model_filename        = basename .. '.fid'
-   local fiducial_model_fixed_filename  = basename .. '_beadtrack.fid'
    local fiducial_text_model_filename   = basename .. '.fid.txt'
    local fiducial_xf_filename           = basename .. '_fid.xf'
    local xf_filename                    = basename .. '.xf'
@@ -99,7 +99,6 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
    local gold_erase_model_filename      = basename .. '_erase.fid'
    local gold_erase_filename            = basename .. '_erase.ali'
    local reconstruction_filename        = basename .. '_full.rec'
-   local bin4_filename                  = basename .. '.bin4'
    local log_file                       = 'tomoauto_' .. basename .. '.log'
    local error_log_file                 = 'tomoauto_' .. basename .. '.err.log'
    local RAPTOR_fiducial_model_filename = basename .. '_RAPTOR/IMOD/' 
@@ -199,44 +198,45 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
    )
    tomoauto_lib.is_file(pre_aligned_filename)
 
-   -- Now we run RAPTOR to produce a succesfully aligned stack
-   tomoauto_lib.check_free_space()
-   tomoauto_lib.run(
-      string.format(
-         'submfg -s %s_RAPTOR.com',
+   if options_table.n then
+      tomoauto_lib.run(
+         string.format(
+            'submfg -s %s_autofidseed.com',
+            basename
+         ),
          basename
-      ),
-      basename
-   )
-   tomoauto_lib.is_file(RAPTOR_fiducial_model_filename)
+      )
+   else
+      -- Now we run RAPTOR to produce a succesfully aligned stack
+      tomoauto_lib.check_free_space()
+      tomoauto_lib.run(
+         string.format(
+            'submfg -s %s_RAPTOR.com',
+            basename
+         ),
+         basename
+      )
+      tomoauto_lib.is_file(RAPTOR_fiducial_model_filename)
 
-   tomoauto_lib.run(
-      string.format(
-         'mv %s .',
-         RAPTOR_fiducial_model_filename
-      ),
-      basename
-   )
+      tomoauto_lib.run(
+         string.format(
+            'mv %s .',
+            RAPTOR_fiducial_model_filename
+         ),
+         basename
+      )
 
-   tomoauto_lib.scale_RAPTOR_model(
-      fiducial_text_model_filename,
-      header,
-      fiducial_model_filename
-   )
+      tomoauto_lib.scale_RAPTOR_model(
+         fiducial_text_model_filename,
+         header,
+         seed_filename
+      )
+   end
 
    tomoauto_lib.run(
       string.format(
          'submfg -s %s_beadtrack.com',
          basename
-      ),
-      basename
-   )
-
-   tomoauto_lib.run(
-      string.format(
-         'mv %s %s',
-         fiducial_model_fixed_filename,
-         fiducial_model_filename
       ),
       basename
    )
@@ -277,15 +277,6 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
       basename
    )
    tomoauto_lib.is_file(aligned_filename)
-
-   tomoauto_lib.run(
-      string.format(
-         'binvol -b 4 -z 1 %s %s',
-         aligned_filename,
-         aligned_bin4_filename
-      ),
-      basename
-   )
 
    tomoauto_lib.check_alignment(aligned_filename, header.nz)
 
@@ -454,24 +445,6 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
    end
    tomoauto_lib.is_file(reconstruction_filename)
 
-   -- We bin the tomogram by a factor of 4 to make visualization faster
-   -- We bin the alignment by 4 as well to check the alignment quality
-   tomoauto_lib.run(string.format(
-         'binvol -binning 4 %s %s',
-         reconstruction_filename,
-         bin4_filename
-      ),
-      basename
-   )
-
-   tomoauto_lib.run(string.format(
-         'clip rotx %s %s',
-         bin4_filename,
-         bin4_filename
-      ),
-      basename
-   )
-
    tomoauto_lib.clean_up(basename)
    if options_table.c then
       COM_file_lib.write_final_ctfplotter(input_filename, header)
@@ -492,7 +465,6 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
    -- These are all of the files created and used throughout
    local basename                       = string.sub(input_filename, 1, -4)
    local aligned_filename               = basename .. '.ali'
-   local aligned_bin4_filename          = basename .. '.ali.bin4'
    local tilt_filename                  = basename .. '.tlt'
    local fiducial_model_filename        = basename .. '.fid'
    local defocus_filename               = basename .. '.defocus'
@@ -502,7 +474,6 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
    local gold_erase_model_filename      = basename .. '_erase.fid'
    local gold_erase_filename            = basename .. '_erase.ali'
    local reconstruction_filename        = basename .. '_full.rec'
-   local bin4_filename                  = basename .. '.bin4'
    local log_file                       = 'tomoauto_' .. basename .. '.log'
    local error_log_file                 = 'tomoauto_' .. basename .. '.err.log'
 
@@ -586,14 +557,6 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
          aligned_filename
       ),
       basename
-   )
-
-   tomoauto_lib.run(
-      string.format(
-         'binvol -binning 4 -zbinning 1 %s %s',
-         aligned_filename,
-         aligned_bin4_filename
-      )
    )
 
    -- Finally we compute the reconstruction
@@ -684,24 +647,6 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
       )
    end
    tomoauto_lib.is_file(reconstruction_filename)
-
-   -- We bin the tomogram by a factor of 4 to make visualization faster
-   -- We bin the alignment by 4 as well to check the alignment quality
-   tomoauto_lib.run(string.format(
-         'binvol -binning 4 %s %s',
-         reconstruction_filename,
-         bin4_filename
-      ),
-      basename
-   )
-
-   tomoauto_lib.run(string.format(
-         'clip rotx %s %s',
-         bin4_filename,
-         bin4_filename
-      ),
-      basename
-   )
 
    tomoauto_lib.clean_up(basename)
    return true

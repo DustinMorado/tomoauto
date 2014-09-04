@@ -23,8 +23,8 @@ local yago         = require 'yago'
 
 local short_options  = 'c,   d_,      g,   h,    i_,   l_,     m_, '
 local long_options   = 'ctf, defocus, gpu, help, iter, config, mode, '
-short_options  = short_options .. 'p_,      s,    t,      z_'
-long_options   = long_options  .. 'procnum, SIRT, tomo3D, thickness'
+short_options  = short_options .. 'n,   p_,      s,    t,      z_'
+long_options   = long_options  .. 'new, procnum, SIRT, tomo3D, thickness'
 
 local status, arg, options_table = pcall(
    yago.get_options,

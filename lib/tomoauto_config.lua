@@ -315,13 +315,72 @@ beadtrack_TiltDefaultGrouping = 5
 -- Default group size when automapping tilt angles
 beadtrack_MagDefaultGrouping = 5
 
+-- RotDefaultGrouping:
+beadtrack_RotDefaultGrouping = 1
+
 -- BoxSizeXandY:
 -- X and Y dimension of box used to search for bead
-beadtrack_BoxSizeXandY = '100 100'
+beadtrack_BoxSizeXandY = '72 72'
 
 -- FillGaps:
 -- Fill in gaps in the seed model or leave them empty
 beadtrack_FillGaps_use = true
+
+-- MaxGapSize
+beadtrack_MaxGapSize = 5
+
+-- LocalAreaTracking
+beadtrack_LocalAreaTracking_use = true
+beadtrack_LocalAreaTracking = 1
+
+-- LocalAreaTargetSize
+beadtrack_LocalAreaTargetSize = 1000
+
+-- MinBeadsInArea
+beadtrack_MinBeadsInArea = 3
+
+-- MinOverlapBeads
+beadtrack_MinOverlapBeads = 3
+
+-- MinViewsForTiltalign
+beadtrack_MinViewsForTiltalign = 4
+
+-- MinTiltRangeToFindAxis
+beadtrack_MinTiltRangeToFindAxis = 10.0
+
+-- MaxBeadsToAverage
+beadtrack_MaxBeadsToAverage = 4
+
+-- PointsToFitMaxAndMin
+-- Points and minimum for extrapolation
+beadtrack_PointsToFitMaxAndMin = '7,3'
+
+-- DensityRescueFractionAndSD
+-- Fraction of mean, and number of SD below mean: criterion for rescue
+beadtrack_DensityRescueFractionAndSD = '0.6,1.0'
+
+-- DistanceRescueCriterion
+-- Distance criterion for rescue
+beadtrack_DistanceRescueCriterion = 10.0
+
+-- RescueRelaxationDensityAndDistance
+-- relaxation of criterion for density and distance rescues
+beadtrack_RescueRelaxationDensityAndDistance = '0.7,0.9'
+
+-- PostFitRescueResidual
+beadtrack_PostFitRescueResidual = 2.5
+
+-- DensityRelaxationPostFit
+beadtrack_DensityRelaxationPostFit = 0.9
+
+-- MaxRescueDistance
+beadtrack_MaxRescueDistance = 2.5
+
+-- ResidualsToAnalyzeMaxAndMin
+beadtrack_ResidualsToAnalyzeMaxAndMin = '9,5'
+
+-- DeletionCriterionMinAndSD
+beadtrack_DeletionCriterionMinAndSD = '0.04,2.0'
 
 -- SobelFilterCentering:
 -- Use a Sobel edge detection filter to better find bead centroid
@@ -331,6 +390,17 @@ beadtrack_SobelFilterCentering_use = true
 -- Gaussian Kernel size for smoothing bead before Sobel filter, set to about 0.5
 -- for low-noise data and around 1.5 for high-noise data
 beadtrack_KernelSigmaForSobel = 1.75
+
+-- These are the options for IMOD autofidseed which will replace RAPTOR
+
+-- MinSpacing
+autofidseed_MinSpacing = 0.85
+
+-- PeakStorageFraction
+autofidseed_PeakStorageFraction = 1.0
+
+-- TargetNumberOfBeads
+autofidseed_TargetNumberOfBeads = 20
 
 --[[==========================================================================#
 # Step 4: Alignment by use of fiducial model                                  #

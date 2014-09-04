@@ -100,7 +100,6 @@ function tomoauto_lib.clean_up(basename)
    local residual_model_filename        = basename .. '.resid'
    local fiducial_text_model_filename   = basename .. '.fid.txt'
    local fiducial_xf_filename           = basename .. '_fid.xf'
-   local xf_filename                    = basename .. '.xf'
    local fiducial_tilt_filename         = basename .. '_fid.tlt'
    local defocus_filename               = basename .. '.defocus'
    local ctf_corrected_aligned_filename = basename .. '_ctfcorr.ali'
@@ -113,20 +112,18 @@ function tomoauto_lib.clean_up(basename)
    local temporary_filenames            = basename .. '*~'
 
    pcall(os.execute, string.format(
-         'rm -rf' .. string.rep(' %s ', 22),
+         'rm -rf' .. string.rep(' %s ', 20),
          raw_tilt_filename,
          ccd_erased_filename,
          peak_model_filename,
          pre_xf_filename,
          pre_xg_filename,
          pre_aligned_filename,
-         fiducial_model_fixed_filename,
          three_d_model_filename,
          fiducial_xyz_filename,
          residual_model_filename,
          fiducial_text_model_filename,
          fiducial_xf_filename,
-         xf_filename,
          fiducial_tilt_filename,
          ctf_corrected_aligned_filename,
          xtilt_filename,
