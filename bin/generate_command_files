@@ -1,31 +1,31 @@
 #!/usr/bin/env lua
---[[===========================================================================#
-#                            generate_command_files                            #
-#------------------------------------------------------------------------------#
-# This is a program that generates all of the COM files used by tomoAuto, with #
-# the benefit of being able to run manually, to tweak and check individual     #
-# steps with tomoAuto.                                                         #
-#------------------------------------------------------------------------------#
-# Author:  Dustin Morado                                                       #
-# Written: May 13th 2014                                                       #
-# Contact: Dustin.Morado@uth.tmc.edu                                           #
-#------------------------------------------------------------------------------#
-# Arguments: input_filaname:    Image stack filename <string>                  #
-#            fiducial_diameter: Fiducial size in nanometers <integer>          #
-#            options_table:     Table with option flags from yago <table>      #
-#===========================================================================--]]
+--- Generates IMOD command files for tilt-series alignment and reconstruction
+--
+-- This is a program that writes the IMOD command files used by tomoauto so that
+-- the process of reconstruction can be stepped through at the command line.
+--
+-- Dependencies: `COM_file_lib`, `yago`, `MRC_IO_lib`
+--
+-- @script generate_command_files
+-- @author Dustin Morado
+-- @license GPLv3
+-- @release 0.2.10
+
 local tomoauto_directory = os.getenv('TOMOAUTOROOT')
 package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
+
 local COM_file_lib    = require 'COM_file_lib'
 local yago            = require 'yago'
 local MRC_IO_lib      = require 'MRC_IO_lib'
 local lfs, os, string = lfs, os, string
 
-function generate_command_files(
-   input_filename,
-   fiducial_diameter,
-   options_table
-)
+--- Generates IMOD command files.
+-- writes IMOD command files to process, align and reconstruct a tilt-series
+-- @param input_filename tilt-series filename e.g. 'image.st'
+-- @param fiducial_diameter size of fiducial markers in nm e.g '10'
+-- @param options_table table object with option flags from yago
+function generate_command_files(input_filename, fiducial_diameter, 
+   options_table)
    if not input_filename then
       error('\nError: No input file entered.\n\n', 0)
    elseif not fiducial_diameter then
@@ -33,17 +33,15 @@ function generate_command_files(
    end
 
    local basename = string.sub(input_filename, 1, -4)
-   local header = MRC_IO_lib.get_required_header(
-      input_filename,
-      fiducial_diameter
-   )
+   local header = MRC_IO_lib.get_required_header(input_filename, 
+      fiducial_diameter)
 
    if options_table.c then
       if options_table.d_ then
          header.defocus = options_table.d_
       else
-         error('Error; You need to enter an approximate defocus to run \z
-                with CTF correction.\n', 0)
+         error('Error; You need to enter an approximate defocus to run' .. 
+               'with CTF correction.\n', 0)
       end
    end
 
@@ -54,16 +52,20 @@ function generate_command_files(
    end
 end
 
-local short_options = 'c,   d_,       g,   h,    i_,   l_,    '
-local long_options  = 'ctf, defoucus, gpu, help, iter, config '
-short_options = short_options .. 'm_,   p_,      s,    t,      z_'
-long_options  = long_options  .. 'mode, procnum, SIRT, tomo3d, thickness'
-local status, arg, options_table = pcall(
-   yago.get_options,
-   arg,
-   short_options,
-   long_options
-)
+if not arg[1] then
+   print('\nUsage: generate_command_files [options] <input.st> <fidsize>\n\n')
+   os.exit(0)
+end
+
+local short_options = 'c,   d_,       g,   h,    i_,   l_,     '
+local long_options  = 'ctf, defoucus, gpu, help, iter, config, '
+short_options = short_options .. 'm_,   p_,      r,      s,    t,      '
+long_options  = long_options  .. 'mode, procnum, RAPTOR, SIRT, tomo3d, '
+short_options = short_options .. 'z_'
+long_options  = long_options  .. 'thickness'
+
+local status, arg, options_table = pcall(yago.get_options, arg, short_options,
+   long_options)
 if not status then
    local err = arg
    io.stderr:write(err)

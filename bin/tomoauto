@@ -1,19 +1,18 @@
 #!/usr/bin/env lua
---[[===========================================================================#
-#                                   tomoauto                                   #
-#------------------------------------------------------------------------------#
-# This program uses IMOD and RAPTOR to automatically handle the processing of  #
-# collected tilt-series. It can erase CCD pixel peaks, align tilt series, per- #
-# form CTF correction and reconstruct a tomogram using WBP or SIRT methods.    #
-#------------------------------------------------------------------------------#
-# Author:  Dustin Morado                                                       #
-# Written: May 22nd 2014                                                       #
-# Contact: Dustin.Morado@uth.tmc.edu                                           #
-#------------------------------------------------------------------------------#
-# Arguments: input_filename:    tilt-series filename <string>                  #
-#            fiducial_diameter: fiducial diameter in nanometers <integer>      #
-#            options_table:     options as output by yago <table>              #
-#===========================================================================--]]
+--- Automatically processes, aligns, and reconstructs tilt series.
+--
+-- This program uses IMOD, RAPTOR and TOMO3D to automatically handle the
+-- processing of collected tilt-series. It can erase CCD pixel peaks, align tilt
+-- series, perform CTF correction and reconstruct a tomogram using WBP or SIRT
+-- methods.
+--
+-- Dependencies: `tomoauto`, `tomoauto_lib`, `yago`
+--
+-- @script tomoauto
+-- @author Dustin Morado
+-- @license GPLv3
+-- @release 0.2.10
+
 local tomoauto_directory = os.getenv('TOMOAUTOROOT')
 package.path   = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 
@@ -21,46 +20,43 @@ local tomoauto     = require 'tomoauto'
 local tomoauto_lib = require 'tomoauto_lib'
 local yago         = require 'yago'
 
+--- Automatically processes, aligns, and reconstructs tilt series.
+-- Coordinates IMOD, RAPTOR, and TOMO3D to reconstruct a tilt series.
+-- @param input_filename Tilt series to be processed e.g. 'image.st'
+-- @param fiducial_diameter Size of fiducial markers in nm e.g. '10'
+-- @param options_table Table object with option flags from yago
+function tomoauto(input_filename, fiducial_diameter, options_table)
+   if options_table.m_ ~= 'reconstruct' then
+      tomoauto.process(input_filename, fiducial_diameter, options_table)
+   elseif options_table.m_ == 'reconstruct' then
+      tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
+   end
+   tomoauto.clean_on_fail(input_filename)
+end
+
+if not arg[1] then
+   print('\nUsage: tomoauto [options] <image.st> <fidsize>\n\n')
+   os.exit(0)
+end
+
 local short_options  = 'c,   d_,      g,   h,    i_,   l_,     m_, '
 local long_options   = 'ctf, defocus, gpu, help, iter, config, mode, '
-short_options  = short_options .. 'n,   p_,      s,    t,      z_'
-long_options   = long_options  .. 'new, procnum, SIRT, tomo3D, thickness'
+short_options  = short_options .. 'n,   p_,      r,      s,    t,      '
+long_options   = long_options  .. 'new, procnum, RAPTOR, SIRT, tomo3D, '
+short_options  = short_options .. 'z_'
+long_options   = long_options  .. 'thickness'
 
-local status, arg, options_table = pcall(
-   yago.get_options,
-   arg,
-   short_options,
-   long_options
-)
+local status, arg, options_table = pcall(yago.get_options, arg, short_options,
+   long_options)
 if not status then
    local err = arg
    io.stderr:write(err)
    os.exit(1)
 end
 
-if options_table.m_ ~= 'reconstruct' then
-   status, err = pcall(
-      tomoauto.process,
-      arg[1],
-      arg[2],
-      options_table
-   )
-elseif options_table.m_ == 'reconstruct' then
-   status, err = pcall(
-      tomoauto.reconstruct,
-      arg[1],
-      arg[2],
-      options_table
-   )
-end
-
+local status, err = pcall(tomoauto, arg[1], arg[2], options_table)
 if not status then
    io.stderr:write(err)
-   local basename = string.sub(arg[1], 1, -4)
-   local clean_status, clean_err = pcall(tomoauto.clean_on_fail, basename)
-   if not clean_status then
-      io.stderr:write(clean_err)
-   end
    os.exit(1)
 else
    os.exit(0)

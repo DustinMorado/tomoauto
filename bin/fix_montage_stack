@@ -1,30 +1,51 @@
 #!/usr/bin/env lua
---[[===========================================================================#
-#                               get_tilt_angles                                #
-#------------------------------------------------------------------------------#
-# This is a program that prints the tilt angles from the header or .mdoc file  #
-# to the screen or an output file, this can be used as the '.rawtlt' file seen #
-# in IMOD programs.                                                            #
-#------------------------------------------------------------------------------#
-# Author:  Dustin Morado                                                       #
-# Written: June 02nd 2014                                                      #
-# Contact: Dustin.Morado@uth.tmc.edu                                           #
-#------------------------------------------------------------------------------#
-# Arguments: input_filename:  Image stack filename <string>                    #
-#            output_filename: [optional] Output filename <string>              #
-#===========================================================================--]]
+--- Removes SerialEM Montage piece coordinates from image extended header.
+--
+-- This is a program to erase the montage piece coordinates from the extended
+-- header of a tilt-series, which somehow makes its way into random tilt-series
+-- collected by SerialEM.
+--
+-- @script fix_montage_stack
+-- @author Dustin Morado
+-- @license GPLv3
+-- @release 0.2.10
+
 local tomoauto_directory = os.getenv('TOMOAUTOROOT')
 package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
+
 local MRC_IO_lib = require 'MRC_IO_lib'
-local header = MRC_IO_lib.get_header(arg[1])
-local extended_header = MRC_IO_lib.get_extended_header(arg[1])
 
-header.nint = header.nint - 6
-header.nreal = header.nreal - 2
-header.Next = header.nint * header.nz
+--- Removes montage piece coordinates from MRC extended header.
+-- Removes the flags for montage piece coordinates from the header and then
+-- erases the piece coordinates stored in the extended header and copies this
+-- new header to the tilt-series.
+-- @param input_filename initial tilt-series e.g. 'image.st'
+-- @param output_filename corrected tilt-series e.g. 'image_fixed.st'
+function fix_montage_stack(input_filename, output_filename)
+   local header = MRC_IO_lib.get_header(input_filename)
+   local extended_header = MRC_IO_lib.get_extended_header(input_filename)
 
-for index, value in ipairs(extended_header) do
-   extended_header[index].mon = nil
+   header.nint = header.nint - 6
+   header.nreal = header.nreal - 2
+   header.Next = header.nint * header.nz
+
+   for index, _ in ipairs(extended_header) do
+      extended_header[index].mon = nil
+   end
+
+   MRC_IO_lib.set_header(input_filename, output_filename, header, 
+      extended_header)
 end
 
-MRC_IO_lib.set_header(arg[1], arg[2], header, extended_header)
+if not arg[1] then
+   print('\nUsage: fix_montage_stack <input.st> <output.st>\n\n')
+   os.exit(0)
+end
+
+local status, err = pcall(fix_montage_stack, arg[1], arg[2])
+if not status then
+   io.stderr:write(err)
+   os.exit(1)
+else
+   os.exit(0)
+end

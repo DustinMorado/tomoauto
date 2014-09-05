@@ -1,25 +1,38 @@
 #!/usr/bin/env lua
---[[===========================================================================#
-#                                median_filter                                 #
-#------------------------------------------------------------------------------#
-# This is a program that imitates the 'image thickness' feature in the slicer  #
-# window of 3dmod. It takes N slices and projects them into an average and     #
-# then reassembles the averages back into an volume.                           #
-#------------------------------------------------------------------------------#
-# Author:  Dustin Morado                                                       #
-# Written: May 18th 2014                                                       #
-# Contact: Dustin.Morado@uth.tmc.edu                                           #
-#------------------------------------------------------------------------------#
-# Arguments: input_filename: Image stack filename <string>                     #
-#            filter_size:    Number of slices to average together <integer>    #
-#===========================================================================--]]
+--- Imitates median filter along beam axis.
+-- This program imitates the 'image thickness' feature in the slicer window of
+-- 3dmod. It takes N slices and projects them into an average and then
+-- reassembles the averages back into a volume.
+--
+-- Dependencies: `tomoauto_lib`
+--
+-- @script dose_fractioned_to_stack
+-- @author Dustin Morado
+-- @license GPLv3
+-- @release 0.2.10
+
 local tomoauto_directory = os.getenv('TOMOAUTOROOT')
 package.cpath  = package.cpath .. ';' .. tomoauto_directory .. '/lib/?.so;'
 package.path   = package.path  .. ';' .. tomoauto_directory .. '/lib/?.lua;'
+
 local struct   = require 'struct'
 local tomoauto_lib  = require 'tomoauto_lib'
 
-local status, err = pcall(tomoauto_lib.median_filter, arg[1], arg[2])
+--- Imitates median filter along beam axis.
+-- Takes N slices and projects them into an average and then reassembles the
+-- averages into a new stack.
+-- @param input_filename Input image stack e.g. 'image.rec'
+-- @param filter_size Number of slices to average together e.g. 7
+function median_filter(input_filename, filter_size)
+   tomoauto_lib.median_filter(input_filename, filter_size)
+end
+
+if not arg[1] then
+   print('\nUsage: median_filter <image.rec> <filter_size>\n\n')
+   os.exit(0)
+end
+
+local status, err = pcall(median_filter, arg[1], arg[2])
 if not status then
    io.stderr:write(err)
    os.exit(1)

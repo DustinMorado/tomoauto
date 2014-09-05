@@ -1,17 +1,15 @@
 #!/usr/bin/env lua
---[[===========================================================================#
-#                            align_dose_fractioned                             #
-#------------------------------------------------------------------------------#
-# This is a program to align dose-fractioned images and produce a sum. It uses #
-# IMOD to align the stack, and is modified from a script by Chen Xu. This is   #
-# useful when dosefgpu_driftcorr fails to align a stack.                       #
-#------------------------------------------------------------------------------#
-# Author:  Dustin Morado                                                       #
-# Written: May 19th 2014                                                       #
-# Contact: Dustin.Morado@uth.tmc.edu                                           #
-#------------------------------------------------------------------------------#
-# Arguments: input_filename <string>                                           #
-#===========================================================================--]]
+--- Aligns dose-fractioned images.
+--
+-- This is a program to align dose-fractioned images and produce a sum. It uses
+-- IMOD to align the stack, and is a fork of a script by Chen Xu. This is useful
+-- when dosefgpu_driftcorr fails to align a stack.
+--
+-- @script align_dose_fractioned
+-- @author Dustin Morado
+-- @license GPLv3
+-- @release 0.2.10
+
 local io, os, string = io, os, string
 local struct = require 'struct'
 
@@ -29,123 +27,69 @@ local float_densities = 2
 local function write_xfalign(basename)
    local command_file = assert(io.open('xfalign.com', 'w'))
    command_file:write(string.format('$xfalign -StandardInput\n'))
-   command_file:write(string.format(
-      'InputImageFile %s.mrc\n',
-      basename 
-   ))
-   command_file:write(string.format(
-      'OutputTransformFile %s.xf\n',
-      basename
-   ))
-   command_file:write(string.format(
-      'ReduceByBinning %s\n',
-      reduce_by_binning
-   ))
+   command_file:write(string.format('InputImageFile %s.mrc\n', basename))
+   command_file:write(string.format('OutputTransformFile %s.xf\n', basename))
+   command_file:write(string.format('ReduceByBinning %s\n', reduce_by_binning))
    command_file:write(string.format('PreCrossCorrelation\n'))
-   command_file:write(string.format(
-      'XcorrFilter %s\n',
-      pre_filter_option
-   ))
+   command_file:write(string.format('XcorrFilter %s\n', pre_filter_option))
    command_file:close()
 end
 
 local function write_xftoxg(basename)
    local command_file = assert(io.open('xftoxg.com', 'w'))
    command_file:write(string.format('$xftoxg -StandardInput\n'))
-   command_file:write(string.format(
-      'InputFile %s.xf\n',
-      basename
-   ))
-   command_file:write(string.format(
-      'GOutputFile %s.xg\n',
-      basename
-   ))
-   command_file:write(string.format(
-      'NumberToFit %s\n',
-      number_to_fit
-   ))
+   command_file:write(string.format('InputFile %s.xf\n', basename))
+   command_file:write(string.format('GOutputFile %s.xg\n', basename))
+   command_file:write(string.format('NumberToFit %s\n', number_to_fit))
    command_file:close()
 end
 
 local function write_newstack(basename)
    local command_file = assert(io.open('newstack.com', 'w'))
    command_file:write(string.format('$newstack -StandardInput\n'))
-   command_file:write(string.format(
-      'InputFile %s.mrc\n',
-      basename
-   ))
-   command_file:write(string.format(
-      'OutputFile %s.ali\n',
-      basename
-   ))
-   command_file:write(string.format(
-      'TransformFile %s.xg\n',
-      basename
-   ))
-   command_file:write(string.format(
-      'ModeToOutput %s\n',
-      mode_to_output
-   ))
-   command_file:write(string.format(
-      'FloatDensities %s\n',
-      float_densities
-   ))
+   command_file:write(string.format('InputFile %s.mrc\n', basename))
+   command_file:write(string.format('OutputFile %s.ali\n', basename))
+   command_file:write(string.format('TransformFile %s.xg\n', basename))
+   command_file:write(string.format('ModeToOutput %s\n', mode_to_output))
+   command_file:write(string.format('FloatDensities %s\n', float_densities))
    command_file:close()
 end
 
 local function run(program, basename)
-   local sucess, exit, signal = os.execute(
-      string.format(
-         '%s 1>> align_dose_fractioned_%s.log \z
-             2>> align_dose_fractioned_%s.err.log',
-         program,
-         basename,
-         basename
-      )
-   )
+   local sucess, exit, signal = os.execute(string.format(
+      '%s 1>> align_dose_fractioned_%s.log ' ..
+      '2>> align_dose_fractioned_%s.err.log', program, basename, basename))
    if signal ~= 0 then
-      error(
-         string.format(
-            '\nError: %s failed for %s.\n\n',
-            program,
-            basename
-         ), 0
-      )
+      error(string.format('\nError: %s failed for %s.\n\n', program, basename),
+         0)
    else
       return true
    end
 end
 
+--- Aligns dose-fractioned images.
+-- Writes IMOD command files to run xfalign, xftoxg, and newstack to generate an
+-- aligned dose-fractioned sum image.
+-- @param input_filename dose-fractioned stack to align and sum e.g. 'stack.mrc'
 function align_dose_fractioned(input_filename)
    local basename  = input_filename:sub(1, -5)
    write_xfalign(basename)
    write_xftoxg(basename)
    write_newstack(basename)
-   run(
-      'submfg -s xfalign.com xftoxg.com newstack.com',
-      basename
-   )
-   run(
-      string.format(
-         'xyzproj -axis Y %s.ali %s_driftcorr.mrc',
-         basename,
-         basename
-      ),
-      basename
-   )
-   run(
-      string.format(
-         'rm *.com *.log *.x* %s.ali',
-         basename
-      ),
-      basename
-   )
+   run('submfg -s xfalign.com xftoxg.com newstack.com', basename)
+   -- Generates the sum from the aligned stack
+   run(string.format('xyzproj -axis Y %s.ali %s_driftcorr.mrc', basename,
+      basename), basename)
+   -- Clean up the command files, log files, transforms, and aligned stack
+   run(string.format('rm *.com *.log *.x* %s.ali', basename), basename)
 end
 
-local status, err = pcall(
-   align_dose_fractioned,
-   arg[1]
-)
+if not arg[i] then
+   print('\nUsage: align_dose_fractioned <image.st>\n\n')
+   os.exit(0)
+end
+
+local status, err = pcall(align_dose_fractioned, arg[1])
 if not status then
    io.stderr:write(err)
    os.exit(1)

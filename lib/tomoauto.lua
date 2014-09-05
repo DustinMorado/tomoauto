@@ -1,32 +1,22 @@
---[[===========================================================================#
-#                                   tomoauto                                   #
-#------------------------------------------------------------------------------#
-# This is a program to automate the alignment of a raw tilt series, use the    #
-# program RAPTOR to make a final alignment, use IMOD to estimate the defocus   #
-# and then correct the CTF by appropriate phase flipping, and then finally     #
-# using eTomo to create the reconstruction.                                    #
-#------------------------------------------------------------------------------#
-# Author:  Dustin Morado                                                       #
-# Written: February 27th 2014                                                  #
-# Contact: Dustin.Morado@uth.tmc.edu                                           #
-#------------------------------------------------------------------------------#
-# Arguments: input_filename:    image stack filename <string>                  #
-#            fiducial_diameter: fiducial diameter in nanometers <integer>      #
-#            options_table:     options as returned by yago <table>            #
-#===========================================================================--]]
+--- Main tomoauto module
+-- This program automates the alignment of raw tilt series using the programs
+-- IMOD, RAPTOR and TOMO3D. 
+-- 
+-- Dependencies: `COM_file_lib`, `tomoauto_lib`
+--
+-- @module tomoauto
+-- @author Dustin Morado
+-- @license GPLv3
+-- @release 0.2.10
+local tomoauto = {}
+
 local tomoauto_directory = os.getenv('TOMOAUTOROOT')
 package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
+
 local COM_file_lib    = require 'COM_file_lib'
-local MRC_IO_lib      = require 'MRC_IO_lib'
 local tomoauto_lib    = require 'tomoauto_lib'
 local os, string = os, string
 
-local tomoauto = {}
---[[==========================================================================#
-#                                 display_help                                #
-#-----------------------------------------------------------------------------#
-# A function that displays the usage and options of tomoAuto                  #
-#==========================================================================--]]
 local function display_help()
    io.write(
    '\nUsage: \n\z
@@ -50,6 +40,13 @@ local function display_help()
    return true
 end
 
+local function run(command)
+   status, exit, signal = os.execute(command)
+   if not status or signal ~= 0 then
+      error(string.format('\nError: %s failed.\n', command))
+   end
+end
+
 --[[===========================================================================#
 #                                   process                                    #
 #------------------------------------------------------------------------------#
@@ -61,6 +58,13 @@ end
 #            fiducial_diameter: fiducial diameter in nanometers <integer>      #
 #            options_table:     Options as returned by yago <table>            #
 #===========================================================================--]]
+--- Main tomoauto function
+-- This function performs the scripting and automation of processing a collected
+-- tilt series, it can simply erase hot pixels, align a tilt series or complete
+-- the reconstruction.
+-- @param input_filename MRC tilt series to process
+-- @param fiducial_diameter Size of fiducial markers in nm
+-- @param options_table A table object with the option flags from yago
 function tomoauto.process(input_filename, fiducial_diameter, options_table)
 
    if options_table.h then
@@ -104,195 +108,126 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
    local RAPTOR_fiducial_model_filename = basename .. '_RAPTOR/IMOD/' 
                                           .. basename .. '.fid.txt'
 
-   -- Multiple times throughout we will check for enough disk space
-   tomoauto_lib.check_free_space()
-
-   -- Here we read the MRC file format header
-   local header = MRC_IO_lib.get_required_header(
-      input_filename,
-      fiducial_diameter
-   )
-
-   -- If we are applying CTF correction, we make sure we have a defocus.
-   -- TODO: Check defocus from header and check if it is sensible
-   if options_table.c then
-      if options_table.d_ then
-         header.defocus = options_table.d_
-      elseif not header.defocus then
-         io.stderr:write(
-            string.format(
-               '%s %s\n',
-               'You need to enter an approximate defocus to run',
-               'with CTF correction.'
-            )
-         )
-         display_help()
-         return true
-      end
-   end
-
-   tomoauto_lib.run(string.format(
-         'touch %s %s',
-         log_file,
-         error_log_file
-      ),
-      basename
-   )
+   run(string.format('touch %s %s', log_file, error_log_file))
 
    -- Here we write all of the needed command files.
-   COM_file_lib.write(input_filename, header, options_table)
+   COM_file_lib.write(input_filename, fiducial_diameter, options_table)
 
-   -- Here we extract the tilt angles from the header
-   MRC_IO_lib.get_tilt_angles(input_filename, raw_tilt_filename)
-   tomoauto_lib.is_file(raw_tilt_filename)
+   if options_table.m_ ~= "reconstruct" then
+      -- Here we extract the tilt angles from the header
+      MRC_IO_lib.get_tilt_angles(input_filename, raw_tilt_filename)
+      tomoauto_lib.is_file(raw_tilt_filename)
 
-   -- We should always remove the Xrays from the image using ccderaser
-   tomoauto_lib.run(
-      string.format(
-         'submfg -s %s_ccderaser.com',
-         basename
-      ),
-      basename
-   )
-   tomoauto_lib.is_file(ccd_erased_filename)
+      -- We should always remove the Xrays from the image using ccderaser
+      run(string.format('submfg -s %s_ccderaser.com', basename))
+      tomoauto_lib.is_file(ccd_erased_filename)
 
-   tomoauto_lib.run(
-      string.format(
-         'mv %s %s',
-         input_filename,
-         original_filename
-      ),
-      basename
-   )
+      run(string.format('mv %s %s', input_filename, original_filename))
 
-   tomoauto_lib.run(
-      string.format(
-         'mv %s %s',
-         ccd_erased_filename,
-         input_filename
-      ),
-      basename
-   )
+      run(string.format('mv %s %s', ccd_erased_filename, input_filename)) 
 
-   if options_table.m_ == 'erase' then
-      tomoauto_lib.run(
+      -- Here we run the Coarse alignment as done in etomo
+      run(string.format(
+            'submfg -s %s_tiltxcorr.com %s_xftoxg.com %s_prenewstack.com',
+            basename, basename, basename), basename)
+      tomoauto_lib.is_file(pre_aligned_filename)
+
+      if options_table.n then
+         run(
+            string.format(
+               'submfg -s %s_autofidseed.com',
+               basename
+            ),
+            basename
+         )
+      else
+         -- Now we run RAPTOR to produce a succesfully aligned stack
+         tomoauto_lib.check_free_space()
+         run(
+            string.format(
+               'submfg -s %s_RAPTOR.com',
+               basename
+            ),
+            basename
+         )
+         tomoauto_lib.is_file(RAPTOR_fiducial_model_filename)
+
+         run(
+            string.format(
+               'mv %s .',
+               RAPTOR_fiducial_model_filename
+            ),
+            basename
+         )
+
+         tomoauto_lib.scale_RAPTOR_model(
+            fiducial_text_model_filename,
+            header,
+            seed_filename
+         )
+      end
+
+      run(
          string.format(
-            'rm -rf %s*.com %s*.log',
+            'submfg -s %s_beadtrack.com',
+            basename
+         ),
+         basename
+      )
+
+      run(
+         string.format(
+            'submfg -s %s_tiltalign.com %s_xfproduct.com',
             basename,
             basename
          ),
          basename
       )
-      return true
-   end
+      tomoauto_lib.is_file(fiducial_xf_filename)
 
-   -- Here we run the Coarse alignment as done in etomo
-   tomoauto_lib.run(
-      string.format(
-         'submfg -s %s_tiltxcorr.com %s_xftoxg.com %s_prenewstack.com',
-         basename,
-         basename,
-         basename
-      ),
-      basename
-   )
-   tomoauto_lib.is_file(pre_aligned_filename)
-
-   if options_table.n then
-      tomoauto_lib.run(
+      run(
          string.format(
-            'submfg -s %s_autofidseed.com',
+            'cp %s %s',
+            fiducial_xf_filename,
+            xf_filename
+         ),
+         basename
+      )
+
+      run(
+         string.format(
+            'cp %s %s',
+            tilt_filename,
+            fiducial_tilt_filename
+         ),
+         basename
+      )
+
+      run(
+         string.format(
+            'submfg -s %s_newstack.com',
             basename
          ),
          basename
       )
-   else
-      -- Now we run RAPTOR to produce a succesfully aligned stack
-      tomoauto_lib.check_free_space()
-      tomoauto_lib.run(
-         string.format(
-            'submfg -s %s_RAPTOR.com',
+      tomoauto_lib.is_file(aligned_filename)
+
+      tomoauto_lib.check_alignment(aligned_filename, header.nz)
+
+      -- Ok for the new stuff here we add CTF correction
+      -- noise background is now set in the global config file
+      if options_table.c then
+         tomoauto_lib.check_free_space()
+
+         run(
+            string.format(
+               'submfg -s %s_ctfplotter.com',
+               basename
+            ),
             basename
-         ),
-         basename
-      )
-      tomoauto_lib.is_file(RAPTOR_fiducial_model_filename)
-
-      tomoauto_lib.run(
-         string.format(
-            'mv %s .',
-            RAPTOR_fiducial_model_filename
-         ),
-         basename
-      )
-
-      tomoauto_lib.scale_RAPTOR_model(
-         fiducial_text_model_filename,
-         header,
-         seed_filename
-      )
-   end
-
-   tomoauto_lib.run(
-      string.format(
-         'submfg -s %s_beadtrack.com',
-         basename
-      ),
-      basename
-   )
-
-   tomoauto_lib.run(
-      string.format(
-         'submfg -s %s_tiltalign.com %s_xfproduct.com',
-         basename,
-         basename
-      ),
-      basename
-   )
-   tomoauto_lib.is_file(fiducial_xf_filename)
-
-   tomoauto_lib.run(
-      string.format(
-         'cp %s %s',
-         fiducial_xf_filename,
-         xf_filename
-      ),
-      basename
-   )
-
-   tomoauto_lib.run(
-      string.format(
-         'cp %s %s',
-         tilt_filename,
-         fiducial_tilt_filename
-      ),
-      basename
-   )
-
-   tomoauto_lib.run(
-      string.format(
-         'submfg -s %s_newstack.com',
-         basename
-      ),
-      basename
-   )
-   tomoauto_lib.is_file(aligned_filename)
-
-   tomoauto_lib.check_alignment(aligned_filename, header.nz)
-
-   -- Ok for the new stuff here we add CTF correction
-   -- noise background is now set in the global config file
-   if options_table.c then
-      tomoauto_lib.check_free_space()
-
-      tomoauto_lib.run(
-         string.format(
-            'submfg -s %s_ctfplotter.com',
-            basename
-         ),
-         basename
-      )
-      tomoauto_lib.is_file(defocus_filename)
+         )
+         tomoauto_lib.is_file(defocus_filename)
+      end
 
       if options_table.m_ == 'align' then
          tomoauto_lib.clean_up(basename)
@@ -301,8 +236,9 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
          end
          return true
       end
+   end
 
-      tomoauto_lib.run(
+      run(
          string.format(
             'submfg -s %s_ctfphaseflip.com',
             basename
@@ -311,7 +247,7 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
       )
       tomoauto_lib.is_file(ctf_corrected_aligned_filename)
 
-      tomoauto_lib.run(
+      run(
          string.format(
             'mv %s %s',
             ctf_corrected_aligned_filename,
@@ -328,7 +264,7 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
    end
 
    -- Now we erase the gold
-   tomoauto_lib.run(
+   run(
       string.format(
          'xfmodel -xf %s %s %s',
          tilt_xf_filename,
@@ -338,7 +274,7 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
       basename
    )
 
-   tomoauto_lib.run(
+   run(
       string.format(
          'submfg -s %s_gold_ccderaser.com',
          basename
@@ -347,7 +283,7 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
    )
    tomoauto_lib.is_file(gold_erase_filename)
 
-   tomoauto_lib.run(
+   run(
       string.format(
          'mv %s %s',
          gold_erase_filename,
@@ -362,7 +298,7 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
 
       if not options_table.s then -- Using Weighted Back Projection method.
          reconstruction_filename = basename .. '_full.rec'
-         tomoauto_lib.run(
+         run(
             string.format(
                'submfg -s %s_tilt.com',
                basename
@@ -370,13 +306,13 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
             basename
          )
       else                 -- Using S.I.R.T method
-         tomoauto_lib.run(
+         run(
             string.format(
                'sirtsetup -i 15 tilt.com'
             ),
             basename
          )
-         tomoauto_lib.run(
+         run(
             string.format(
                'processchunks localhost tilt_sirt'
             ),
@@ -398,7 +334,7 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
       )
 
       if header.mode == 6 then
-         tomoauto_lib.run(
+         run(
             string.format(
                'newstack -mo 1 %s %s',
                aligned_filename,
@@ -438,7 +374,7 @@ function tomoauto.process(input_filename, fiducial_diameter, options_table)
          )
       end
 
-      tomoauto_lib.run(
+      run(
          tomo3d_string,
          basename
       )
@@ -489,7 +425,7 @@ function tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
       fiducial_diameter
    )
 
-   tomoauto_lib.run(
+   run(
       string.format(
          'touch %s %s',
          log_file,

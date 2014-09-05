@@ -1,19 +1,19 @@
 #!/usr/bin/env lua
---[[===========================================================================#
-#                           dose_fractioned_to_stack                           #
-#------------------------------------------------------------------------------#
-# This is a program to take a set of dose fraction, drift-corrected sum images #
-# and creates an MRC image stack. It also fixes the header information which   #
-# is currently erased by Yifan Cheng's dosefgpu_driftcorr program.             #
-#                                                                              #
-# NOTE: This currently handles a bug in the beta version of SerialEM 3.4       #
-#------------------------------------------------------------------------------#
-# Author:  Dustin Morado                                                       #
-# Written: June 06th 2014                                                      #
-# Contact: Dustin.Morado@uth.tmc.edu                                           #
-#------------------------------------------------------------------------------#
-# Arguments: basename: basename of the original stack and log file <string>    #
-#===========================================================================--]]
+--- Takes aligned dose-fractioned sums and produces a tilt series.
+--
+-- This is a program to take a set of drift-corrected dose-fractioned sum images
+-- and creates an MRC tilt-series. It also fixes the header information which is
+-- currently erased by Xueming Li's dosefgpu_driftcorr program.
+--
+-- NOTE: This currently handles a bug in the beta version of SerialEM 3.4
+--
+-- Dependencies: `MRC_IO_lib`, `tomoauto_lib`
+--
+-- @script dose_fractioned_to_stack
+-- @author Dustin Morado
+-- @license GPLv3
+-- @release 0.2.10
+
 local tomoauto_directory = os.getenv('TOMOAUTOROOT')
 package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 
@@ -22,8 +22,14 @@ local tomoauto_lib = require 'tomoauto_lib'
 local lfs          = require 'lfs'
 local io, string, table = io, string, table
 
-local function dose_fractioned_to_stack(basename)
-   local stack_filename       = basename .. '.st'
+--- Takes aligned dose-fractioned sums and produces a tilt-series.
+-- Reads the log output by SerialEM in collecting dose-fractioned tilt series
+-- and creates a tilt series using the corresponding drift-corrected sums. Then
+-- copies the header information from the initial tilt-series that is lost in
+-- drift-correction and writes it to the header of the new tilt-series.
+-- @param input_filename initial tilt-series collected e.g. 'image.st'
+function dose_fractioned_to_stack(input_filename)
+   local basename             = string.sub(input_filename, 1, -4)
    local log_filename         = basename .. '.log'
    local new_stack_filename   = basename .. '_driftcorr.st'
    local filelist_name        = basename .. '_filelist'
@@ -38,7 +44,7 @@ local function dose_fractioned_to_stack(basename)
    local extended_header      = {}
 
    tomoauto_lib.is_file(log_filename)
-   tomoauto_lib.is_file(stack_filename)
+   tomoauto_lib.is_file(input_filename)
 
    local log_file = io.open(log_filename, 'r')
    for line in log_file:lines('*l') do
@@ -78,10 +84,8 @@ local function dose_fractioned_to_stack(basename)
 
       if is_terminated then
          error(string.format(
-               '\nError: Original stack %s terminated so we will too.\n\n',
-               stack_filename
-            ), 0
-         )
+            '\nError: Original stack %s terminated so we will too.\n\n',
+            input_filename), 0)
       end
    end
    log_file:close()
@@ -89,9 +93,7 @@ local function dose_fractioned_to_stack(basename)
    if #MRC_table ~= #tilt_angle_table then
       error(string.format(
          '\nError: %s has unequal file and tilt angle references.\n\n',
-         log_filename
-      ), 0
-   )
+         log_filename), 0)
    else
       number_of_sections = #MRC_table
    end
@@ -102,47 +104,22 @@ local function dose_fractioned_to_stack(basename)
          file:close()
          local last_index = #new_tilt_angle_table
          if last_index == 0 then
-            table.insert(
-               new_tilt_angle_table,
-               tilt_angle_table[i]
-            )
-            table.insert(
-               new_MRC_table,
-               MRC_table[i]
-            )
+            table.insert(new_tilt_angle_table, tilt_angle_table[i])
+            table.insert(new_MRC_table, MRC_table[i])
          elseif tilt_angle_table[i] > new_tilt_angle_table[1] then
-            table.insert(
-               new_tilt_angle_table, 
-               1, 
-               tilt_angle_table[i]
-            )
-            table.insert(
-               new_MRC_table, 
-               1, 
-               MRC_table[i]
-            )
+            table.insert(new_tilt_angle_table, 1, tilt_angle_table[i])
+            table.insert(new_MRC_table, 1, MRC_table[i])
          elseif tilt_angle_table[i] < new_tilt_angle_table[last_index] then
-            table.insert(
-               new_tilt_angle_table, 
-               tilt_angle_table[i]
-            )
-            table.insert(
-               new_MRC_table, 
-               MRC_table[i]
-            )
+            table.insert(new_tilt_angle_table, tilt_angle_table[i])
+            table.insert(new_MRC_table, MRC_table[i])
          else
-            error(
-               string.format(
-                  '\nError: %s has unordered or duplicate tilt angles.\n\n',
-                  log
-               ), 0
-            )
+            error(string.format(
+               '\nError: %s has unordered or duplicate tilt angles.\n\n',
+               log), 0)
          end
       else
          io.stderr:write(string.format(
-            'Warning: Dosefgpu_driftcorr did not process %s.\n',
-            MRC_table[i]
-         ))
+            'Warning: Dosefgpu_driftcorr did not process %s.\n', MRC_table[i]))
       end
    end
    number_of_sections = #new_MRC_table
@@ -155,19 +132,15 @@ local function dose_fractioned_to_stack(basename)
    end
    filelist:close()
 
-   tomoauto_lib.run(string.format(
-         'newstack -filei %s %s',
-         filelist_name,
-         new_stack_filename
-      ),
-      basename
-   )
+   tomoauto_lib.run(string.format('newstack -filei %s %s', filelist_name,
+      new_stack_filename), basename)
    tomoauto_lib.is_file(new_stack_filename)
 
-   header          = MRC_IO_lib.get_header(stack_filename)
-   extended_header = MRC_IO_lib.get_extended_header(stack_filename)
+   header          = MRC_IO_lib.get_header(input_filename)
+   extended_header = MRC_IO_lib.get_extended_header(input_filename)
    
-   ---[[SerialEM beta 3.4 bug work around
+   --[[
+   -- SerialEM beta 3.4 bug work around
    for i = 1, number_of_sections do 
       if math.floor(new_tilt_angle_table[i]) == -2 then
          table.insert(extended_header, i, {})
@@ -202,32 +175,16 @@ local function dose_fractioned_to_stack(basename)
 
    initial_driftcorr_header = nil
 
-   MRC_IO_lib.set_header(
-      new_stack_filename, 
-      temporary_filename, 
-      header, extended_header
-   )
-   tomoauto_lib.run(
-      string.format(
-         'mv %s %s',
-         temporary_filename,
-         new_stack_filename
-      ),
-      basename
-   )
-
-   tomoauto_lib.run(
-      string.format(
-         'rm -f %s', 
-         filelist_name
-      ),
-      basename
-   )
-   return true
+   MRC_IO_lib.set_header(new_stack_filename, temporary_filename,
+      header, extended_header)
+   tomoauto_lib.run(string.format('mv %s %s', temporary_filename,
+         new_stack_filename), basename)
+   tomoauto_lib.run(string.format('rm -f %s', filelist_name), basename)
 end
 
 if not arg[1] then
-   error('\nError: Please enter a file basename.\n\n', 0)
+   print('\nUsage: dose_fraction_to_stack <SerialEM_stack.st>\n\n')
+   os.exit(0)
 end
 
 local status, err = pcall(dose_fractioned_to_stack, arg[1])

@@ -1,25 +1,31 @@
 #!/usr/bin/env lua
---[[===========================================================================#
-#                             print_extended_header                            #
-#------------------------------------------------------------------------------#
-# This is a program to print information in the extended header to the screen  #
-# it is similar to extracttilts in IMOD, but also displays the information in  #
-# the extended header of Agard style MRC headers.                              #
-#------------------------------------------------------------------------------#
-# Author:   Dustin Morado                                                      #
-# Written:  May 23rd 2014                                                      #
-# Contact:  Dustin.Morado@uth.tmc.edu                                          #
-#------------------------------------------------------------------------------#
-# Arguments: input_filename: Image stack filename <string>                     #
-#            options_table:  Options table as produced by yago                 #
-#===========================================================================--]]
+--- Prints section of extended header to the screen.
+--
+-- This program prints information in the extended header to the screen. It is
+-- similar to extracttilts in IMOD, but also displays the information in the
+-- extended header for files with Agard style MRC headers.
+--
+-- Dependencies: `MRC_IO_lib`, `yago`
+--
+-- @script print_extended_header
+-- @author Dustin Morado
+-- @license GPLv3
+-- @release 0.2.10
+
 local tomoauto_directory = os.getenv('TOMOAUTOROOT')
 package.path     = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
+
 local MRC_IO_lib = require 'MRC_IO_lib'
 local yago       = require 'yago'
 local io         = io
 
-local function print_extended_header(filename, options_table)
+--- Prints section of extended header to the screen.
+-- Reads the header to determine header format and then checks if desired
+-- section exists. If the desired data is available it prints the data to the
+-- screen.
+-- @param input_filename MRC file to read e.g. 'image.st'
+-- @param options_table table object with option flags from yago
+function print_extended_header(input_filename, options_table)
    if options_table.h then
       io.stdout:write('\nUsage: readExtHeader [OPTION..] MRC file\n\n')
       io.stdout:write('-a, --aDef \t\tprint applied defoci (approximate)\n')
@@ -43,8 +49,8 @@ local function print_extended_header(filename, options_table)
 
    local reference       = ''
    local reference_name  = ''
-   local header          = MRC_IO_lib.get_header(filename)
-   local extended_header = MRC_IO_lib.get_extended_header(filename)
+   local header          = MRC_IO_lib.get_header(input_filename)
+   local extended_header = MRC_IO_lib.get_extended_header(input_filename)
 
    if options_table.a then
       reference      = 'appliedDefocus'
@@ -96,160 +102,58 @@ local function print_extended_header(filename, options_table)
       reference_name = 'Tilt Angles'
    end
 
-   io.stdout:write(
-      string.format(
-         '\n\nInput Filename\t%s\n\n',
-         filename
-      )
-   )
+   io.stdout:write(string.format('\n\nInput Filename\t%s\n\n', input_filename))
+
+   if not extended_header[1][reference] then
+      error(string.format('No %s found in the extended header.\n\n',
+         reference_name), 0)
+   end
 
    for i = 1, header.nz do
       if reference == 'pixel_size' then
-         if extended_header[i][reference] then
-            io.stdout:write(
-               string.format(
-                  '%s (%03d):\t%5.4e\n',
-                  reference_name,
-                  i,
-                  extended_header[i][reference]
-               )
-            )
-         else
-            error(
-               string.format(
-                  'No %s found in the extended header.\n\n',
-                  reference_name
-               ), 0
-            )
-         end
-
+         io.stdout:write(string.format('%s (%03d):\t%5.4e\n', reference_name, i,
+            extended_header[i][reference]))
       elseif reference == 'a_tilt' and extended_header[i].b_tilt then
-         if extended_header[i][reference] then
-            io.stdout:write(
-               string.format(
-                  '%s (%03d):\t%05.2f\t%05.2f\n',
-                  reference_name,
-                  i,
-                  extended_header[i][reference],
-                  extended_header[i].b_tilt
-               )
-            )
-         else
-            error(
-               string.format(
-                  'No %s found in the extended header.\n\n',
-                  reference_name
-               ), 0
-            )
-         end
-
+         io.stdout:write(string.format('%s (%03d):\t%05.2f\t%05.2f\n',
+            reference_name, i, extended_header[i][reference],
+            extended_header[i].b_tilt))
       elseif reference == 'x_stage' then
-         if extended_header[i][reference] then
-            if extended_header[i].z_stage then
-               io.stdout:write(
-                  string.format(
-                     '%s (%03d):\t%05.2f\t%05.2f\t%05.2f\n',
-                     reference_name,
-                     i,
-                     extended_header[i][reference],
-                     extended_header[i].y_stage,
-                     extended_header[i].z_stage
-                  )
-               )
-            else
-               io.stdout:write(
-                  string.format(
-                     '%s (%03d):\t%05.2f\t%05.2f\n',
-                     reference_name,
-                     i,
-                     extended_header[i][reference],
-                     extended_header[i].y_stage
-                  )
-               )
-            end
+         if extended_header[i].z_stage then
+            io.stdout:write(string.format(
+               '%s (%03d):\t%05.2f\t%05.2f\t%05.2f\n', reference_name, i,
+               extended_header[i][reference], extended_header[i].y_stage,
+               extended_header[i].z_stage))
          else
-            error(
-               string.format(
-                  'No %s found in the extended header.\n\n',
-                  reference_name
-               ), 0
-            )
+            io.stdout:write(string.format('%s (%03d):\t%05.2f\t%05.2f\n',
+               reference_name, i, extended_header[i][reference],
+               extended_header[i].y_stage))
          end
-
       elseif reference == 'x_shift' then
-         if extended_header[i][reference] then
-            io.stdout:write(
-               string.format(
-                  '%s (%03d):\t%05.2f\t%05.2f\n',
-                  reference_name,
-                  i,
-                  extended_header[i][reference],
-                  extended_header[i].y_shift
-               )
-            )
-         else
-            error(
-               string.format(
-                  'No %s found in the extended header.\n\n',
-                  reference_name
-               ), 0
-            )
-         end
-
+         io.stdout:write(string.format('%s (%03d):\t%05.2f\t%05.2f\n',
+               reference_name, i, extended_header[i][reference],
+               extended_header[i].y_shift))
       elseif reference == 'intensity' then
-         if extended_header[i][reference] then
-            io.stdout:write(
-               string.format(
-                  '%s (%03d):\t%07.5f\n',
-                  reference_name,
-                  i,
-                  extended_header[i][reference]
-               )
-            )
-         else
-            error(
-               string.format(
-                  'No %s found in the extended header.\n\n',
-                  reference_name
-               ), 0
-            )
-         end
-
+         io.stdout:write(string.format('%s (%03d):\t%07.5f\n', reference_name,
+               i, extended_header[i][reference]))
       else
-         if extended_header[i][reference] then
-            io.stdout:write(
-               string.format(
-                  '%s (%03d):\t% 06.2f\n',
-                  reference_name,
-                  i,
-                  extended_header[i][reference]
-               )
-            )
-         else
-            error(
-               string.format(
-                  'No %s found in the extended header.\n\n',
-                  reference_name
-               ), 0
-            )
-         end
+         io.stdout:write(string.format('%s (%03d):\t% 06.2f\n', reference_name,
+               i, extended_header[i][reference]))
       end
    end
-   return true
+end
+
+if not arg[1] then
+   print('\nUsage: print_extended_header [options] <MRC file>\n\n')
+   os.exit(0)
 end
 
 local short_options  = 'a,    b,   c,     d,   e,   E,    h,    H,  i,   m,    '
 local long_options   = 'aDef, bin, coord, def, exp, dose, help, ht, int, mean, '
-
 short_options = short_options .. 'M,   p,   t,   T,     s,   S'
 long_options  = long_options  .. 'mag, pix, tlt, tltAx, stg, shft'
 
-local status, arg, options_table = pcall(
-   yago.get_options,
-   arg,
-   short_options,
-   long_options
-)
+local status, arg, options_table = pcall(yago.get_options, arg, short_options,
+   long_options)
 
 if not status then
    local err = arg
