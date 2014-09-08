@@ -85,7 +85,7 @@ function align_dose_fractioned(input_filename)
 end
 
 if not arg[i] then
-   print('\nUsage: align_dose_fractioned <image.st>\n\n')
+   io.write('\nUsage: align_dose_fractioned <image.st>\n\n')
    os.exit(0)
 end
 

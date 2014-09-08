@@ -73,8 +73,46 @@ function write_header(input_filename, output_filename, options_table)
    MRC_IO_lib.set_header(input_filename, output_filename, options_table)
 end
 
-if not arg[1] then
-   print('\nUsage: write_header [options] <input.mrc> <output.mrc>\n\n')
+if not arg[1] or not arg[2] then
+   io.write('\nUsage: write_header [options] <input.mrc> <output.mrc>\n\n' ..
+      '--nx\t\t\tSet Image X dimension\n' ..
+      '--ny\t\t\tSet Image Y dimension\n' ..
+      '--nz\t\t\tSet Image Z dimension\n' ..
+      '--mode\t\t\tSet Image Data Mode\n' ..
+      '--nxstart\t\tSet Image X starting location\n' ..
+      '--nystart\t\tSet Image Y starting location\n' ..
+      '--nzstart\t\tSet Image Z starting location\n' ..
+      '--help\t\t\tPrint this help message and exit\n' ..
+      '--mx\t\t\tSet mx [X pixel spacing = xlen/mx\n' ..
+      '--my\t\t\tSet my [Y pixel spacing = ylen/my\n' ..
+      '--mz\t\t\tSet mz [Z pixel spacing = zlen/mz\n' ..
+      '--xlen\t\t\tSet xlen [See above]\n' ..
+      '--ylen\t\t\tSet ylen [See above]\n' ..
+      '--zlen\t\t\tSet zlen [See above]\n' ..
+      '--amin\t\t\tSet average minimum value\n' ..
+      '--amax\t\t\tSet average maximum value\n' ..
+      '--amean\t\t\tSet average mean value\n' ..
+      '--cAngleX\t\tSet current X angle rotation\n' ..
+      '--cAngleY\t\tSet current Y angle rotation\n' ..
+      '--cAngleZ\t\tSet current Z angle rotation\n' ..
+      '--xorg\t\t\tSet X origin value\n' ..
+      '--yorg\t\t\tSet Y origin value\n' ..
+      '--zorg\t\t\tSet Z origin value\n' ..
+      '--rms\t\t\tSet RMS value\n' ..
+      '--addlabel\t\tAdd a label to the header\n' ..
+      '--labelIndex\t\tAdd label to this number\n' ..
+      '--startAngle\t\tStart of tilt angles [e.g 60]\n' ..
+      '--angleSpacing\t\tSet increment of tilt angles\n' ..
+      '--defocus\t\tSet Image Defocus\n' ..
+      '--expTime\t\tSet Exposure Time\n' ..
+      '--tiltAxis\t\tSet tilt axis offset rotation angle\n' ..
+      '--pixSize\t\tSet Image Pixel Size\n' ..
+      '--mag\t\t\tSet Image Magnification\n' ..
+      '--ht\t\t\tSet High Tension Voltage\n' ..
+      '--binning\t\tSet Image Binning\n' ..
+      '--appDefocus\t\tSet Applied Defocus\n' ..
+      '--intensity\t\tSet intensity[IMOD]\n' ..
+      '--expDose\t\tSet Exposure Dose[IMOD]\n')
    os.exit(0)
 end
 

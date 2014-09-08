@@ -17,21 +17,12 @@ package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 
 local MRC_IO_lib = require 'MRC_IO_lib'
 
---- Gets the tilt angles from the extended header of a tilt series.
--- prints the tilt angles from the header or .mdoc file to the screen or an
--- output file.
--- @param input_filename Input image stack filename e.g. 'image.st'
--- @param output_filename [optional] Output filename e.g.'image.rawtlt'
-function get_tilt_angles(input_filename, output_filename)
-   MRC_IO_lib.get_tilt_angles(input_filename, output_filename)
-end
-
-if not arg[1] then
-   print('\nUsage: get_tilt_angles <image.st> [image.rawtlt]\n\n')
+if not arg[1] or not arg[2] then
+   io.write('\nUsage: get_tilt_angles <image.st> [image.rawtlt]\n\n')
    os.exit(0)
 end
 
-local status, err = pcall(get_tilt_angles, arg[1], arg[2])
+local status, err = pcall(MRC_IO_lib.get_tilt_angles, arg[1], arg[2])
 if not status then
    io.stderr:write(err)
    os.exit(1)

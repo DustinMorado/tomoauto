@@ -7,7 +7,7 @@
 --
 -- NOTE: This currently handles a bug in the beta version of SerialEM 3.4
 --
--- Dependencies: `MRC_IO_lib`, `tomoauto_lib`
+-- Dependencies: `MRC_IO_lib`
 --
 -- @script dose_fractioned_to_stack
 -- @author Dustin Morado
@@ -18,9 +18,26 @@ local tomoauto_directory = os.getenv('TOMOAUTOROOT')
 package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 
 local MRC_IO_lib   = require 'MRC_IO_lib'
-local tomoauto_lib = require 'tomoauto_lib'
 local lfs          = require 'lfs'
 local io, string, table = io, string, table
+
+local function run(command)
+   local status, exit, signal = os.execute(command)
+   if not status or signal ~= 0 then
+      error(string.format('\nError: %s failed.\n', command))
+   end
+   return status, exit, signal
+end
+
+local function is_file(filename)
+   local file = io.open(filename, 'r')
+   if file ~= nil then
+      io.close(file)
+      return true
+   else
+      error(string.format('\nError: File %s not found.\n\n', filename))
+   end
+end
 
 --- Takes aligned dose-fractioned sums and produces a tilt-series.
 -- Reads the log output by SerialEM in collecting dose-fractioned tilt series
@@ -43,8 +60,8 @@ function dose_fractioned_to_stack(input_filename)
    local header               = {}
    local extended_header      = {}
 
-   tomoauto_lib.is_file(log_filename)
-   tomoauto_lib.is_file(input_filename)
+   is_file(log_filename)
+   is_file(input_filename)
 
    local log_file = io.open(log_filename, 'r')
    for line in log_file:lines('*l') do
@@ -132,9 +149,9 @@ function dose_fractioned_to_stack(input_filename)
    end
    filelist:close()
 
-   tomoauto_lib.run(string.format('newstack -filei %s %s', filelist_name,
+   run(string.format('newstack -filei %s %s', filelist_name,
       new_stack_filename), basename)
-   tomoauto_lib.is_file(new_stack_filename)
+   is_file(new_stack_filename)
 
    header          = MRC_IO_lib.get_header(input_filename)
    extended_header = MRC_IO_lib.get_extended_header(input_filename)
@@ -177,13 +194,13 @@ function dose_fractioned_to_stack(input_filename)
 
    MRC_IO_lib.set_header(new_stack_filename, temporary_filename,
       header, extended_header)
-   tomoauto_lib.run(string.format('mv %s %s', temporary_filename,
+   run(string.format('mv %s %s', temporary_filename,
          new_stack_filename), basename)
-   tomoauto_lib.run(string.format('rm -f %s', filelist_name), basename)
+   run(string.format('rm -f %s', filelist_name), basename)
 end
 
 if not arg[1] then
-   print('\nUsage: dose_fraction_to_stack <SerialEM_stack.st>\n\n')
+   io.write('\nUsage: dose_fraction_to_stack <SerialEM_stack.st>\n\n')
    os.exit(0)
 end
 

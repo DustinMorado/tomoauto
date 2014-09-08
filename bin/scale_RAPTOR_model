@@ -5,7 +5,7 @@
 -- scales and changes its properties to make it better for erasing gold and for
 -- computing the alignment using IMOD tiltalign
 --
--- Dependencies: `MRC_IO_lib`, `tomoauto_lib`
+-- Dependencies: `MRC_IO_lib`
 --
 -- @script scale_RAPTOR_model
 -- @author Dustin Morado
@@ -16,7 +16,6 @@ local tomoauto_directory = os.getenv('TOMOAUTOROOT')
 package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 
 local MRC_IO_lib  = require 'MRC_IO_lib'
-local tomoauto_lib   = require 'tomoauto_lib'
 
 --- Alters 3dmod model file produced by RAPTOR to better erase gold.
 -- Scales the model to the original dataset, and makes the model point size
@@ -24,15 +23,25 @@ local tomoauto_lib   = require 'tomoauto_lib'
 -- @param input_filename RAPTOR generated fiducial model e.g image.fid.txt
 -- @param output_filename Output fiducial model filename e.g image.fid
 function scale_RAPTOR_model(input_filename, output_filename)
-   local basename  = string.sub(input_filename, 1, -9)
-   local input_stack_filename = basename .. '.st'
-   local header = MRC_IO_lib.get_header(input_stack_filename)
-
-   tomoauto_lib.scale_RAPTOR_model(input_filename, header, output_filename)
+   local input_file  = assert(io.open(input_filename, 'r'))
+   local output_file = assert(io.open(output_filename, 'w'))
+   local header = MRC_IO_lib.get_header(input_filename)
+   local refcurscale_string = string.format('#refcurscale %5.3f %5.3f %5.3f',
+      header.xlen / header.mx, header.ylen / header.my, header.zlen / header.mz)
+   for line in input_file:lines('*l') do
+      line = string.gsub(line, 'drawmode%s+%d+', 'drawmode\t1\n\z
+         symbol\t\t0\nsymsize\t\t7')
+      line = string.gsub(line, 'symbol%s+circle', refcurscale_string)
+      line = string.gsub(line, '^size%s+%d+', '')
+      output_file:write(line,'\n')
+   end
+   input_file:close()
+   output_file:close()
+   header = nil
 end
 
-if not arg[1] then
-   print('\nUsage: scale_RAPTOR_model <image.fid.txt> <image.fid>\n\n')
+if not arg[1] or not arg[2] then
+   io.write('\nUsage: scale_RAPTOR_model <image.fid.txt> <image.fid>\n\n')
    os.exit(0)
 end
 

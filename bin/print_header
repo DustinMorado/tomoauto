@@ -97,7 +97,7 @@ function print_header(input_filename)
 end
 
 if not arg[1] then
-   print('\nUsage: print_header <MRC file>\n\n')
+   io.write('\nUsage: print_header <MRC file>\n\n')
    os.exit(0)
 end
 

@@ -1,4 +1,4 @@
---- MRC Input Output control library
+--- MRC Input Output control library.
 -- This module provides all of the input output access for the MRC file format
 -- particularly in regards to the header information.
 --
@@ -278,7 +278,7 @@ function MRC_IO_lib.get_extended_header(input_filename)
                input_file:read(4))
          end
       else
-         error('Error: I do not know this type of input_file.', 0)
+         error('Error: I do not know this type of input_file.')
       end
       extended_header[i] = extended_header_section
    end
@@ -304,7 +304,7 @@ function MRC_IO_lib.get_tilt_angles(input_filename, output_filename)
       for i = 1, nz do
          if not extended_header[i].a_tilt then
             error(string.format('Error: No tilt angle for %s section %d.\n',
-               input_filename, i), 0)
+               input_filename, i))
          else
             output_file:write(string.format('% 6.2f\n',
                extended_header[i].a_tilt))
@@ -324,7 +324,7 @@ function MRC_IO_lib.get_tilt_angles(input_filename, output_filename)
       else
          error(string.format(
             'Error: No tilt angles found in %s\'s extend header\n',
-            input_filename), 0)
+            input_filename))
       end
    end
    output_file:close()
@@ -608,7 +608,7 @@ end
 -- @return header A table object with the required information
 function MRC_IO_lib.get_required_header(input_filename, fiducial_diameter)
 
-   local   header = MRC_IO_lib.get_header(input_filename)
+   local  header = MRC_IO_lib.get_header(input_filename)
    local  extended_header = MRC_IO_lib.get_extended_header(input_filename)
 
    header.file_type = string.sub(header.labels[1], 1, 3)
@@ -627,7 +627,7 @@ function MRC_IO_lib.get_required_header(input_filename, fiducial_diameter)
       header.pixel_size = (header.xlen / header.mx) / 10
    else
       error(string.format('Error: I do no know how to handle image stack %s.\n',
-         input_filename), 0)
+         input_filename))
    end
 
    -- Calculate the Fiducial size in pixels
@@ -642,7 +642,7 @@ function MRC_IO_lib.get_required_header(input_filename, fiducial_diameter)
    end
    if not header.split_angle then
       error(string.format('Error: Could not find a zero degree tilt for %s.\n',
-         input_filename), 0)
+         input_filename))
    end
    return header
 end

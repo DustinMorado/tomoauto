@@ -310,7 +310,7 @@ local function write_tiltalign(input_filename, header)
    command_file:write(string.format('OutputModelFile %s.3dmod\n\n', basename))
    command_file:write(string.format('OutputResidualFile %s.resid\n\n',
       basename))
-   command_file:write(string.format('OutputFidXYZFile %sfid.xyz\n\n', basename))
+   command_file:write(string.format('OutputFidXYZFile %s_fid.xyz\n\n', basename))
    command_file:write(string.format('OutputTiltFile %s.tlt\n\n', basename))
    command_file:write(string.format('OutputXAxisTiltFile %s.xtilt\n\n',
       basename))
@@ -533,64 +533,6 @@ local function write_ctfplotter(input_filename, header)
    command_file:close()
 end
 
---- Writes the COM file for ctfplotter in interactive mode
--- Removes the 'SaveAndExit' and 'AutofitRangeAndStep' options in ctfplotter so
--- that the CTF can be inspected, adjusted and corrected.
--- @param input_filename MRC image stack to be processed e.g. 'image.st'
--- @param header Table object with MRC file standard header information
-function COM_file_lib.write_final_ctfplotter(input_filename, header)
-	local basename = string.sub(input_filename, 1, -4)
-	local command_filename = string.format('%s_ctfplotter.com', basename)
-	local command_file = assert(io.open(command_filename, 'w'))
-
-   command_file:write(string.format('$ctfplotter -StandardInput\n\n'))
-   command_file:write(string.format('InputStack %s\n\n', input_filename))
-   command_file:write(string.format('AngleFile %s.tlt\n\n', basename))
-   if ctfplotter_InvertTiltAngles_use then
-      command_file:write(string.format('InvertTiltAngles\n\n'))
-   end
-   command_file:write(string.format('OffsetToAdd %s\n\n',
-      ctfplotter_OffsetToAdd))
-   command_file:write(string.format('DefocusFile %s.defocus\n\n', basename))
-   command_file:write(string.format('AxisAngle %s\n\n', header.tilt_axis))
-   command_file:write(string.format('PixelSize %s\n\n', header.pixel_size))
-   command_file:write(string.format('ExpectedDefocus %d\n\n',
-      header.defocus * 1000))
-   command_file:write(string.format('AngleRange %s\n\n', ctfplotter_AngleRange))
-   command_file:write(string.format('Voltage %s\n\n', ctfplotter_Voltage))
-   command_file:write(string.format('SphericalAberration %s\n\n',
-      ctfplotter_SphericalAberration))
-   command_file:write(string.format('AmplitudeContrast %s\n\n',
-      ctfplotter_AmplitudeContrast))
-   command_file:write(string.format('DefocusTol %s\n\n', ctfplotter_DefocusTol))
-   command_file:write(string.format('PSResolution %s\n\n',
-      ctfplotter_PSResolution))
-   command_file:write(string.format('TileSize %s\n\n', ctfplotter_TileSize))
-   command_file:write(string.format('LeftDefTol %s\n\n', ctfplotter_LeftDefTol))
-   command_file:write(string.format('RightDefTol %s\n\n',
-      ctfplotter_RightDefTol))
-   if header.file_type == 'Fei' then
-      ctfplotter_ConfigFile = string.format('%s%s',
-         '/usr/local/ImodCalib/CTFnoise', '/CCDbackground/polara-CCD-2012.ctg')
-      ctfplotter_FrequencyRangeToFit = '0.1 0.225'
-   elseif header.nx > 3000 then
-      ctfplotter_ConfigFile = string.format('%s%s',
-         '/usr/local/ImodCalib/CTFnoise',
-         '/K24Kbackground/polara-K2-4K-2014.ctg')
-      ctfplotter_FrequencyRangeToFit = ctfplotter_FrequencyRangeToFit
-   else
-      ctfplotter_ConfigFile = ctfplotter_ConfigFile
-      ctfplotter_FrequencyRangeToFit = ctfplotter_FrequencyRangeToFit
-   end
-   command_file:write(string.format('ConfigFile %s\n\n', ctfplotter_ConfigFile))
-   command_file:write(string.format('FrequencyRangeToFit %s\n\n',
-      ctfplotter_FrequencyRangeToFit))
-	if ctfplotter_VaryExponentInFit_use then
-      command_file:write(string.format('VaryExponentInFit\n\n'))
-   end
-   command_file:close()
-end
-
 local function write_ctfphaseflip(input_filename, header)
 	local basename = string.sub(input_filename,1, -4)
 	local command_filename = string.format('%s_ctfphaseflip.com', basename)
@@ -615,6 +557,18 @@ local function write_ctfphaseflip(input_filename, header)
       ctfphaseflip_AmplitudeContrast))
    command_file:write(string.format('InterpolationWidth %s\n\n',
       ctfphaseflip_InterpolationWidth))
+   command_file:close()
+end
+
+local function write_xfmodel(input_filename)
+   local basename = string.sub(input_filename, 1, -4)
+   local command_filename = string.format('%s_xfmodel.com', basename)
+   local command_file = assert(io.open(command_filename, 'w'))
+
+   command_file:write(string.format('$xfmodel -StandardInput\n\n'))
+   command_file:write(string.format('InputFile %s.fid\n\n', basename))
+   command_file:write(string.format('OutputFile %s_erase.fid\n\n', basename))
+   command_file:write(string.format('XformsToApply %s.tltxf\n\n', basename))
    command_file:close()
 end
 
@@ -672,7 +626,7 @@ local function write_tilt(input_filename, header, options_table)
 	else
       error(string.format(
          'Error! Please make sure either PARALLEL or PERPENDICULAR\n' ..
-         'is chosen in the configuration command_file not both!\n'), 0)
+         'is chosen in the configuration command_file not both!\n'))
    end
    command_file:write(string.format('RADIAL %s\n\n', tilt_RADIAL))
    command_file:write(string.format('SCALE %s\n\n', tilt_SCALE))
@@ -712,6 +666,44 @@ local function write_tilt(input_filename, header, options_table)
    command_file:close()
 end
 
+local function write_tomo3d(input_filename, header, options_table)
+   local basename = string.sub(input_filename, 1, -4)
+   local tilt_filename           = basename .. '.tlt'
+   local aligned_filename        = basename .. '.ali'
+   local reconstruction_filename = basename .. '_tomo3d.rec'
+   local command_filename        = basename .. '_tomo3d.sh'
+   local command_file = assert(io.open(command_filename, 'w'))
+
+   local z = options_table.z_ or '1200'
+   local iterations = options_table.i_ or '30'
+   local hamming_filter = 0.35
+   local tomo3d_string = string.format(' -a %s -i %s -m %f -z %d',
+      tilt_filename, aligned_filename, hamming_filter, z)
+   if options_table.g then
+      tomo3d_string = string.format('tomo3dhybrid -g 0 %s', tomo3d_string)
+   else
+      tomo3d_string = string.format('tomo3d %s', tomo3d_string)
+   end
+   if options_table.s then
+      reconstruction_filename = basename .. '_sirt.rec'
+      tomo3d_string = string.format('%s -l %d -S -o %s', tomo3d_string,
+         iterations, reconstruction_filename)
+   else
+      tomo3d_string = string.format('%s -o %s', tomo3d_string,
+         reconstruction_filename)
+   end
+
+   command_file:write(string.format('#!/bin/sh\n\n'))
+   if header.mode == 6 then
+      command_file:write(string.format('newstack -mo 1 %s %s\n\n', 
+         aligned_filename, aligned_filename))
+   end
+   command_file:write(string.format('%s\n\n', tomo3d_string))
+   command_file:close()
+   header = nil
+   assert(os.execute(string.format('chmod a+x %s', command_filename)))
+end
+
 --- Writes necessary IMOD command files.
 -- Takes the local functions in this module and writes the command files for
 -- tomoauto or generate_command_files
@@ -719,6 +711,8 @@ end
 -- @param fiducial_diameter Size of fiducial markers in nm e.g. "10"
 -- @param options_table Table object with option flags from yago
 function COM_file_lib.write(input_filename, fiducial_diameter, options_table)
+   local basename = string.sub(input_filename, 1, -4)
+
    local header = MRC_IO_lib.get_required_header(input_filename,
       fiducial_diameter)
       
@@ -727,7 +721,7 @@ function COM_file_lib.write(input_filename, fiducial_diameter, options_table)
          header.defocus = options_table.d_
       elseif not header.defocus then
          error('You need to enter an appproximate defocus to run with CTF ' ..
-            'correction.\n\n', 0)
+            'correction.\n\n')
       end
    end
 
@@ -739,6 +733,8 @@ function COM_file_lib.write(input_filename, fiducial_diameter, options_table)
    end
 
    if options_table.m_ ~= "reconstruct" then
+      local raw_tilt_filename = basename .. '.rawtlt'
+      MRC_IO_lib.get_tilt_angles(input_filename, raw_tilt_filename)
       write_ccderaser(input_filename)
       write_tiltxcorr(input_filename, header)
       write_xftoxg(input_filename)
@@ -760,6 +756,7 @@ function COM_file_lib.write(input_filename, fiducial_diameter, options_table)
       end
 
       if options_table.m_ == "align" then
+         header = nil
          return true
       end
    end
@@ -768,9 +765,12 @@ function COM_file_lib.write(input_filename, fiducial_diameter, options_table)
       write_ctfphaseflip(input_filename, header)
    end
 
+   write_xfmodel(input_filename)
    write_gold_ccderaser(input_filename)
 
-   if not options_table.t then
+   if options_table.t then
+      write_tomo3d(input_filename, header, options_table)
+   else
       write_tilt(input_filename, header, options_table)
    end
 

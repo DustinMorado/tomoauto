@@ -4,7 +4,7 @@
 -- 3dmod. It takes N slices and projects them into an average and then
 -- reassembles the averages back into a volume.
 --
--- Dependencies: `tomoauto_lib`
+-- Dependencies: `MRC_IO_lib`
 --
 -- @script dose_fractioned_to_stack
 -- @author Dustin Morado
@@ -15,8 +15,8 @@ local tomoauto_directory = os.getenv('TOMOAUTOROOT')
 package.cpath  = package.cpath .. ';' .. tomoauto_directory .. '/lib/?.so;'
 package.path   = package.path  .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 
-local struct   = require 'struct'
-local tomoauto_lib  = require 'tomoauto_lib'
+local struct     = require 'struct'
+local MRC_IO_lib = require 'MRC_IO_lib'
 
 --- Imitates median filter along beam axis.
 -- Takes N slices and projects them into an average and then reassembles the
@@ -24,11 +24,74 @@ local tomoauto_lib  = require 'tomoauto_lib'
 -- @param input_filename Input image stack e.g. 'image.rec'
 -- @param filter_size Number of slices to average together e.g. 7
 function median_filter(input_filename, filter_size)
-   tomoauto_lib.median_filter(input_filename, filter_size)
+   local median_filtered_filename = input_filename .. '.med' .. filter_size
+   local header = MRC_IO_lib.get_header(input_filename)
+   local nz = header.nz
+   header = nil
+   local file_list = assert(io.open('filelist.txt', 'w'))
+   file_list:write(nz, '\n')
+   filter_size = tonumber(filter_size)
+   local is_even = (filter_size % 2 == 0) and true or false
+   for i = 1, nz do
+      average_filename = string.format('%s.avg_%04d', input_filename, i)
+      file_list:write(string.format('%s\n0\n', average_filename))
+      if is_even then
+         if i < nz / 2 then
+            left_index  = i - ((filter_size / 2) - 1)
+            right_index = i +  (filter_size / 2)
+            if left_index < 1 then
+               local shift = 1 - left_index
+               left_index  = left_index  + shift
+               right_index = right_index + shift
+            end
+         else
+            left_index  = i -  (filter_size / 2)
+            right_index = i + ((filter_size / 2) - 1)
+            if right_index > nz then
+               local shift = right_index - nz
+               left_index  = left_index  - shift
+               right_index = right_index - shift
+            end
+         end
+      else
+         left_index  = i - math.floor(filter_size / 2)
+         right_index = i + math.floor(filter_size / 2)
+         if left_index < 1 then
+            local shift = 1 - left_index
+            left_index  = left_index  + shift
+            right_index = right_index + shift
+         elseif right_index > nz then
+            local shift = right_index - nz
+            left_index  = left_index  - shift
+            right_index = right_index - shift
+         end
+      end
+      local success, exit, signal = os.execute(string.format(
+         'xyzproj -z "%d %d" -axis Y %s %s &> /dev/null', left_index,
+         right_index, input_filename, average_filename))
+      if not success or signal ~= 0 then
+         os.execute('rm filelist.txt')
+         error('\nError: median_filter xyzproj failed.\n\n')
+      end
+   end
+   file_list:close()
+   file_list = nil
+   success, exit, signal = os.execute(string.format(
+      'newstack -filei filelist.txt %s &> /dev/null', median_filtered_filename))
+   if not success or signal ~= 0 then
+      os.execute(string.format('rm filelist.txt %s %s.avg_*', 
+         median_filtered_filename, input_filename))
+      error('\nError: median_filter newstack failed.\n\n')
+   end
+   success, exit, signal = os.execute(string.format(
+      'rm -f filelist.txt %s.avg_*', input_filename))
+   if not success or signal ~= 0 then
+      error('\nError: median_filter cleanup failed.\n\n')
+   end
 end
 
-if not arg[1] then
-   print('\nUsage: median_filter <image.rec> <filter_size>\n\n')
+if not arg[1] or not arg[2] then
+   io.write('\nUsage: median_filter <image.rec> <filter_size>\n\n')
    os.exit(0)
 end
 

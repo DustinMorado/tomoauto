@@ -38,15 +38,11 @@ function yago.get_options(Arg, short_options, long_options)
    ordered_long_options  = nil
 
    if #short_options_table ~= #long_options_table then
-      error(
-         '\n\nError: The number of short options and \z
-         long options do not match.\n',
-         0
-      )
+      error('\n\nError: The number of short options and long options do not' ..
+         'match.\n')
    end
 
    for index, argument in ipairs(Arg) do
-
       -- Check for short options (simple or globbed)
       if string.match(argument, '^%-%w') then
          argument  = string.gsub(argument, '^%-', '')
@@ -67,12 +63,8 @@ function yago.get_options(Arg, short_options, long_options)
                skip = true
 
             else
-               error(
-                  string.format(
-                     '\n\nError: Invalid simple short option %s.\n',
-                     argument
-                  ), 0
-               )
+               error(string.format('\nError: Invalid simple short option %s\n',
+                  argument))
             end
 
          -- Globbed short options
@@ -100,20 +92,13 @@ function yago.get_options(Arg, short_options, long_options)
 
                   -- Option argument is globbed with options
                   else
-                     short_options_table[option_] = string.sub(
-                        argument,
-                        i + 1,
-                        -1
-                     )
+                     short_options_table[option_] = string.sub(argument, i + 1,
+                        -1)
                      break
                   end
                else
-                  error(
-                     string.format(
-                        '\n\nError: Invalid globbed short option %s.\n',
-                        option
-                     )
-                  )
+                  error(string.format(
+                     '\n\nError: Invalid globbed short option %s.\n', option))
                end
             end
          end
@@ -131,21 +116,13 @@ function yago.get_options(Arg, short_options, long_options)
             then
                short_options_table[long_to_short] = right_hand_side
             else
-               error(
-                  string.format(
-                     '\n\nError: Invalid long option %s.\n',
-                     left_hand_side
-                  ), 0
-               )
+               error(string.format('\n\nError: Invalid long option %s.\n',
+                  left_hand_side))
             end
          else
             if long_options_table[argument] == nil then
-               error(
-                  string.format(
-                     '\n\nError: Invalid long option %s.\n',
-                     argument
-                  ), 0
-               )
+               error(string.format('\n\nError: Invalid long option %s.\n',
+                  argument))
             end
             if string.len(long_options_table[argument]) == 1 then
                local long_to_short = long_options_table[argument]

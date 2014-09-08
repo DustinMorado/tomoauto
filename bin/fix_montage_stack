@@ -37,8 +37,8 @@ function fix_montage_stack(input_filename, output_filename)
       extended_header)
 end
 
-if not arg[1] then
-   print('\nUsage: fix_montage_stack <input.st> <output.st>\n\n')
+if not arg[1] or not arg[2] then
+   io.write('\nUsage: fix_montage_stack <input.st> <output.st>\n\n')
    os.exit(0)
 end
 

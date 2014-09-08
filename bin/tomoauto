@@ -6,7 +6,7 @@
 -- series, perform CTF correction and reconstruct a tomogram using WBP or SIRT
 -- methods.
 --
--- Dependencies: `tomoauto`, `tomoauto_lib`, `yago`
+-- Dependencies: `tomoauto_lib`, `yago`
 --
 -- @script tomoauto
 -- @author Dustin Morado
@@ -16,35 +16,33 @@
 local tomoauto_directory = os.getenv('TOMOAUTOROOT')
 package.path   = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 
-local tomoauto     = require 'tomoauto'
 local tomoauto_lib = require 'tomoauto_lib'
 local yago         = require 'yago'
 
---- Automatically processes, aligns, and reconstructs tilt series.
--- Coordinates IMOD, RAPTOR, and TOMO3D to reconstruct a tilt series.
--- @param input_filename Tilt series to be processed e.g. 'image.st'
--- @param fiducial_diameter Size of fiducial markers in nm e.g. '10'
--- @param options_table Table object with option flags from yago
-function tomoauto(input_filename, fiducial_diameter, options_table)
-   if options_table.m_ ~= 'reconstruct' then
-      tomoauto.process(input_filename, fiducial_diameter, options_table)
-   elseif options_table.m_ == 'reconstruct' then
-      tomoauto.reconstruct(input_filename, fiducial_diameter, options_table)
-   end
-   tomoauto.clean_on_fail(input_filename)
-end
-
-if not arg[1] then
-   print('\nUsage: tomoauto [options] <image.st> <fidsize>\n\n')
+if not arg[1] or not arg[2] then
+   io.write('\nUsage: tomoauto [options] <image.st> <fidsize>\n' ..
+      'Automates the alignment of tilt series and the reconstruction of\n' ..
+      'these series into 3D tomograms.\n\n' ..
+      '-c, --CTF      \tApplies CTF correction to the aligned stack\n' ..
+      '-d, --defocus  \tUses this as estimated defocus for ctfplotter\n' ..
+      '-g, --GPU      \tUses GPGPU methods to speed up the reconstruction\n' ..
+      '-h, --help     \tPrints this information and exits\n' ..
+      '-i, --iter     \tThe number of SIRT iterations to run [default 30]\n' ..
+      '-l, --config   \tSources a local config file\n' ..
+      '-m, --mode     \tSelect which mode you want to operate\n' ..
+      '\t\tavailable modes (align, reconstruct).\n' ..  
+      '-p, --procnum  \tUses <int> processors to speed up tilt\n' ..
+      '-r, --RAPTOR   \tUses RAPTOR instead of autofidseed\n' ..
+      '-s, --SIRT     \tUse SIRT to reconstruct [default WBP]\n' ..
+      '-t, --tomo3d   \tUse the TOMO3D to compute reconstruction\n' ..
+      '-z, --thickness\tCreate a tomogram with <int> thickness\n')
    os.exit(0)
 end
 
 local short_options  = 'c,   d_,      g,   h,    i_,   l_,     m_, '
 local long_options   = 'ctf, defocus, gpu, help, iter, config, mode, '
-short_options  = short_options .. 'n,   p_,      r,      s,    t,      '
-long_options   = long_options  .. 'new, procnum, RAPTOR, SIRT, tomo3D, '
-short_options  = short_options .. 'z_'
-long_options   = long_options  .. 'thickness'
+short_options  = short_options .. 'p_,      r,      s,    t,      z_'
+long_options   = long_options  .. 'procnum, RAPTOR, SIRT, tomo3D, thickness'
 
 local status, arg, options_table = pcall(yago.get_options, arg, short_options,
    long_options)
@@ -54,9 +52,10 @@ if not status then
    os.exit(1)
 end
 
-local status, err = pcall(tomoauto, arg[1], arg[2], options_table)
+local status, err = pcall(tomoauto_lib.process, arg[1], arg[2], options_table)
 if not status then
    io.stderr:write(err)
+   tomoauto_lib.clean_up(arg[1], options_table)
    os.exit(1)
 else
    os.exit(0)

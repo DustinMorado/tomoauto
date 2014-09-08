@@ -44,7 +44,7 @@ function print_extended_header(input_filename, options_table)
       io.stdout:write('-T, --tltAx\t\tprint tilt axis offsets\n')
       io.stdout:write('-s, --stg  \t\tprint stage coordinates\n')
       io.stdout:write('-S, --shift\t\tprint image shifts\n')
-      return true
+      return
    end
 
    local reference       = ''
@@ -143,7 +143,23 @@ function print_extended_header(input_filename, options_table)
 end
 
 if not arg[1] then
-   print('\nUsage: print_extended_header [options] <MRC file>\n\n')
+   io.write('\nUsage: print_extended_header [options] <MRC file>\n\n' ..
+      '-a, --adef \t\tprint applied defoci (approximate)\n' ..
+      '-b, --bin  \t\tprint applied binning\n' ..
+      '-c, --coord\t\tprint stage coordinates\n' ..
+      '-d, --def  \t\tprint defoci (approximate)\n' ..
+      '-e, --exp  \t\tprint exposure times (approximate)\n' ..
+      '-e, --dose \t\tprint exposure doses (approximate)\n' ..
+      '-h, --help \t\tprint this help and then exit\n' ..
+      '-h, --ht   \t\tprint screen high tension\n' ..
+      '-i, --int  \t\tprint intensities\n' ..
+      '-m, --mean \t\tprint mean values\n' ..
+      '-m, --mag  \t\tprint magnifications\n' ..
+      '-p, --pix  \t\tprint pixel size\n' ..
+      '-t, --tlt  \t\tprint tilt angles\n' ..
+      '-t, --tltax\t\tprint tilt axis offsets\n' ..
+      '-s, --stg  \t\tprint stage coordinates\n' ..
+      '-s, --shift\t\tprint image shifts\n')
    os.exit(0)
 end
 
