@@ -604,7 +604,7 @@ end
 -- This function returns a table object with a mix of data from the standard and
 -- the extended MRC header.
 -- @param input_filename MRC stack filename
--- @param fiducal_diameter Size of fiducial markers in nm
+-- @param fiducial_diameter Size of fiducial markers in nm
 -- @return header A table object with the required information
 function MRC_IO_lib.get_required_header(input_filename, fiducial_diameter)
 
