@@ -15,7 +15,7 @@ package.cpath = package.cpath .. ';' .. tomoauto_directory .. '/lib/?.so;'
 local struct = assert(require 'struct')
 local math, string, table = math, string, table
 
---- Gets standard 1024 byte MRC header
+--- Gets standard 1024 byte MRC header.
 -- This reads the first 1024 bytes of an MRC file and returns a table object
 -- with the corresponding data. The complete header information for Agard style
 -- headers can be found here: http://www.2dx.unibas.ch/documentation/
@@ -139,7 +139,7 @@ function MRC_IO_lib.get_header(input_filename)
    return header
 end
 
---- Reads Bio3d style floats in the header
+--- Reads Bio3d style floats in the header.
 -- This function handles Bio3D's weird way of putting floats in the extended
 -- header
 -- @param short_1 first short read in
@@ -155,7 +155,7 @@ local function IMOD_short_to_float(short_1, short_2)
    return real
 end
 
---- Checks MRC header type
+--- Checks MRC header type.
 -- This function reads the nint and nreal sections in the header and checks to
 -- see if the file comes from IMOD
 -- @param nint section from header
@@ -176,7 +176,7 @@ function MRC_IO_lib.is_IMOD(nint, nreal)
    end
 end
 
---- Reads MRC file extended header
+--- Reads MRC file extended header.
 -- A function that reads the extended header for a given MRC file and returns a
 -- table object with the corresponnding data
 -- @param input_filename MRC file to be read
@@ -330,7 +330,7 @@ function MRC_IO_lib.get_tilt_angles(input_filename, output_filename)
    output_file:close()
 end
 
---- Write an MRC file with a given header
+--- Write an MRC file with a given header.
 -- This function writes a MRC file using a provided table object with header
 -- information
 -- @param input_filename MRC file to set header
@@ -600,7 +600,7 @@ function MRC_IO_lib.write_header(input_filename, output_filename, options_table)
       extended_header)
 end
 
---- Gets all header information needed for tomoauto
+--- Gets all header information needed for tomoauto.
 -- This function returns a table object with a mix of data from the standard and
 -- the extended MRC header.
 -- @input_filename MRC stack filename

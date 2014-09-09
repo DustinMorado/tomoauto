@@ -1,4 +1,4 @@
---- Writes IMOD command files
+--- Writes IMOD command files.
 --
 -- This module writes all of the command (COM) files for the various programs in
 -- IMOD. It is largely dependent on the global and optional local configuration

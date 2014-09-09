@@ -1,22 +1,3 @@
---[[==========================================================================#
-#                               globalConfig.lua                              #
-#-----------------------------------------------------------------------------#
-# This is the central configuration file for eTomo_auto it is a long file     #
-# and it has been attempted at great lengths to document this file as         #
-# completely as possible; however, if you have any more questions, please     #
-# refer to the manpages of the desired program. This file is organized in the #
-# manner in which eTomo_auto is run.  The defaults in this file are from the  #
-# defaults in eTomo and not necessarily the ones in the specific man pages.   #
-#-----------------------------------------------------------------------------#
-# Author:  Dustin Morado                                                      #
-# Written: June 02nd 2014                                                     #
-# Contact: Dustin.Morado@uth.tmc.edu                                          #
-#==========================================================================--]]
---[[==========================================================================#
-# Step 1: Pre-Processing                                                      #
-#-----------------------------------------------------------------------------#
-# Commands: ccderaser                                                         #
-#==========================================================================--]]
 -- These are the options for the ccderaser command used for pre-processing to
 -- remove x-ray abnormalities on the CCD camera.
 
@@ -84,11 +65,6 @@ ccderaser_GiantCriterion = 12.0
 -- Maximum radius of extra-large peak area to erase.
 ccderaser_ExtraLargeRadius = 8.0
 
---[[==========================================================================#
-# Step 2: Coarse Alignment                                                    #
-#-----------------------------------------------------------------------------#
-# Commands: tiltxcorr, newstack                                               #
-#==========================================================================--]]
 -- These are the options for the tiltxcorr command used to calculate the
 -- cross-correlation to create initial transformations for the coarse alignment.
 
@@ -263,11 +239,6 @@ prenewstack_ContrastBlackWhite = '0 255'
 prenewstack_ScaleMinAndMax_use = nil
 prenewstack_ScaleMinAndMax = '0 255'
 
---[[==========================================================================#
-# Step 3: RAPTOR automated fiducial model algorithm                           #
-#-----------------------------------------------------------------------------#
-# Commands: RAPTOR                                                            #
-#==========================================================================--]]
 -- These are the options for the RAPTOR command used to automatically create
 -- a gold tracking model and then align the model.
 
@@ -402,11 +373,6 @@ autofidseed_PeakStorageFraction = 1.0
 -- TargetNumberOfBeads
 autofidseed_TargetNumberOfBeads = 20
 
---[[==========================================================================#
-# Step 4: Alignment by use of fiducial model                                  #
-#-----------------------------------------------------------------------------#
-# Commands: tiltalign, newstack                                               #
-#==========================================================================--]]
 -- These are the options for the tiltalign command that solves for the
 -- displacements, rotations, tilts and magnification differences of a tilt
 -- series.
@@ -637,11 +603,6 @@ newstack_BinByFactor = 1
 -- File with magnification gradients to be applied for each image.
 newstack_GradientFile_use = nil
 
---[[==========================================================================#
-# Step 4: CTF Correction                                                      #
-#-----------------------------------------------------------------------------#
-# Commands: CTFplotter, CTFphaseflip                                          #
-#==========================================================================--]]
 -- These are the options for the CTFplotter command used to estimate the
 -- defocus and CTF curve to later correct for phase flipping.
 
@@ -665,11 +626,8 @@ ctfplotter_OffsetToAdd = 0.0
 -- The configure file specifies the noise files used to estimate the noise
 -- floor, one file per line.  The files can be specified with either absolute
 -- paths or with paths relative to the loca- tion of the configure file itself.
-ctfplotter_ConfigFile = string.format(
-   '%s%s',
-   '/usr/local/ImodCalib/CTFnoise',
-   '/K22Kbackground/polara-K2-2k-2013.ctg'
-)
+ctfplotter_ConfigFile = '/usr/local/ImodCalib/CTFnoise/K22Kbackground/' ..
+   'polara-K2-2k-2013.ctg'
 
 -- PSResolution:
 -- The number of points over which CTF will be computed.  The Nyquist frequency
@@ -782,11 +740,6 @@ ctfphaseflip_DefocusTol = 200
 -- See AmplitudeContrast above for ctfplotter
 ctfphaseflip_AmplitudeContrast = 0.07
 
---[[==========================================================================#
-# Step 5: Erase Gold                                                          #
-#-----------------------------------------------------------------------------#
-# Commands: ccderaser                                                         #
-#==========================================================================--]]
 -- These are the options for the ccderaser command used to erase the fiducial
 -- markers from the aligned stack
 
@@ -824,11 +777,6 @@ gold_ccderaser_PolynomialOrder = 0
 -- the polynomial fit to points that do not touch the ones being replaced.
 gold_ccderaser_ExcludeAdjacent_use = true
 
---[[==========================================================================#
-# Step 6: Tomogram Generation                                                 #
-#-----------------------------------------------------------------------------#
-# Commands: tilt                                                              #
-#==========================================================================--]]
 -- These are the options for the tilt command used to create a tomographic
 -- reconstruction from the R-weighted backprojection. It can be split and ran in
 -- parallel on multiple CPUs or on the GPU.
