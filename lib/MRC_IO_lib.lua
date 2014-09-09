@@ -335,8 +335,8 @@ end
 -- information
 -- @param input_filename MRC file to set header
 -- @param output_filename Output MRC file
--- @header Table object with standard header information
--- @extended_header Table object with extended header information
+-- @param header Table object with standard header information
+-- @param extended_header Table object with extended header information
 function MRC_IO_lib.set_header(input_filename, output_filename, header,
    extended_header)
 
@@ -603,8 +603,8 @@ end
 --- Gets all header information needed for tomoauto.
 -- This function returns a table object with a mix of data from the standard and
 -- the extended MRC header.
--- @input_filename MRC stack filename
--- @fiducal_diameter Size of fiducial markers in nm
+-- @param input_filename MRC stack filename
+-- @param fiducal_diameter Size of fiducial markers in nm
 -- @return header A table object with the required information
 function MRC_IO_lib.get_required_header(input_filename, fiducial_diameter)
 
