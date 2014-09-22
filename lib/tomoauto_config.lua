@@ -383,7 +383,7 @@ tiltalign_ImagesAreBinned = 1
 
 -- AngleOffset:
 -- Amount to add to all entered tilt angles.
-tiltalign_AngleOffset_use = nil
+tiltalign_AngleOffset_use = true
 tiltalign_AngleOffset = 0.0
 
 -- RotOption:
@@ -391,7 +391,7 @@ tiltalign_AngleOffset = 0.0
 -- 1 for each view having an independent rotation; 2 to enter general mapping of
 -- rotation variables; 3 or 4 for automapping; -1 single rotation variable
 tiltalign_RotOption_use = true
-tiltalign_RotOption = 1
+tiltalign_RotOption = 3
 
 -- RotDefaultGrouping:
 -- Default group size when automapping rotation variables
@@ -417,7 +417,7 @@ tiltalign_MagReferenceView = 1
 -- MagOption:
 -- Type of magnification solution. See tiltalign manual page.
 tiltalign_MagOption_use = true
-tiltalign_MagOption = 1
+tiltalign_MagOption = 3
 
 -- MagDefaultGrouping:
 -- Default group size when automapping magnification
@@ -427,12 +427,12 @@ tiltalign_MagDefaultGrouping = 4
 -- XStretchOption:
 -- Type of X-stretch solution. See tiltalign manual page.
 tiltalign_XStretchOption_use = true
-tiltalign_XStretchOption = 3
+tiltalign_XStretchOption = 0
 
 -- SkewOption:
 -- Type of skew solution. See tiltalign manual.
 tiltalign_SkewOption_use = true
-tiltalign_SkewOption = 3
+tiltalign_SkewOption = 0
 
 -- XStretchDefaultGrouping:
 -- Default average group size when automapping X stretch variables.

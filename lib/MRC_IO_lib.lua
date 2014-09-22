@@ -19,7 +19,7 @@ local math, string, table = math, string, table
 -- This reads the first 1024 bytes of an MRC file and returns a table object
 -- with the corresponding data. The complete header information for Agard style
 -- headers can be found here: http://www.2dx.unibas.ch/documentation/
--- mrc-software/fei-extended-mrc-format-not-used-by-2dx 
+-- mrc-software/fei-extended-mrc-format-not-used-by-2dx
 --
 -- The information for the SerialEM/IMOD style MRC file can be found here:
 -- http://bio3d.colorado.edu/imod/doc/mrc_format.txt
