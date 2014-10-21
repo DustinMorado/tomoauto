@@ -130,7 +130,7 @@ function align_dose_fractioned(input_filename)
       basename, basename))
 end
 
-if not arg[i] then
+if not arg[1] then
    io.write('\nUsage: align_dose_fractioned <image.mrc>\n')
    os.exit(0)
 end
