@@ -533,6 +533,62 @@ local function write_ctfplotter(input_filename, header)
    command_file:close()
 end
 
+local function write_ctfplotter_check(input_filename, header)
+	local basename = string.sub(input_filename, 1, -4)
+	local command_filename = string.format('%s_ctfplotter.com.check', basename)
+	local command_file = assert(io.open(command_filename, 'w'))
+
+   command_file:write(string.format('$ctfplotter -StandardInput\n\n'))
+   command_file:write(string.format('InputStack %s\n\n', input_filename))
+   command_file:write(string.format('AngleFile %s.tlt\n\n', basename))
+   if ctfplotter_InvertTiltAngles_use then
+      command_file:write(string.format('InvertTiltAngles\n\n'))
+   end
+   command_file:write(string.format('OffsetToAdd %s\n\n',
+      ctfplotter_OffsetToAdd))
+   command_file:write(string.format('DefocusFile %s.defocus\n\n', basename))
+   command_file:write(string.format('AxisAngle %s\n\n', header.tilt_axis))
+   command_file:write(string.format('PixelSize %s\n\n', header.pixel_size))
+   command_file:write(string.format('ExpectedDefocus %d\n\n',
+      header.defocus * 1000))
+   command_file:write(string.format('AngleRange %s\n\n', ctfplotter_AngleRange))
+   command_file:write(string.format('#AutoFitRangeAndStep %s\n\n',
+      ctfplotter_AutoFitRangeAndStep))
+   command_file:write(string.format('Voltage %s\n\n', ctfplotter_Voltage))
+   command_file:write(string.format('SphericalAberration %s\n\n',
+      ctfplotter_SphericalAberration))
+   command_file:write(string.format('AmplitudeContrast %s\n\n',
+      ctfplotter_AmplitudeContrast))
+   command_file:write(string.format('DefocusTol %s\n\n', ctfplotter_DefocusTol))
+   command_file:write(string.format('PSResolution %s\n\n',
+      ctfplotter_PSResolution))
+   command_file:write(string.format('TileSize %s\n\n', ctfplotter_TileSize))
+   command_file:write(string.format('LeftDefTol %s\n\n', ctfplotter_LeftDefTol))
+   command_file:write(string.format('RightDefTol %s\n\n',
+      ctfplotter_RightDefTol))
+   if header.file_type == 'Fei' then
+      ctfplotter_ConfigFile = string.format('%s%s',
+         '/usr/local/ImodCalib/CTFnoise', '/CCDbackground/polara-CCD-2012.ctg')
+      ctfplotter_FrequencyRangeToFit = '0.1 0.225'
+   elseif header.nx > 3000 then
+      ctfplotter_ConfigFile = string.format('%s%s',
+         '/usr/local/ImodCalib/CTFnoise',
+         '/K24Kbackground/polara-K2-4K-2014.ctg')
+      ctfplotter_FrequencyRangeToFit = ctfplotter_FrequencyRangeToFit
+   else
+      ctfplotter_ConfigFile = ctfplotter_ConfigFile
+      ctfplotter_FrequencyRangeToFit = ctfplotter_FrequencyRangeToFit
+   end
+   command_file:write(string.format('ConfigFile %s\n\n', ctfplotter_ConfigFile))
+   command_file:write(string.format('FrequencyRangeToFit %s\n\n',
+      ctfplotter_FrequencyRangeToFit))
+	if ctfplotter_VaryExponentInFit_use then
+      command_file:write(string.format('VaryExponentInFit\n\n'))
+   end
+   command_file:write(string.format('#SaveAndExit\n\n'))
+   command_file:close()
+end
+
 local function write_ctfphaseflip(input_filename, header)
 	local basename = string.sub(input_filename,1, -4)
 	local command_filename = string.format('%s_ctfphaseflip.com', basename)
@@ -753,6 +809,7 @@ function COM_file_lib.write(input_filename, fiducial_diameter, options_table)
 
       if options_table.c then
          write_ctfplotter(input_filename, header)
+         write_ctfplotter_check(input_filename, header)
       end
 
       if options_table.m_ == "align" then

@@ -230,6 +230,8 @@ function tomoauto_lib.clean_up(input_filename, options_table)
    local gold_erase_filename            = basename .. '_erase.ali'
    local RAPTOR_directory_name          = basename .. '_RAPTOR'
    local com_filenames                  = basename .. '_*.com'
+   local ctfplotter_com_filename        = basename .. '_ctfplotter.com'
+   local ctfplotter_check_filename      = basename .. '_ctfplotter.com.check'
    local log_filenames                  = basename .. '_*.log'
    local temporary_filenames            = basename .. '*~'
 
@@ -263,6 +265,11 @@ function tomoauto_lib.clean_up(input_filename, options_table)
       pcall(os.execute, string.format('rm -rf' .. string.rep(' %s ', 2),
          defocus_filename,
          tilt_xf_filename
+      ))
+   end
+   if options_table.c then
+      pcall(os.execute, string.format('mv %s %s', ctfplotter_check_filename,
+         ctfplotter_com_filename
       ))
    end
    local original_file = io.open(original_filename, 'r')
