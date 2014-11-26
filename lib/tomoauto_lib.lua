@@ -268,9 +268,11 @@ function tomoauto_lib.clean_up(input_filename, options_table)
       ))
    end
    if options_table.c then
-      pcall(os.execute, string.format('mv %s %s', ctfplotter_check_filename,
-         ctfplotter_com_filename
-      ))
+       if options_table.m_ ~= "reconstruct" then
+          pcall(os.execute, string.format('mv %s %s', ctfplotter_check_filename,
+              ctfplotter_com_filename
+          ))
+      end
    end
    local original_file = io.open(original_filename, 'r')
    if original_file then
