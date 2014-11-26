@@ -693,7 +693,7 @@ ctfplotter_AngleRange = '-40.0 40.0'
 -- estimate used for the next two iterations.  3) The size of the range is
 -- determined by the parameter entered here, not by the starting and ending
 -- angles entered with the -range option.
-ctfplotter_AutoFitRangeAndStep = '10.0 10.0'
+ctfplotter_AutoFitRangeAndStep = '0.0 0.0'
 
 -- FrequencyRangeToFit:
 -- Starting and ending frequencies of range to fit in power spec- trum.  The two

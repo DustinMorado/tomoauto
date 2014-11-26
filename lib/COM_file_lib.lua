@@ -552,7 +552,7 @@ local function write_ctfplotter_check(input_filename, header)
    command_file:write(string.format('ExpectedDefocus %d\n\n',
       header.defocus * 1000))
    command_file:write(string.format('AngleRange %s\n\n', ctfplotter_AngleRange))
-   command_file:write(string.format('#AutoFitRangeAndStep %s\n\n',
+   command_file:write(string.format('AutoFitRangeAndStep %s\n\n',
       ctfplotter_AutoFitRangeAndStep))
    command_file:write(string.format('Voltage %s\n\n', ctfplotter_Voltage))
    command_file:write(string.format('SphericalAberration %s\n\n',
