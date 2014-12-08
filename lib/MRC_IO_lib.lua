@@ -9,9 +9,6 @@
 
 local MRC_IO_lib = {}
 
-local tomoauto_directory = os.getenv('TOMOAUTOROOT')
-package.cpath = package.cpath .. ';' .. tomoauto_directory .. '/lib/?.so;'
-
 local struct = assert(require 'struct')
 local math, string, table = math, string, table
 

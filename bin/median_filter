@@ -1,4 +1,4 @@
-#!/usr/bin/env lua
+#!/usr/bin/env talua
 --- Imitates median filter along beam axis.
 -- This program imitates the 'image thickness' feature in the slicer window of
 -- 3dmod. It takes N slices and projects them into an average and then
@@ -10,10 +10,6 @@
 -- @author Dustin Morado
 -- @license GPLv3
 -- @release 0.2.10
-
-local tomoauto_directory = os.getenv('TOMOAUTOROOT')
-package.cpath  = package.cpath .. ';' .. tomoauto_directory .. '/lib/?.so;'
-package.path   = package.path  .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 
 local struct     = require 'struct'
 local MRC_IO_lib = require 'MRC_IO_lib'

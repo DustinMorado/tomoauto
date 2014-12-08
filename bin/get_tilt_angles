@@ -1,4 +1,4 @@
-#!/usr/bin/env lua
+#!/usr/bin/env talua
 --- Gets the tilt angles from the extended-header of a tilt series.
 --
 -- This program prints the tilt angles from the header or .mdoc file to the
@@ -11,9 +11,6 @@
 -- @author Dustin Morado
 -- @license GPLv3
 -- @release 0.2.10
-
-local tomoauto_directory = os.getenv('TOMOAUTOROOT')
-package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 
 local MRC_IO_lib = require 'MRC_IO_lib'
 

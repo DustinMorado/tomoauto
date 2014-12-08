@@ -1,4 +1,4 @@
-#!/usr/bin/env lua
+#!/usr/bin/env talua
 --- Aligns dose-fractioned images.
 --
 -- This is a program to align dose-fractioned images and produce a sum. It uses

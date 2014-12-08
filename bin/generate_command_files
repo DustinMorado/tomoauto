@@ -1,4 +1,4 @@
-#!/usr/bin/env lua
+#!/usr/bin/env talua
 --- Generates IMOD command files for tilt-series alignment and reconstruction
 --
 -- This is a program that writes the IMOD command files used by tomoauto so that
@@ -10,9 +10,6 @@
 -- @author Dustin Morado
 -- @license GPLv3
 -- @release 0.2.10
-
-local tomoauto_directory = os.getenv('TOMOAUTOROOT')
-package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 
 local COM_file_lib    = require 'COM_file_lib'
 local yago            = require 'yago'
