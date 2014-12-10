@@ -14,7 +14,7 @@
 
 local MRC_IO_lib = require 'MRC_IO_lib'
 
-if not arg[1] or not arg[2] then
+if not arg[1] then
    io.write('\nUsage: get_tilt_angles <image.st> [image.rawtlt]\n\n')
    os.exit(0)
 end
