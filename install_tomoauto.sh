@@ -75,7 +75,7 @@ tar xvJf "$lua_dir"/"$lua_install".tar.xz --directory "$lua_dir" > \
 cd "$lua_dir"/"$lua_install"
 make "$platform" > "$lua_dir"/lua_install.log 2>&1
 make install "$platform" >> "$lua_dir"/lua_install.log 2>&1
-cd -
+cd - > /dev/null
 ln -s "$tomoauto_dir"/lua/bin/lua "$tomoauto_dir"/bin/talua
 
 tar xvJf "$lua_dir"/"$lfs_install".tar.xz --directory "$lua_dir" > \
@@ -87,7 +87,7 @@ awk -v platform=${platform} \
 mv config config.bak && mv config.new config
 make > "$lua_dir"/lfs_install.log 2>&1
 make install >> "$lua_dir"/lfs_install.log 2>&1
-cd -
+cd - > /dev/null
 
 tar xvJf "$lua_dir"/"$struct_install".tar.xz --directory "$lua_dir" > \
     /dev/null 2>&1
@@ -98,7 +98,7 @@ awk -v platform=${platform} \
 mv makefile makefile.bak && mv makefile.new makefile
 make > "$lua_dir"/struct_install.log 2>&1
 make install >> "$lua_dir"/struct_install.log 2>&1
-cd -
+cd - > /dev/null
 
 if [ -f "$tomoauto_init_file" ]; then
     mv "$tomoauto_init_file" "$tomoauto_init_file".bak
