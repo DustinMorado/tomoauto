@@ -1,4 +1,4 @@
-#!/bin/sh 
+#!/bin/sh
 #------------------------------------------------------------------------------#
 #                             install_tomoauto.sh                              #
 #------------------------------------------------------------------------------#
@@ -70,31 +70,34 @@ fi
 
 set -e
 
-tar xvJf "$lua_dir"/"$lua_install".tar.xz --directory "$lua_dir" &> /dev/null
+tar xvJf "$lua_dir"/"$lua_install".tar.xz --directory "$lua_dir" > \
+    /dev/null 2>&1
 cd "$lua_dir"/"$lua_install"
-make "$platform" 2>&1 > "$lua_dir"/lua_install.log 
-make install "$platform" 2>&1 >> "$lua_dir"/lua_install.log
+make "$platform" > "$lua_dir"/lua_install.log 2>&1
+make install "$platform" >> "$lua_dir"/lua_install.log 2>&1
 cd -
 ln -s "$tomoauto_dir"/lua/bin/lua "$tomoauto_dir"/bin/talua
 
-tar xvJf "$lua_dir"/"$lfs_install".tar.xz --directory "$lua_dir"
+tar xvJf "$lua_dir"/"$lfs_install".tar.xz --directory "$lua_dir" > \
+    /dev/null 2>&1
 cd "$lua_dir"/"$lfs_install"
 awk -v platform=${platform} \
     '$0 ~ platform { sub(/#/, ""); print } \
     $0 !~ platform { print }' config > config.new
 mv config config.bak && mv config.new config
-make 2>&1 > "$lua_dir"/lfs_install.log
-make install 2>&1 >> "$lua_dir"/lfs_install.log
+make > "$lua_dir"/lfs_install.log 2>&1
+make install >> "$lua_dir"/lfs_install.log 2>&1
 cd -
 
-tar xvJf "$lua_dir"/"$struct_install".tar.xz --directory "$lua_dir"
+tar xvJf "$lua_dir"/"$struct_install".tar.xz --directory "$lua_dir" > \
+    /dev/null 2>&1
 cd "$lua_dir"/"$struct_install"
 awk -v platform=${platform} \
     '$0 ~ platform { sub(/#/, ""); print } \
     $0 !~ platform { print }' makefile > makefile.new
 mv makefile makefile.bak && mv makefile.new makefile
-make 2>&1 > "$lua_dir"/struct_install.log
-make install 2>&1 >> "$lua_dir"/struct_install.log
+make > "$lua_dir"/struct_install.log 2>&1
+make install >> "$lua_dir"/struct_install.log 2>&1
 cd -
 
 if [ -f "$tomoauto_init_file" ]; then
