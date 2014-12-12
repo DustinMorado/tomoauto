@@ -262,10 +262,7 @@ function tomoauto_lib.clean_up(input_filename, options_table)
       temporary_filename
    ))
    if options_table.m_ ~= "align" then
-      pcall(os.execute, string.format('rm -rf' .. string.rep(' %s ', 2),
-         defocus_filename,
-         tilt_xf_filename
-      ))
+      pcall(os.execute, string.format('rm -f %s', tilt_xf_filename))
    end
    if options_table.c then
        if options_table.m_ ~= "reconstruct" then
