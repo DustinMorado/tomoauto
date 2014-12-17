@@ -76,6 +76,7 @@ fi
 tar xvJf "$lua_dir"/"$lua_install".tar.xz --directory "$lua_dir" > \
     /dev/null 2>&1
 cd "$lua_dir"/"$lua_install"
+make clean > /dev/null 2>&1
 make "$platform" > "$lua_dir"/lua_install.log 2>&1
 make "$platform" install >> "$lua_dir"/lua_install.log 2>&1
 cd - > /dev/null
@@ -94,6 +95,7 @@ awk -v platform=${platform} \
     '$0 ~ platform { sub(/#/, ""); print } \
     $0 !~ platform { print }' config > config.new
 mv config config.bak && mv config.new config
+make clean > /dev/null 2>&1
 make > "$lua_dir"/lfs_install.log 2>&1
 make install >> "$lua_dir"/lfs_install.log 2>&1
 cd - > /dev/null
@@ -108,6 +110,7 @@ awk -v platform=${platform} \
     '$0 ~ platform { sub(/#/, ""); print } \
     $0 !~ platform { print }' makefile > makefile.new
 mv makefile makefile.bak && mv makefile.new makefile
+make clean > /dev/null 2>&1
 make > "$lua_dir"/struct_install.log 2>&1
 make install >> "$lua_dir"/struct_install.log 2>&1
 cd - > /dev/null
