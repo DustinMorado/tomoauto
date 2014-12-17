@@ -11,7 +11,7 @@
 printf "Hello \"$USER\"!\n"
 printf "This shell script handles the installation of tomoauto\n"
 printf "======================================================\n\n"
-printf "Where is tomoauto currently located?\n" 
+printf "Where is tomoauto currently located?\n"
 printf "\t(Default: \"$PWD\"): "
 read tomoauto_answer
 
@@ -70,14 +70,23 @@ fi
 
 set -e
 
+if [ -d "$lua_dir"/"$lua_install" ]; then
+    rm -rf "$lua_dir"/"$lua_install"
+fi
 tar xvJf "$lua_dir"/"$lua_install".tar.xz --directory "$lua_dir" > \
     /dev/null 2>&1
 cd "$lua_dir"/"$lua_install"
 make "$platform" > "$lua_dir"/lua_install.log 2>&1
-make install "$platform" >> "$lua_dir"/lua_install.log 2>&1
+make "$platform" install >> "$lua_dir"/lua_install.log 2>&1
 cd - > /dev/null
+if [ -L "$tomoauto_dir"/bin/talua ]; then
+    rm "$tomoauto_dir"/bin/talua
+fi
 ln -s "$tomoauto_dir"/lua/bin/lua "$tomoauto_dir"/bin/talua
 
+if [ -d "$lua_dir"/"$lfs_install" ]; then
+    rm -rf "$lua_dir"/"$lfs_install"
+fi
 tar xvJf "$lua_dir"/"$lfs_install".tar.xz --directory "$lua_dir" > \
     /dev/null 2>&1
 cd "$lua_dir"/"$lfs_install"
@@ -89,6 +98,9 @@ make > "$lua_dir"/lfs_install.log 2>&1
 make install >> "$lua_dir"/lfs_install.log 2>&1
 cd - > /dev/null
 
+if [ -d "$lua_dir"/"$struct_install" ]; then
+    rm -rf "$lua_dir"/"$struct_install"
+fi
 tar xvJf "$lua_dir"/"$struct_install".tar.xz --directory "$lua_dir" > \
     /dev/null 2>&1
 cd "$lua_dir"/"$struct_install"
@@ -109,7 +121,7 @@ case "$user_shell" in
     sh|bash|zsh|ksh)
         printf "export TOMOAUTOROOT=\"$tomoauto_dir\"\n" >> \
             "$tomoauto_init_file"
-        printf "export PATH=\"$tomoauto_dir/bin:$PATH\"\n" >> \
+        printf "export PATH=\"$tomoauto_dir/bin:\$PATH\"\n" >> \
             "$tomoauto_init_file"
         printf "export LUA_PATH=\"$tomoauto_dir/lib/?.lua;;\"\n" >> \
             "$tomoauto_init_file"
@@ -129,4 +141,4 @@ case "$user_shell" in
 esac
 
 printf "Installation complete! "
-printf "Source \"$tomoauto_init_file\" in your shell rc file if you'd like\n"
+printf "Source \n\t\"$tomoauto_init_file\"\nin your shell rc file if you'd like\n"
