@@ -1,4 +1,4 @@
-#!/usr/bin/env lua
+#!/usr/bin/env talua
 --- Changes 3dmod model file produced by RAPTOR to better erase gold.
 --
 -- This program takes a fiducial model generated automatically by RAPTOR and
@@ -11,9 +11,6 @@
 -- @author Dustin Morado
 -- @license GPLv3
 -- @release 0.2.10
-
-local tomoauto_directory = os.getenv('TOMOAUTOROOT')
-package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 
 local MRC_IO_lib  = require 'MRC_IO_lib'
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env lua
+#!/usr/bin/env talua
 --- Prints section of extended header to the screen.
 --
 -- This program prints information in the extended header to the screen. It is
@@ -11,9 +11,6 @@
 -- @author Dustin Morado
 -- @license GPLv3
 -- @release 0.2.10
-
-local tomoauto_directory = os.getenv('TOMOAUTOROOT')
-package.path     = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 
 local MRC_IO_lib = require 'MRC_IO_lib'
 local yago       = require 'yago'

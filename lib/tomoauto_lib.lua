@@ -10,10 +10,7 @@
 -- @release 0.2.10
 local tomoauto_lib = {}
 
-local tomoauto_directory = os.getenv('TOMOAUTOROOT')
-package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
-
-local COM_file_lib    = require 'COM_file_lib'
+local COM_file_lib = require 'COM_file_lib'
 local os, string = os, string
 
 local function display_help()

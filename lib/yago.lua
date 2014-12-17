@@ -1,5 +1,6 @@
 local string, table = string, table
 local yago = {}
+
 function yago.get_options(Arg, short_options, long_options)
    -- Short and long option tables
    local short_options_table = {}

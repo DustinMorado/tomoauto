@@ -1,4 +1,4 @@
-#!/usr/bin/env lua
+#!/usr/bin/env talua
 --- Removes SerialEM Montage piece coordinates from image extended header.
 --
 -- This is a program to erase the montage piece coordinates from the extended
@@ -9,9 +9,6 @@
 -- @author Dustin Morado
 -- @license GPLv3
 -- @release 0.2.10
-
-local tomoauto_directory = os.getenv('TOMOAUTOROOT')
-package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 
 local MRC_IO_lib = require 'MRC_IO_lib'
 

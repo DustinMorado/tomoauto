@@ -1,4 +1,4 @@
-#!/usr/bin/env lua
+#!/usr/bin/env talua
 --- Prints MRC standard header to screen.
 -- This program prints the information of the standard header in an MRC file.
 -- Similar to the IMOD command header, although this one puts out a littel more
@@ -10,9 +10,6 @@
 -- @author Dustin Morado
 -- @license GPLv3
 -- @release 0.2.10
-
-local tomoauto_directory = os.getenv('TOMOAUTOROOT')
-package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 
 local MRC_IO_lib   = require 'MRC_IO_lib'
 local io, string = io, string

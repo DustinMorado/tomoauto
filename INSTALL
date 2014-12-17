@@ -1,0 +1,7 @@
+To install tomoauto place the directory where you want. 
+
+Then run the shell script install_tomoauto.sh. 
+ (It works easiest when it's run in the tomoauto directory.) 
+
+If you want access to tomoauto's commands at startup: 
+source tomoauto_init.<your shell> in your shell's startup rc file.

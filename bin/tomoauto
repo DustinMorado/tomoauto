@@ -1,4 +1,4 @@
-#!/usr/bin/env lua
+#!/usr/bin/env talua
 --- Automatically processes, aligns, and reconstructs tilt series.
 --
 -- This program uses IMOD, RAPTOR and TOMO3D to automatically handle the
@@ -12,9 +12,6 @@
 -- @author Dustin Morado
 -- @license GPLv3
 -- @release 0.2.10
-
-local tomoauto_directory = os.getenv('TOMOAUTOROOT')
-package.path   = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 
 local tomoauto_lib = require 'tomoauto_lib'
 local yago         = require 'yago'

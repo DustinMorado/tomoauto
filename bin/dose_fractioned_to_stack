@@ -1,4 +1,4 @@
-#!/usr/bin/env lua
+#!/usr/bin/env talua
 --- Takes aligned dose-fractioned sums and produces a tilt series.
 --
 -- This is a program to take a set of drift-corrected dose-fractioned sum images
@@ -13,9 +13,6 @@
 -- @author Dustin Morado
 -- @license GPLv3
 -- @release 0.2.10
-
-local tomoauto_directory = os.getenv('TOMOAUTOROOT')
-package.path = package.path .. ';' .. tomoauto_directory .. '/lib/?.lua;'
 
 local MRC_IO_lib   = require 'MRC_IO_lib'
 local lfs          = require 'lfs'
