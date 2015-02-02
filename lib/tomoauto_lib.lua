@@ -1,7 +1,7 @@
 --- Main tomoauto module.
 -- This program automates the alignment of raw tilt series using the programs
--- IMOD, RAPTOR and TOMO3D. 
--- 
+-- IMOD, RAPTOR and TOMO3D.
+--
 -- Dependencies: `COM_file_lib`
 --
 -- @module tomoauto_lib
@@ -24,7 +24,7 @@ local function display_help()
       '-i, --iter     \tThe number of SIRT iterations to run [default 30]\n' ..
       '-l, --config   \tSources a local config file\n' ..
       '-m, --mode     \tSelect which mode you want to operate\n' ..
-      'continued:  \tavailable modes (erase, align, reconstruct).\n' ..  
+      'continued:  \tavailable modes (erase, align, reconstruct).\n' ..
       '-n, --new      \tUses autofidseed as opposed to RAPTOR.\n' ..
       '-p, --procnum  \tUses <int> processors to speed up tilt\n' ..
       '-s, --SIRT     \tUse SIRT to reconstruct [default WBP]\n' ..
@@ -258,9 +258,6 @@ function tomoauto_lib.clean_up(input_filename, options_table)
       log_filenames,
       temporary_filename
    ))
-   if options_table.m_ ~= "align" then
-      pcall(os.execute, string.format('rm -f %s', tilt_xf_filename))
-   end
    if options_table.c then
        if options_table.m_ ~= "reconstruct" then
           pcall(os.execute, string.format('mv %s %s', ctfplotter_check_filename,
@@ -335,11 +332,11 @@ function tomoauto_lib.process(input_filename, fiducial_diameter, options_table)
       run(string.format('submfg %s_ccderaser.com', basename))
       is_file(ccd_erased_filename)
       run(string.format('mv %s %s', input_filename, original_filename))
-      run(string.format('mv %s %s', ccd_erased_filename, input_filename)) 
+      run(string.format('mv %s %s', ccd_erased_filename, input_filename))
 
       -- Here we run the Coarse alignment as done in etomo
-      run(string.format('submfg %s_tiltxcorr.com', basename)) 
-      run(string.format('submfg %s_xftoxg.com', basename)) 
+      run(string.format('submfg %s_tiltxcorr.com', basename))
+      run(string.format('submfg %s_xftoxg.com', basename))
       run(string.format('submfg %s_prenewstack.com', basename))
       is_file(pre_aligned_filename)
       if options_table.r then
