@@ -112,7 +112,7 @@ function dose_fractioned_to_stack(input_filename)
       number_of_sections = #MRC_table
    end
 
-   for i = 1, number_of_sections do
+   for i = number_of_sections, 1, -1 do
       local file = io.open(MRC_table[i], 'r')
       if file ~= nil then
          file:close()
