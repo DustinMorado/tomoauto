@@ -1,7 +1,25 @@
-To install tomoauto place the directory where you want. 
+################################################################################
+#                                                                              #
+#                      tomoauto installation instructions                      #
+#                                                                              #
+#------------------------------------------------------------------------------#
+# AUTHOR: Dustin Reed Morado                                                   #
+# VERSION: 0.2.20                                                              #
+# DATE: 12.02.2015                                                             #
+################################################################################
 
-Then run the shell script install_tomoauto.sh. 
- (It works easiest when it's run in the tomoauto directory.) 
+1. Move the tomoauto directory to the location you want it to be installed.
+   - e.g. mv tomoauto ~/opt
 
-If you want access to tomoauto's commands at startup: 
-source tomoauto_init.<your shell> in your shell's startup rc file.
+2. Change into the tomoauto directory.
+   - e.g. cd ~/opt/tomoauto
+
+3. Execute the install_tomoauto.sh script and follow the prompts.
+   - e.g. ./install_tomoauto.sh
+
+4. To use tomoauto first source the resulting tomoauto_init shell script
+   - e.g. source ~/opt/tomoauto/tomoauto_init.zsh
+
+5. [Optional] If you want access to tomoauto at startup add step 4 to your
+   approriate shell startup file.
+   - e.g. echo source ~/opt/tomoauto/tomoauto_init.zsh >> ~/.zshrc

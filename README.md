@@ -1,9 +1,9 @@
 #tomoauto
-## Version 0.2.15
+## Version 0.2.20
 ### About
 tomoauto is a wrapper-library written in Lua to automate the alignment,
 correction and recontstruction of cryo-electron tomography (Cryo-ET)
-tilt-series. Coupled with high-throughput collection, tomoauto drastically
+tilt-series. Coupled with high-throughput collection, tomoauto
 speeds up data processing so that more time can be spent on data analysis.
 
 tomoauto is simply a script that handles the use of several popular software
@@ -14,9 +14,13 @@ fashion in our lab for the last 3 years with good results.
 Recent releases have expanded the original functionality to handle direct
 detector cameras, dose-fractionation, and more complex operations on MRC files.
 
-It is a very rough release and has many TODOs that have yet to be implemented.
-
 ### Change Log
+#### 0.2.20
+ * Update for Lua 5.3.0 release
+ * Added a CTF test-suite comparing CTFFIND4 and CTFPLOTTER
+ * Added programs to handle motion-correction with MOTIONCORR
+ * No longer need struct library
+ * bit32 library was deprecated and therefore removed
 #### 0.2.15
  * Wrote a new installation script and packaged with sources for lua and needed
    Lua libraries.
@@ -50,6 +54,12 @@ It is a very rough release and has many TODOs that have yet to be implemented.
 
 **[TOMO3D]
 (https://sites.google.com/site/3demimageprocessing/software)**
+
+**[CTFFIND4]
+(http://grigoriefflab.janelia.org/ctffind4)**
+
+**[MOTIONCORR]
+(http://cryoem.ucsf.edu/software/driftcorr.html)**
 
 ----
 
@@ -92,10 +102,24 @@ tomography. J. Struct. Biol. 170:570-575.
 
 [10.1016/j.jsb.2010.01.008](http://dx.doi.org/10.1016/j.jsb.2010.01.008)
 
-JI Agulleiro, JJ Fernandez. (2012) Evaluation of a multicore-optimized
+J.I. Agulleiro, J.J. Fernandez. (2012) Evaluation of a multicore-optimized
 implementation for tomographic reconstruction. PLoS ONE  7(11):e48261.
 
 [10.1371/journal.pone.0048261](http://dx.doi.org/10.1371/journal.pone.0048261)
+
+**CTFFIND4**
+
+J.A. Mindell, N. Grigorieff. (2003) Accurate determination of local defocus and
+specimen tilt in electron microscopy. J. Struct. Biol. 142(3):334-47.
+
+[doi:10.1016/S1047-8477(03)00069-8](http://dx.doi.org/10.1016/S1047-8477(03)00069-8)
+
+**MOTIONCORR**
+
+X. Li, et al. (2013) Electron counting and beam-induced motion correction enable
+near-atomic-resolution single-particle cryo-EM. Nat. Methods 10(6):584-90.
+
+[doi: 10.1038/nmeth.2472](http://dx.doi.org/doi: 10.1038/nmeth.2472)
 
 ----
 
