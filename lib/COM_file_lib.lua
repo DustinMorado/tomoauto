@@ -314,7 +314,7 @@ local function write_tiltalign(input_filename, header)
         basename))
     command_file:write(string.format('RotationAngle %4.2f\n\n',
         header.tilt_axis))
-    ---[[
+    --[[ Commenting out for now because no longer collecting bidirectionally
     command_file:write(string.format('SeparateGroup %d-%d\n\n', 1,
         header.split_angle))
     --]]

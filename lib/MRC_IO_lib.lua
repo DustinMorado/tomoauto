@@ -632,6 +632,7 @@ function MRC_IO_lib.get_required_header(input_filename, fiducial_diameter)
       fiducial_diameter / header.pixel_size + 0.5)
 
    -- Find the section at 0 degrees to split alignments
+   --[[ Commented out since we are no longer collectiing bidirectionally
    for i = 1, header.nz do
       if math.floor(extended_header[i].a_tilt) == 0 then
          header.split_angle = i
@@ -641,6 +642,7 @@ function MRC_IO_lib.get_required_header(input_filename, fiducial_diameter)
       error(string.format('Error: Could not find a zero degree tilt for %s.\n',
          input_filename))
    end
+   --]]
    return header
 end
 return MRC_IO_lib
