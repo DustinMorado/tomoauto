@@ -106,13 +106,10 @@ function dose_fractioned_to_stack(input_filename)
    end
    log_file:close()
 
-   if #MRC_table ~= #tilt_angle_table then
-      error(string.format(
-         '\nError: %s has unequal file and tilt angle references.\n\n',
-         log_filename), 0)
-   else
-      number_of_sections = #MRC_table
+   while #MRC_table > #tilt_angle_table do
+     table.remove(MRC_table)
    end
+   number_of_sections = #MRC_table
 
    for i = 1, number_of_sections do
       local file = io.open(MRC_table[i], 'r')
@@ -154,10 +151,10 @@ function dose_fractioned_to_stack(input_filename)
 
    header          = MRC_IO_lib.get_header(input_filename)
    extended_header = MRC_IO_lib.get_extended_header(input_filename)
-   
+
    --[[
    -- SerialEM beta 3.4 bug work around
-   for i = 1, number_of_sections do 
+   for i = 1, number_of_sections do
       if math.floor(new_tilt_angle_table[i]) == -2 then
          table.insert(extended_header, i, {})
          for k,v in pairs(extended_header[i - 1]) do
