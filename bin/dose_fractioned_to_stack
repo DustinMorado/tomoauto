@@ -67,7 +67,7 @@ function dose_fractioned_to_stack(input_filename)
       local is_data_loss  = string.find(line, 'This%sRecord[%s%w]+data%sloss')
       local is_low_count  = string.find(line, 'sufficient%scount')
       local tilt_angle    = string.match(line, 'Tilt%s=%s([%-%d%.]+)')
-      local is_terminated = string.find(line, 'TERMINATING')
+      --local is_terminated = string.find(line, 'TERMINATING')
 
       if true_start then
          MRC_table = {}
@@ -96,11 +96,13 @@ function dose_fractioned_to_stack(input_filename)
          table.insert(tilt_angle_table, tonumber(tilt_angle))
       end
 
+      --[[
       if is_terminated then
          error(string.format(
             '\nError: Original stack %s terminated so we will too.\n\n',
             input_filename), 0)
       end
+      --]]
    end
    log_file:close()
 
