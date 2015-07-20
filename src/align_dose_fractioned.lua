@@ -71,7 +71,7 @@ local newstack = {
   OutputFile = { use = true, value = 'TOMOAUTO{basename}.ali' },
   TransformFile = { use = true, value = 'TOMOAUTO{basename}.xg' },
   ModeToOutput = { use = true, value = 2 },
-  FloatDensities = { use = true, value = nil },
+  FloatDensities = { use = true, value = 2 },
 }
 
 Config.newstack:clear()
@@ -105,3 +105,4 @@ end
 Utils.run('rm ' .. input_mrc.basename .. '.xf')
 Utils.run('rm ' .. input_mrc.basename .. '.xg')
 Utils.run('rm ' .. input_mrc.basename .. '.ali')
+Utils.run('rm ' .. input_mrc.basename .. '.xcxf')

@@ -358,11 +358,11 @@ Config.xftoxg = {
 }
 
 Config.xfalign = {
-  Name = 'TOMOAUTO{basename}_xftoxg.com',
+  Name = 'TOMOAUTO{basename}_xfalign.com',
   'CommandLine',
   CommandLine = { use = true, value = '$xfalign -StandardInput' },
   'InputImageFile',
-  InputImagefile = { use = true, value = 'TOMOAUTO{abspath}' },
+  InputImageFile = { use = true, value = 'TOMOAUTO{abspath}' },
   'OutputTransformFile',
   OutputTransformFile = { use = true, value = 'TOMOAUTO{basename}.xf' },
   'SizeToAnalyze',

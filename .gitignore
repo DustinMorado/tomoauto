@@ -1,3 +1,8 @@
 *~
 *.swp
 *.bak
+
+bin/
+include/
+lib/
+man/

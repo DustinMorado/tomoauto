@@ -51,6 +51,7 @@ if not Utils.is_file(options.input) then
 end
 
 local input_mrc = MRCIO:new_mrc(options.input)
+local output_mrc = MRCIO:new_mrc(options.output)
 local log_filename = input_mrc.basename .. '.log'
 
 if not input_mrc.has_mdoc and not Utils.is_file(log_filename) then
@@ -66,6 +67,11 @@ if input_mrc.has_mdoc then
       table.insert(subframes, string.match(line, timestamp_regex))
     end
   end
+
+else
+   local log_file = io.open(log_filename, 'r')
+   for line in log_file:lines('*l') do
+      if string.match(line, 'Opened')
 --- Takes aligned dose-fractioned sums and produces a tilt-series.
 -- Reads the log output by SerialEM in collecting dose-fractioned tilt series
 -- and creates a tilt series using the corresponding drift-corrected sums. Then

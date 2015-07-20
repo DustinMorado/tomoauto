@@ -10,7 +10,7 @@ PLAT= none
 # so take care if INSTALL_TOP is not an absolute path. See the local target.
 # You may want to make INSTALL_LMOD and INSTALL_CMOD consistent with
 # LUA_ROOT, LUA_LDIR, and LUA_CDIR in luaconf.h.
-INSTALL_TOP= /usr/local
+INSTALL_TOP= ${TOMOAUTOROOT}
 INSTALL_BIN= $(INSTALL_TOP)/bin
 INSTALL_INC= $(INSTALL_TOP)/include
 INSTALL_LIB= $(INSTALL_TOP)/lib
@@ -39,7 +39,7 @@ RM= rm -f
 PLATS= aix bsd c89 freebsd generic linux macosx mingw posix solaris
 
 # What to install.
-TO_BIN= lua luac
+TO_BIN= talua taluac
 TO_INC= lua.h luaconf.h lualib.h lauxlib.h lua.hpp
 TO_LIB= liblua.a
 TO_MAN= lua.1 luac.1
