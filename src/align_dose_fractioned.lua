@@ -8,138 +8,100 @@
 -- @script align_dose_fractioned
 -- @author Dustin Morado
 -- @license GPLv3
--- @release 0.2.10
+-- @release 0.2.30
 
 local io, os, string = io, os, string
-local struct = require 'struct'
+local Config = require('tomoauto_config')
+local Utils = require('tomoauto_utils')
+local MRCIO = require('tomoauto_mrcio')
+local yalgo = require('yalgo')
+
+local parser = yalgo:new_parser('Use IMOD to align dose-fractionated data.')
+parser:add_argument({
+  name = 'input',
+  is_positional = true,
+  is_required = true,
+  description = 'Input dose-fractionated data stack',
+  meta_value = 'INPUT.mrc'
+})
+
+parser:add_argument({
+  name = 'output',
+  is_positional = true,
+  description = 'Output aligned micrograph',
+  default_value = 'TOMOAUTO{basename}_driftcorr.mrc',
+  meta_value = 'OUTPUT.mrc'
+})
+
+local options = parser:get_arguments()
+
+if not Utils.is_file(options.input) then
+  error('ERROR: align_dose_fractioned: Input file does not exist.\n')
+end
+
+local input_mrc = MRCIO:new_mrc(options.input)
 
 -- xfalign options
-local reduce_by_binning = 2
-local pre_filter_option = '0.01 0.02 0 0.3'
+local xfalign = {
+  InputImageFile = { use = true, value = 'TOMOAUTO{basename}.mrc' },
+  OutputTransformFile = { use = true, value = 'TOMOAUTO{basename}.xf' },
+  ReduceByBinning = { use = true, value = 2 },
+  PreCrossCorrelation = { use = true, value = nil },
+  XcorrFilter = { use = true, value = { 0.01, 0.02, 0, 0.3 } },
+}
+
+Config.xfalign:clear()
+Config.xfalign:update(xfalign)
+Config.xfalign:run(input_mrc)
 
 -- xftoxg options
-local number_to_fit = 0
+local xftoxg = {
+  InputFile = { use = true, value = 'TOMOAUTO{basename}.xf' },
+  GOutputFile = { use = true, value = 'TOMOAUTO{basename}.xg' },
+  NumberToFit = { use = true, value = 0 },
+}
+
+Config.xftoxg:clear()
+Config.xftoxg:update(xftoxg)
+Config.xftoxg:run(input_mrc)
 
 -- newstack options
-local mode_to_output  = 2
-local float_densities = 2
+local newstack = {
+  InputFile = { use = true, value = 'TOMOAUTO{basename}.mrc' },
+  OutputFile = { use = true, value = 'TOMOAUTO{basename}.ali' },
+  TransformFile = { use = true, value = 'TOMOAUTO{basename}.xg' },
+  ModeToOutput = { use = true, value = 2 },
+  FloatDensities = { use = true, value = nil },
+}
+
+Config.newstack:clear()
+Config.newstack:update(newstack)
+Config.newstack:run(input_mrc)
 
 -- xyzproj options
-local axis_to_tilt_around = 'Y'
+local xyzproj = {
+  InputFile = { use = true, value = 'TOMOAUTO{basename}.ali' },
+  OuputFile = { use = true, value = options.output },
+  AxisToTiltAround = { use = true, value = 'Y' },
+}
 
-local function write_xfalign(input_filename)
-   local basename = string.sub(input_filename, 1, -5)
-   local command_filename = string.format('%s_xfalign.com', basename)
-   local command_file = assert(io.open(command_filename, 'w'))
-   command_file:write(string.format('$xfalign -StandardInput\n\n'))
-   command_file:write(string.format('InputImageFile %s\n\n', input_filename))
-   command_file:write(string.format('OutputTransformFile %s.xf\n\n', basename))
-   command_file:write(string.format('ReduceByBinning %s\n\n', 
-      reduce_by_binning))
-   command_file:write(string.format('PreCrossCorrelation\n\n'))
-   command_file:write(string.format('XcorrFilter %s\n\n', pre_filter_option))
-   command_file:close()
+Config.xyzproj:clear()
+Config.xyzproj:update(xyzproj)
+Config.xyzproj:run(input_mrc)
+
+local log_filename = 'align_dose_fractioned_' .. input_mrc.basename .. '.log'
+local log_file = io.open(log_filename, 'w')
+for _, log in ipairs({ 'xfalign', 'xftoxg', 'newstack', 'xyzproj' }) do
+  local command_filename = input_mrc.basename .. '_' .. log .. '.com'
+  local sublog_filename = input_mrc.basename .. '_' .. log .. '.log'
+  local sublog_file = io.open(sublog_filename, 'r')
+  sublog_data = sublog_file:read('*a')
+  sublog_file:close()
+  log_file:write(sublog_data)
+  Utils.run('rm ' .. sublog_filename)
+  Utils.run('rm ' .. command_filename)
 end
 
-local function write_xftoxg(input_filename)
-   local basename = string.sub(input_filename, 1, -5)
-   local command_filename = string.format('%s_xftoxg.com', basename)
-   local command_file = assert(io.open(command_filename, 'w'))
-   command_file:write(string.format('$xftoxg -StandardInput\n\n'))
-   command_file:write(string.format('InputFile %s.xf\n\n', basename))
-   command_file:write(string.format('GOutputFile %s.xg\n\n', basename))
-   command_file:write(string.format('NumberToFit %s\n\n', number_to_fit))
-   command_file:close()
-end
-
-local function write_newstack(input_filename)
-   local basename = string.sub(input_filename, 1, -5)
-   local command_filename = string.format('%s_newstack.com', basename)
-   local command_file = assert(io.open(command_filename, 'w'))
-   command_file:write(string.format('$newstack -StandardInput\n\n'))
-   command_file:write(string.format('InputFile %s\n\n', input_filename))
-   command_file:write(string.format('OutputFile %s.ali\n\n', basename))
-   command_file:write(string.format('TransformFile %s.xg\n\n', basename))
-   command_file:write(string.format('ModeToOutput %s\n\n', mode_to_output))
-   command_file:write(string.format('FloatDensities %s\n\n', float_densities))
-   command_file:close()
-end
-
-local function write_xyzproj(input_filename)
-   local basename = string.sub(input_filename, 1, -5)
-   local command_filename = string.format('%s_xyzproj.com', basename)
-   local command_file = assert(io.open(command_filename, 'w'))
-   command_file:write(string.format('$xyzproj -StandardInput\n\n'))
-   command_file:write(string.format('InputFile %s.ali\n\n', basename))
-   command_file:write(string.format('OutputFile %s_driftcorr.mrc\n\n', 
-      basename))
-   command_file:write(string.format('AxisToTiltAround %s\n\n',
-      axis_to_tilt_around))
-   command_file:close()
-end
-
-local function run(command)
-   local status, exit, signal = os.execute(command)
-   if not status or signal ~= 0 then
-      error(string.format('\nError: %s failed.\n', command))
-   end
-   return status, exit, signal
-end
-
---- Aligns dose-fractioned images.
--- Writes IMOD command files to run xfalign, xftoxg, and newstack to generate an
--- aligned dose-fractioned sum image.
--- @param input_filename dose-fractioned stack to align and sum e.g. 'stack.mrc'
-function align_dose_fractioned(input_filename)
-   local basename = string.sub(input_filename, 1, -5)
-   write_xfalign(input_filename)
-   write_xftoxg(input_filename)
-   write_newstack(input_filename)
-   write_xyzproj(input_filename)
-   run(string.format('submfg -s %s_xfalign.com', basename))
-   run(string.format('submfg -s %s_xftoxg.com', basename))
-   run(string.format('submfg -s %s_newstack.com', basename))
-   run(string.format('submfg -s %s_xyzproj.com', basename))
-   -- Clean up the command files, log files, transforms, and aligned stack
-   local log_filename = string.format('align_dose_fractioned_%s.log', basename)
-   local log_file = assert(io.open(log_filename, 'w'))
-   local xfalign_log_filename = string.format('%s_xfalign.log', basename)
-   local xfalign_log_file = assert(io.open(xfalign_log_filename, 'r'))
-   local xfalign_log = xfalign_log_file:read('*a')
-   xfalign_log_file:close()
-   log_file:write(xfalign_log)
-   xfalign_log = nil
-   local xftoxg_log_filename = string.format('%s_xftoxg.log', basename)
-   local xftoxg_log_file = assert(io.open(xftoxg_log_filename, 'r'))
-   local xftoxg_log = xftoxg_log_file:read('*a')
-   xftoxg_log_file:close()
-   log_file:write(xftoxg_log)
-   xftoxg_log = nil
-   local newstack_log_filename = string.format('%s_newstack.log', basename)
-   local newstack_log_file = assert(io.open(newstack_log_filename, 'r'))
-   local newstack_log = newstack_log_file:read('*a')
-   newstack_log_file:close()
-   log_file:write(newstack_log)
-   newstack_log = nil
-   local xyzproj_log_filename = string.format('%s_xyzproj.log', basename)
-   local xyzproj_log_file = assert(io.open(xyzproj_log_filename, 'r'))
-   local xyzproj_log = xyzproj_log_file:read('*a')
-   xyzproj_log_file:close()
-   log_file:write(xyzproj_log)
-   xyzproj_log = nil
-   run(string.format('rm *com %s*log %s.xf %s.xg %s.ali', basename, basename,
-      basename, basename))
-end
-
-if not arg[1] then
-   io.write('\nUsage: align_dose_fractioned <image.mrc>\n')
-   os.exit(0)
-end
-
-local status, err = pcall(align_dose_fractioned, arg[1])
-if not status then
-   io.stderr:write(err)
-   os.exit(1)
-else
-   os.exit(0)
-end
+Utils.run('rm ' .. input_mrc.basename .. '.xf')
+Utils.run('rm ' .. input_mrc.basename .. '.xg')
+Utils.run('rm ' .. input_mrc.basename .. '.ali')

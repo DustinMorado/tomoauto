@@ -12,53 +12,68 @@
 -- @script dose_fractioned_to_stack
 -- @author Dustin Morado
 -- @license GPLv3
--- @release 0.2.10
+-- @release 0.2.30
 
-local MRC_IO_lib   = require 'MRC_IO_lib'
-local lfs          = require 'lfs'
 local io, string, table = io, string, table
+local MRCIO = require('tomoauto_mrcio')
+local Config = require('tomoauto_config')
+local Utils = require('tomoauto_utils')
+local yalgo = require('yalgo')
 
-local function run(command)
-   local status, exit, signal = os.execute(command)
-   if not status or signal ~= 0 then
-      error(string.format('\nError: %s failed.\n', command))
-   end
-   return status, exit, signal
+local parser = yalgo:new_parser('Make motion corrected tilt-series.')
+parser:add_argument({
+  name = 'input',
+  is_positional = true,
+  is_required = true,
+  description = 'Input non motion corrected tilt-series from SerialEM',
+  meta_value = 'INPUT.st'
+})
+
+parser:add_argument({
+  name = 'output',
+  is_positional = true,
+  default_value = 'TOMOAUTO{basename}_driftcorr.st',
+  description = 'Output motion corrected tilt-series',
+  meta_value = 'OUTPUT.st'
+})
+
+parser:add_argument({
+  name = 'run_motioncorr',
+  long_option = '--MOTIONCORR',
+  short_option = '-M',
+  description = 'Run MOTIONCORR on non corrected sub-frames if needed',
+})
+
+local options = parser:get_arguments()
+
+if not Utils.is_file(options.input) then
+  error('ERROR: dose_fractioned_to_stack: Input file does not exist.\n')
 end
 
-local function is_file(filename)
-   local file = io.open(filename, 'r')
-   if file ~= nil then
-      io.close(file)
-      return true
-   else
-      error(string.format('\nError: File %s not found.\n\n', filename))
-   end
+local input_mrc = MRCIO:new_mrc(options.input)
+local log_filename = input_mrc.basename .. '.log'
+
+if not input_mrc.has_mdoc and not Utils.is_file(log_filename) then
+  error('ERROR: dose_fractioned_to_stack: No mdoc or log file to make stack.\n')
 end
 
+local timestamp_regex = '(%u%l%l%d%d_%d%d%.%d%d%.%d%d%.mrc)$'
+local subframes = {}
+if input_mrc.has_mdoc then
+  local mdoc_file = io.open(input_mrc.mdoc_filename, 'r')
+  for line in mdoc_file:lines('*l') do
+    if string.match(line, 'SubFramePath') then
+      table.insert(subframes, string.match(line, timestamp_regex))
+    end
+  end
 --- Takes aligned dose-fractioned sums and produces a tilt-series.
 -- Reads the log output by SerialEM in collecting dose-fractioned tilt series
 -- and creates a tilt series using the corresponding drift-corrected sums. Then
 -- copies the header information from the initial tilt-series that is lost in
 -- drift-correction and writes it to the header of the new tilt-series.
 -- @param input_filename initial tilt-series collected e.g. 'image.st'
-function dose_fractioned_to_stack(input_filename)
-   local basename             = string.sub(input_filename, 1, -4)
-   local log_filename         = basename .. '.log'
-   local new_stack_filename   = basename .. '_driftcorr.st'
-   local filelist_name        = basename .. '_filelist'
    local temporary_filename   = basename .. '_temp.st'
-   local number_of_sections   = nil
    local shift                = 0
-   local MRC_table            = {}
-   local new_MRC_table        = {}
-   local tilt_angle_table     = {}
-   local new_tilt_angle_table = {}
-   local header               = {}
-   local extended_header      = {}
-
-   is_file(log_filename)
-   is_file(input_filename)
 
    local log_file = io.open(log_filename, 'r')
    for line in log_file:lines('*l') do
