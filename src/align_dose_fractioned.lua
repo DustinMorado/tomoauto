@@ -33,6 +33,15 @@ parser:add_argument({
   meta_value = 'OUTPUT.mrc'
 })
 
+parser:add_argument({
+  name = 'local_config',
+  long_option = '--local-config',
+  short_option = '-L',
+  description = 'Use local configuration file.',
+  has_argument = true,
+  meta_value = 'CONFIG_FILE'
+})
+
 local options = parser:get_arguments()
 
 if not Utils.is_file(options.input) then
@@ -52,7 +61,6 @@ local xfalign = {
 
 Config.xfalign:clear()
 Config.xfalign:update(xfalign)
-Config.xfalign:run(input_mrc)
 
 -- xftoxg options
 local xftoxg = {
@@ -63,7 +71,6 @@ local xftoxg = {
 
 Config.xftoxg:clear()
 Config.xftoxg:update(xftoxg)
-Config.xftoxg:run(input_mrc)
 
 -- newstack options
 local newstack = {
@@ -76,17 +83,24 @@ local newstack = {
 
 Config.newstack:clear()
 Config.newstack:update(newstack)
-Config.newstack:run(input_mrc)
 
 -- xyzproj options
 local xyzproj = {
   InputFile = { use = true, value = 'TOMOAUTO{basename}.ali' },
-  OuputFile = { use = true, value = options.output },
+  OutputFile = { use = true, value = options.output },
   AxisToTiltAround = { use = true, value = 'Y' },
 }
 
 Config.xyzproj:clear()
 Config.xyzproj:update(xyzproj)
+
+if options.local_config then
+  Config:load_local_config(options.local_config)
+end
+
+Config.xfalign:run(input_mrc)
+Config.xftoxg:run(input_mrc)
+Config.newstack:run(input_mrc)
 Config.xyzproj:run(input_mrc)
 
 local log_filename = 'align_dose_fractioned_' .. input_mrc.basename .. '.log'
