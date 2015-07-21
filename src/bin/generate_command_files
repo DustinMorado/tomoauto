@@ -1,0 +1,47 @@
+#!/usr/bin/env talua
+--- Generates IMOD command files for tilt-series alignment and reconstruction
+--
+-- This is a program that writes the IMOD command files used by tomoauto so that
+-- the process of reconstruction can be stepped through at the command line.
+--
+-- Dependencies: `COM_file_lib`, `yago`
+--
+-- @script generate_command_files
+-- @author Dustin Morado
+-- @license GPLv3
+-- @release 0.2.10
+
+local config = require('tomoauto.config')
+local yalgo = require('yalgo')
+local lfs = require('lfs')
+
+local os, string = os, string
+
+local parser = yalgo:new_parser('Write the command files as used by tomoauto.')
+parser:add_argument({
+  name = 'input',
+  description = 'Input tilt-series for processing.',
+  meta_value = 'INPUT.st',
+  is_positional = true,
+  is_required = true
+})
+
+parser:add_argument({
+  name = 'fiducial_diameter_nm',
+  description = 'Fiducial marker diameter in nm.',
+  meta_value = 'DIAMETER',
+  is_positional = true,
+  default_value = config.tomoauto.fiducial_diameter_nm
+})
+
+parser:add_argument({
+  name = 'local_config',
+  description = 'Use local configuration file.',
+  meta_value = 'CONFIG_FILE',
+  long_option = '--local-config',
+  short_option = '-L',
+  has_argument = true
+})
+
+local options = parser:get_arguments()
+--vim:tw=80:ts=8:sts=2:sw=2:noet:ft=lua

@@ -300,13 +300,28 @@ end
 
 function MRCIO:set_pixel_size ()
   local mx, xlen = self.header.mx, self.header.xlen
-  local pixel_size_x = xlen / mx
+  local pixel_size_x
+  if mx == 0 then
+    pixel_size_x = 1.0
+  else
+    pixel_size_x = xlen / mx
+  end
 
   local my, ylen = self.header.my, self.header.ylen
-  local pixel_size_y = ylen / my
+  local pixel_size_y
+  if my == 0 then
+    pixel_size_y = 1.0
+  else
+    pixel_size_y = ylen / my
+  end
 
   local mz, zlen = self.header.mz, self.header.zlen
-  local pixel_size_z = zlen / mz
+  local pixel_size_z
+  if mz == 0 then
+    pixel_size_z = 1.0
+  else
+    pixel_size_z = zlen / mz
+  end
 
   local extended_header_pixel_size
   if self.extended_header and #self.extended_header ~= 0 then
@@ -478,6 +493,172 @@ function MRCIO:write (output_filename)
 
   mrc:close()
   output_file:close()
+end
+
+function MRCIO:add_label (label)
+  if not label or type(label) ~= 'string' then
+    error('ERROR: MRCIO:add_label: Label must be given and be a string type.\n')
+  end
+
+  label = string.format('%-80s', label)
+  label = string.sub(label, 1, 80)
+  if self.header.nlabl ~= 10 then
+    self.header.nlabl = self.header.nlabl + 1
+    local label_field = 'label_' .. self.header.nlabl
+    self.header[label_field] = label
+
+  else
+    self.header.label_3 = label
+  end
+end
+
+function MRCIO:add_extended_header_field (field, ...)
+  if not self.is_IMOD then
+    error('ERROR: MRCIO:add_extended_header_field: Cannot add extended ' ..
+          'header field to an Agard/FEI style extended header.\n')
+  end
+
+  local valid_fields = {
+    a_tilt = true,
+    montage = true,
+    stage = true,
+    magnification = true,
+    intensity = true,
+    exp_dose = true
+  }
+
+  if not valid_fields[field] then
+    error('ERROR: MRCIO:add_extended_header_field: Invalid field given.\n')
+  end
+
+  if not self.extended_header then
+    self.extended_header = {}
+  end
+
+  if field == 'a_tilt' then
+    local a_tilt = ...
+    if not a_tilt or type(a_tilt) ~= 'table' or #a_tilt ~= self.header.nz then
+      error('ERROR: MRCIO:add_extended_header_field: Invalid field table.\n')
+    end
+
+    for i, value in ipairs(a_tilt) do
+      if not self.extended_header[i] then
+        self.extended_header[i] = {}
+      end
+
+      self.extended_header[i].a_tilt = value
+    end
+
+    self.header.nint = self.header.nint + 2
+    self.header.nreal = self.header.nreal + 1
+    self.header.Next = self.header.Next + (self.header.nz * 2)
+
+  elseif field == 'montage' then
+    local montage_x, montage_y, montage_z = ...
+    if not montage_x or not montage_y or not montage_z or
+       type(montage_x) ~= 'table' or
+       type(montage_y) ~= 'table' or
+       type(montage_z) ~= 'table' or
+       #montage_x ~= self.header.nz or
+       #montage_y ~= self.header.nz or
+       #montage_z ~= self.header.nz then
+      error('ERROR: MRCIO:add_extended_header_field: Invalid field tables.\n')
+    end
+
+    for i = 1, self.header.nz do
+      if not self.extended_header[i] then
+        self.extended_header[i] = {}
+      end
+
+      self.extended_header[i].montage_x = montage_x[i]
+      self.extended_header[i].montage_y = montage_y[i]
+      self.extended_header[i].montage_z = montage_z[i]
+    end
+
+    self.header.nint = self.header.nint + 6
+    self.header.nreal = self.header.nreal + 2
+    self.header.Next = self.header.Next + (self.header.nz * 6)
+
+  elseif field == 'stage' then
+    local x_stage, y_stage = ...
+    if not x_stage or not y_stage or
+       type(x_stage) ~= 'table' or type(y_stage) ~= 'table' or
+       #x_stage ~= self.header.nz or #y_stage ~= self.header.nz then
+      error('ERROR: MRCIO:add_extended_header_field: Invalid field tables.\n')
+    end
+
+    for i = 1, self.header.nz do
+      if not self.extended_header[i] then
+        self.extended_header[i] = {}
+      end
+
+      self.extended_header[i].x_stage = x_stage[i]
+      self.extended_header[i].y_stage = y_stage[i]
+    end
+
+    self.header.nint = self.header.nint + 4
+    self.header.nreal = self.header.nreal + 4
+    self.header.Next = self.header.Next + (self.header.nz * 4)
+
+  elseif field == 'magnification' then
+    local magnification = ...
+    if not magnification or type(magnification) ~= 'table' or
+       #magnification ~= self.header.nz then
+      error('ERROR: MRCIO:add_extended_header_field: Invalid field table.\n')
+    end
+
+    for i, value in ipairs(magnification) do
+      if not self.extended_header[i] then
+        self.extended_header[i] = {}
+      end
+
+      self.extended_header[i].magnification = value
+    end
+
+    self.header.nint = self.header.nint + 2
+    self.header.nreal = self.header.nreal + 8
+    self.header.Next = self.header.Next + (self.header.nz * 2)
+
+  elseif field == 'intensity' then
+    local intensity = ...
+    if not intensity or type(intensity) ~= 'table' or
+       #intensity ~= self.header.nz then
+      error('ERROR: MRCIO:add_extended_header_field: Invalid field table.\n')
+    end
+
+    for i, value in ipairs(intensity) do
+      if not self.extended_header[i] then
+        self.extended_header[i] = {}
+      end
+
+      self.extended_header[i].intensity = value
+    end
+
+    self.header.nint = self.header.nint + 2
+    self.header.nreal = self.header.nreal + 16
+    self.header.Next = self.header.Next + (self.header.nz * 2)
+
+  elseif field == 'exp_dose' then
+    local exp_dose_1, exp_dose_2 = ...
+    if not exp_dose_1 or not exp_dose_2 or
+       type(exp_dose_1) ~= 'table' or type(exp_dose_2) ~= 'table' or
+       #exp_dose_1 ~= self.header.nz or #exp_dose_2 ~= self.header.nz then
+      error('ERROR: MRCIO:add_extended_header_field: Invalid field tables.\n')
+    end
+
+    for i = 1, self.header.nz do
+      if not self.extended_header[i] then
+        self.extended_header[i] = {}
+      end
+
+      self.extended_header[i].exp_dose_1 = exp_dose_1[i]
+      self.extended_header[i].exp_dose_2 = exp_dose_2[i]
+    end
+
+    self.header.nint = self.header.nint + 4
+    self.header.nreal = self.header.nreal + 32
+    self.header.Next = self.header.Next + (self.header.nz * 4)
+  end
 end
 
 return MRCIO

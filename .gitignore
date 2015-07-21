@@ -2,7 +2,7 @@
 *.swp
 *.bak
 
-bin/
-include/
-lib/
-man/
+./bin/
+./include/
+./lib/
+./man/

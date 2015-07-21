@@ -120,3 +120,4 @@ Utils.run('rm ' .. input_mrc.basename .. '.xf')
 Utils.run('rm ' .. input_mrc.basename .. '.xg')
 Utils.run('rm ' .. input_mrc.basename .. '.ali')
 Utils.run('rm ' .. input_mrc.basename .. '.xcxf')
+--vim:tw=80:ts=8:sts=2:sw=2:noet:ft=lua

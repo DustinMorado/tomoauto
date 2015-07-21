@@ -229,3 +229,4 @@ if not status then
 else
    os.exit(0)
 end
+--vim:tw=80:ts=8:sts=2:sw=2:noet:ft=lua

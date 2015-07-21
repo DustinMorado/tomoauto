@@ -1,12 +1,16 @@
--- tomoauto global configuration.
+-- tomoauto global configuration module.
+-- This module contains all of the default global parameters for every command
+-- run by tomoauto as well as defaults for the tomoauto program itself such as
+-- which program to use for reconstruction and CTF determination. Every effort
+-- has been made to include every option for each command. 
 -- @module Config
 -- @author Dustin Morado
 -- @license GPLv3
 -- @release 0.2.30
 
 local Config = {}
+local Utils = require('tomoauto.utils')
 local io, string, table = io, string, table
-local Utils = require('tomoauto_utils')
 
 local function needs_update(value)
   return type(value) == 'string' and string.match(value, 'TOMOAUTO{[%w_-]+}')
