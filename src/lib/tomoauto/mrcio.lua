@@ -146,7 +146,11 @@ end
 -- @param input_filename MRC file to read
 -- @return header: A table with header information
 function MRCIO:set_header ()
-  local mrc = io.open(self.filename, 'rb')
+  local mrc, err = io.open(self.filename, 'rb')
+  if not mrc then
+    error('ERROR: tomoauto.mrcio:set_header: ' .. err .. ' .\n')
+  end
+
   local header_data = mrc:read(1024)
   mrc:close()
 
@@ -240,7 +244,11 @@ function MRCIO:set_extended_header ()
     return
   end
 
-  local mrc = io.open(self.filename, 'rb')
+  local mrc, err = io.open(self.filename, 'rb')
+  if not mrc then
+    error('ERROR: tomoauto.mrcio:set_extended_header: ' .. err .. ' .\n')
+  end
+
   mrc:seek('set', 1024)
   local header_data = mrc:read(self.header.Next)
   mrc:close()
@@ -285,7 +293,11 @@ function MRCIO:set_tilt_angles ()
     end
 
   elseif self.has_mdoc then
-    local mdoc_file = io.open(self.mdoc_filename, 'r')
+    local mdoc_file, err = io.open(self.mdoc_filename, 'r')
+    if not mdoc_file then
+      error('ERROR: tomoauto.mrcio:set_tilt_angles: ' .. err .. ' .\n')
+    end
+
     for line in mdoc_file:lines('*l') do
       local tilt_angle = string.match(line, 'TiltAngle%s=%s(-?%d+%.%d+)$')
       if tilt_angle then
@@ -345,7 +357,11 @@ function MRCIO:set_pixel_size ()
     pixel_size_A = pixel_size_x
 
   elseif self.has_mdoc then
-    local mdoc_file = io.open(self.mdoc_filename, 'r')
+    local mdoc_file, err = io.open(self.mdoc_filename, 'r')
+    if not mdoc_file then
+      error('ERROR: tomoauto.mrcio:set_pixel_size: ' .. err .. ' .\n')
+    end
+
     for line in mdoc_file:lines('*l') do
       pixel_size_A = string.match(line, 'PixelSpacing%s=%s(%d+%.%d+)$')
       if pixel_size_A then
@@ -392,7 +408,11 @@ function MRCIO:set_tilt_axis_angle ()
     self.tilt_axis_angle = string.match(self.header.labels_2,
                                   'Tilt%saxis%sangle%s=%s(%-?%d+%.?%d+)')
   elseif self.has_mdoc then
-    local mdoc_file = io.open(self.mdoc_filename, 'r')
+    local mdoc_file, err = io.open(self.mdoc_filename, 'r')
+    if not mdoc_file then
+      error('ERROR: tomoauto.mrcio:set_tilt_axis_angle: ' .. err .. '.\n')
+    end
+
     for line in mdoc_file:lines('*l') do
       local rotation_angle = string.match(line, 'RotationAngle%s=%s(%d+%.%d+)$')
       if rotation_angle then
@@ -464,7 +484,11 @@ function MRCIO:write (output_filename)
   end
 
   Utils.backup(output_filename)
-  local output_file = io.open(output_filename, 'wb')
+  local output_file, err = io.open(output_filename, 'wb')
+  if not output_file then
+    error('ERROR: tomoauto.mrcio:write: ' .. err .. ' .\n')
+  end
+
   output_file:write(header_data)
 
   local pixel_data_size
@@ -482,7 +506,11 @@ function MRCIO:write (output_filename)
 
   end
 
-  local mrc = io.open(self.filename, 'rb')
+  local mrc, err = io.open(self.filename, 'rb')
+  if not mrc then
+    error('ERROR: tomoauto.mrcio:write: ' .. err .. ' .\n')
+  end
+
   local jump = 1024 + self.header.Next
   mrc:seek('set', jump)
 
@@ -662,3 +690,4 @@ function MRCIO:add_extended_header_field (field, ...)
 end
 
 return MRCIO
+-- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

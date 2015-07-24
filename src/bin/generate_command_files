@@ -44,4 +44,4 @@ parser:add_argument({
 })
 
 local options = parser:get_arguments()
---vim:tw=80:ts=8:sts=2:sw=2:noet:ft=lua
+-- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

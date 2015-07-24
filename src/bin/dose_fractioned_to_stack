@@ -1,26 +1,53 @@
 #!/usr/bin/env talua
---- Takes aligned dose-fractioned sums and produces a tilt series.
+--[[
+Copyright (c) 2015 Dustin Reed Morado
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+--]]
+
+--- Make a tilt-series with proper header from motion-corrected micrographs.
 --
--- This is a program to take a set of drift-corrected dose-fractioned sum images
--- and creates an MRC tilt-series. It also fixes the header information which is
--- currently erased by Xueming Li's dosefgpu_driftcorr program.
+-- MOTIONCORR currently destroys all of the header and extended-header data
+-- included in dose-fractionated micrographs which makes it impossible to get
+-- important information such as pixel size and tilt-axis rotation angle
+-- automatically. This program takes the original tilt-series as produced by
+-- SerialEM and the associated .mdoc or .log file and uses newstack to produce a
+-- tilt-series from the motion-corrected micrographs. If MOTIONCORR has not
+-- already been run on the raw subframes it can be executed here. Finally the
+-- header information is set correctly in the new tilt-series and if a .mdoc
+-- file was created for the original tilt-series an associated one is created
+-- for the new tilt-series as well.
 --
--- NOTE: This currently handles a bug in the beta version of SerialEM 3.4
---
--- Dependencies: `MRC_IO_lib`
+-- Dependencies: `tomoauto`, `yalgo`
 --
 -- @script dose_fractioned_to_stack
 -- @author Dustin Morado
--- @license GPLv3
+-- @license MIT
 -- @release 0.2.30
 
-local io, string, table = io, string, table
-local MRCIO = require('tomoauto_mrcio')
-local Config = require('tomoauto_config')
-local Utils = require('tomoauto_utils')
 local yalgo = require('yalgo')
+local tomoauto = require('tomoauto')
+local io, string, table = io, string, table
 
-local parser = yalgo:new_parser('Make motion corrected tilt-series.')
+local parser = yalgo:new_parser('Make a tilt-series with proper header from ' ..
+  'motion-corrected micrographs.')
+
+-- Handle command-line arguments
 parser:add_argument({
   name = 'input',
   is_positional = true,
@@ -44,189 +71,146 @@ parser:add_argument({
   description = 'Run MOTIONCORR on non corrected sub-frames if needed',
 })
 
+parser:add_argument({
+  name = 'local_config',
+  long_option = '--local-config',
+  short_option = '-L',
+  has_argument = true,
+  description = 'Use provided local configuration file.',
+  meta_value = 'CONFIG_FILE'
+})
+
 local options = parser:get_arguments()
 
-if not Utils.is_file(options.input) then
+-- Error if input file does not exist
+if not tomoauto.utils.is_file(options.input) then
   error('ERROR: dose_fractioned_to_stack: Input file does not exist.\n')
 end
 
-local input_mrc = MRCIO:new_mrc(options.input)
-local output_mrc = MRCIO:new_mrc(options.output)
+-- Create MRC object for the original SerialEM tilt-series
+local input_mrc = tomoauto.mrcio:new_mrc(options.input)
 local log_filename = input_mrc.basename .. '.log'
 
-if not input_mrc.has_mdoc and not Utils.is_file(log_filename) then
+if not input_mrc.has_mdoc and not tomoauto.utils.is_file(log_filename) then
   error('ERROR: dose_fractioned_to_stack: No mdoc or log file to make stack.\n')
 end
 
-local timestamp_regex = '(%u%l%l%d%d_%d%d%.%d%d%.%d%d%.mrc)$'
+local timestamp_regex = '%u%l%l%d%d_%d%d%.%d%d%.%d%d%.mrc'
 local subframes = {}
+
+-- mdoc routine
 if input_mrc.has_mdoc then
   local mdoc_file = io.open(input_mrc.mdoc_filename, 'r')
   for line in mdoc_file:lines('*l') do
-    if string.match(line, 'SubFramePath') then
-      table.insert(subframes, string.match(line, timestamp_regex))
+    if string.match(line, 'ZValue') then
+      table.insert(subframes, {})
+
+    elseif string.match(line, 'TiltAngle') then
+      local tilt_angle = string.match(line, 'TiltAngle = (-?%d+%.%d+)')
+      subframes[#subframes][2] = tilt_angle
+
+    elseif string.match(line, 'SubFramePath') then
+      local subframe = string.match(line, timestamp_regex)
+      subframes[#subframes][1] = subframe
     end
   end
 
 else
-   local log_file = io.open(log_filename, 'r')
-   for line in log_file:lines('*l') do
-      if string.match(line, 'Opened')
---- Takes aligned dose-fractioned sums and produces a tilt-series.
--- Reads the log output by SerialEM in collecting dose-fractioned tilt series
--- and creates a tilt series using the corresponding drift-corrected sums. Then
--- copies the header information from the initial tilt-series that is lost in
--- drift-correction and writes it to the header of the new tilt-series.
--- @param input_filename initial tilt-series collected e.g. 'image.st'
-   local temporary_filename   = basename .. '_temp.st'
-   local shift                = 0
+  local log_file = io.open(log_filename, 'r')
+  for line in log_file:lines('*l') do
+    if string.match(line, 'Opened new file') then
+      subframes = {}
 
-   local log_file = io.open(log_filename, 'r')
-   for line in log_file:lines('*l') do
-      local true_start    = string.match(line, 'Opened')
-      local mrc_filename  = string.match(line, '[%w%-%_%.]+%.mrc')
-      local is_data_loss  = string.find(line, 'This%sRecord[%s%w]+data%sloss')
-      local is_low_count  = string.find(line, 'sufficient%scount')
-      local tilt_angle    = string.match(line, 'Tilt%s=%s([%-%d%.]+)')
-      local is_terminated = string.find(line, 'TERMINATING')
+    elseif string.match(line, '%d+ frames were saved') then
+      local subframe = string.match(line, timestamp_regex)
+      if #subframes ~= 0 and #subframes[#subframes] == 1 then
+	subframes[#subframes][1] = subframe
 
-      if true_start then
-         MRC_table = {}
-         tilt_angle_table = {}
-      end
-
-      if mrc_filename then
-         local basename   = string.sub(mrc_filename, 1, -5)
-         local new_mrc_filename = string.format('%s_driftcorr.mrc', basename)
-         table.insert(MRC_table, new_mrc_filename)
-      end
-
-      if is_data_loss then
-         if #MRC_table ~= #tilt_angle_table then
-            table.remove(MRC_table)
-         end
-      end
-
-      if is_low_count then
-         if #MRC_table ~= #tilt_angle_table then
-            table.remove(MRC_table)
-         end
-      end
-
-      if tilt_angle then
-         table.insert(tilt_angle_table, tonumber(tilt_angle))
-      end
-
-      if is_terminated then
-         error(string.format(
-            '\nError: Original stack %s terminated so we will too.\n\n',
-            input_filename), 0)
-      end
-   end
-   log_file:close()
-
-   if #MRC_table ~= #tilt_angle_table then
-      error(string.format(
-         '\nError: %s has unequal file and tilt angle references.\n\n',
-         log_filename), 0)
-   else
-      number_of_sections = #MRC_table
-   end
-
-   for i = 1, number_of_sections do
-      local file = io.open(MRC_table[i], 'r')
-      if file ~= nil then
-         file:close()
-         local last_index = #new_tilt_angle_table
-         if last_index == 0 then
-            table.insert(new_tilt_angle_table, tilt_angle_table[i])
-            table.insert(new_MRC_table, MRC_table[i])
-         elseif tilt_angle_table[i] > new_tilt_angle_table[1] then
-            table.insert(new_tilt_angle_table, 1, tilt_angle_table[i])
-            table.insert(new_MRC_table, 1, MRC_table[i])
-         elseif tilt_angle_table[i] < new_tilt_angle_table[last_index] then
-            table.insert(new_tilt_angle_table, tilt_angle_table[i])
-            table.insert(new_MRC_table, MRC_table[i])
-         else
-            error(string.format(
-               '\nError: %s has unordered or duplicate tilt angles.\n\n',
-               log), 0)
-         end
       else
-         io.stderr:write(string.format(
-            'Warning: Dosefgpu_driftcorr did not process %s.\n', MRC_table[i]))
+	table.insert(subframes, { subframe })
       end
-   end
-   number_of_sections = #new_MRC_table
 
-   local filelist = io.open(filelist_name, 'w')
-   filelist:write(string.format('%d\n', number_of_sections))
+    elseif string.match(line, 'Saved Z') then
+      local tilt_angle = string.match(line, 'Tilt = (-?%d+%.%d+)')
+      subframes[#subframes][2] = tilt_angle
+    end
+  end
 
-   for i = 1, number_of_sections do
-      filelist:write(string.format('%s\n0\n', new_MRC_table[i]))
-   end
-   filelist:close()
-
-   run(string.format('newstack -filei %s %s', filelist_name,
-      new_stack_filename), basename)
-   is_file(new_stack_filename)
-
-   header          = MRC_IO_lib.get_header(input_filename)
-   extended_header = MRC_IO_lib.get_extended_header(input_filename)
-   
-   --[[
-   -- SerialEM beta 3.4 bug work around
-   for i = 1, number_of_sections do 
-      if math.floor(new_tilt_angle_table[i]) == -2 then
-         table.insert(extended_header, i, {})
-         for k,v in pairs(extended_header[i - 1]) do
-            extended_header[i][k] = v
-         end
-      end
-      extended_header[i].a_tilt = new_tilt_angle_table[i]
-   end
-   --]]
-
-   local initial_driftcorr_header = MRC_IO_lib.get_header(new_stack_filename)
-   local pixel_spacing = header.xlen / header.mx
-
-   header.nx    = initial_driftcorr_header.nx
-   header.ny    = initial_driftcorr_header.ny
-   header.nz    = number_of_sections
-
-   header.mode  = 2
-
-   header.mx    = initial_driftcorr_header.nx
-   header.my    = initial_driftcorr_header.ny
-   header.mz    = number_of_sections
-
-   header.xlen  = pixel_spacing * header.mx
-   header.ylen  = pixel_spacing * header.my
-   header.zlen  = pixel_spacing * header.mz
-
-   header.amin  = initial_driftcorr_header.amin
-   header.amax  = initial_driftcorr_header.amax
-   header.amean = initial_driftcorr_header.amean
-
-   initial_driftcorr_header = nil
-
-   MRC_IO_lib.set_header(new_stack_filename, temporary_filename,
-      header, extended_header)
-   run(string.format('mv %s %s', temporary_filename,
-         new_stack_filename), basename)
-   run(string.format('rm -f %s', filelist_name), basename)
+  if #subframes ~= 0 and #subframes[#subframes] == 1 then
+    table.remove(subframes)
+  end
 end
 
-if not arg[1] then
-   io.write('\nUsage: dose_fraction_to_stack <SerialEM_stack.st>\n\n')
-   os.exit(0)
+if #subframes == 0 then
+  error('ERROR: dose_fractioned_to_stack: No subframes found in mdoc or log ' ..
+	'file.\n')
 end
 
-local status, err = pcall(dose_fractioned_to_stack, arg[1])
-if not status then
-   io.stderr:write(err)
-   os.exit(1)
-else
-   os.exit(0)
+table.sort(subframes, function (t1, t2) return t1[2] <= t2[2] end)
+if options.run_motioncorr then
+  for _, subframe in ipairs(subframes) do
+    subframe_mrc = tomoauto.mrcio:new_mrc(subframe[1])
+    if options.local_config then
+      tomoauto.config:load_local_config(options.local_config)
+    end
+
+    tomoauto.config.MOTIONCORR:run(subframe_mrc)
+    subframe_mrc = nil
+  end
 end
---vim:tw=80:ts=8:sts=2:sw=2:noet:ft=lua
+
+local driftcorr_subframes = {}
+for _, subframe in ipairs(subframes)  do
+  local driftcorr_subframe = tomoauto.utils.basename(subframe[1], '.mrc') ..
+    '_driftcorr.mrc'
+
+  if tomoauto.utils.is_file(driftcorr_subframe) then
+    table.insert(driftcorr_subframes, { driftcorr_subframe, subframe[2] })
+
+  else
+    io.stderr:write('WARNING: dose_fractioned_to_stack: ' ..
+      driftcorr_subframe .. ' does not exist.\n')
+
+  end
+end
+
+local list_data = #driftcorr_subframes .. '\n'
+for _, subframe in ipairs(driftcorr_subframes) do
+  list_data = list_data .. subframe[1] .. '\n0\n'
+end
+
+local list_filename = input_mrc.basename .. '_filelist.txt'
+local list_file = io.open(list_filename, 'w')
+list_file:write(list_data)
+list_file:close()
+list_data = nil
+
+local temp_filename = input_mrc.basename .. '_temp.st'
+local newstack = {
+  FileOfInputs = { use = true, value = list_filename },
+  OutputFile = { use = true, value = temp_filename }
+}
+
+tomoauto.config.newstack:clear()
+tomoauto.config.newstack:update(newstack)
+
+if options.local_config then
+  tomoauto.config:load_local_config(options.local_config)
+end
+
+tomoauto.config.newstack:run(input_mrc)
+tomoauto.utils.run('rm ' .. list_filename)
+tomoauto.utils.run('rm ' .. input_mrc.basename .. '_newstack.com')
+tomoauto.utils.run('rm ' .. input_mrc.basename .. '_newstack.log')
+
+temp_mrc = tomoauto.mrcio:new_mrc(temp_filename)
+temp_mrc.header.mx = temp_mrc.header.nx
+temp_mrc.header.my = temp_mrc.header.ny
+temp_mrc.header.mz = temp_mrc.header.nz
+temp_mrc.header.xlen = input_mrc.pixel_size_A * temp_mrc.header.mx
+temp_mrc.header.ylen = input_mrc.pixel_size_A * temp_mrc.header.my
+temp_mrc.header.zlen = input_mrc.pixel_size_A * temp_mrc.header.mz
+temp_mrc.header.label_1 = input_mrc.header.label_1
+temp_mrc.header.label_2 = input_mrc.header.label_2
+
+-- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

@@ -129,6 +129,11 @@ make clean
 mv config.bak config
 cd - > /dev/null 2>&1
 
+install -m 0755 ${tomoauto_dir}/src/bin/* ${tomoauto_dir}/bin
+mkdir ${tomoauto_dir}/lib/lua/5.3/tomoauto
+install -m 0644 ${tomoauto_dir}/src/lib/tomoauto/* \
+  ${tomoauto_dir}/lib/lua/5.3/tomoauto
+
 if [[ -a "${tomoauto_init_file}" ]]
 then
     mv "${tomoauto_init_file}" "{$tomoauto_init_file}.bak"

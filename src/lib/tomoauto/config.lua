@@ -2,7 +2,7 @@
 -- This module contains all of the default global parameters for every command
 -- run by tomoauto as well as defaults for the tomoauto program itself such as
 -- which program to use for reconstruction and CTF determination. Every effort
--- has been made to include every option for each command. 
+-- has been made to include every option for each command.
 -- @module Config
 -- @author Dustin Morado
 -- @license GPLv3
@@ -1720,3 +1720,4 @@ Config.CTFFIND4 = {
 }
 
 return Config
+-- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :
