@@ -115,7 +115,7 @@ end
 
 local short_options = 'a_, b_, c_, d_,   e_,      f_,      g_,      h,    i_, '
 local long_options  = 'nx, ny, nz, mode, nxstart, nystart, nzstart, help, mx, '
-short_options = short_opitons .. 'j_, k_, l_,   m_,   n_,   o_,   p_,   q_,    '
+short_options = short_options .. 'j_, k_, l_,   m_,   n_,   o_,   p_,   q_,    '
 long_options  = long_options  .. 'my, mz  xlen, ylen, zlen, amin, amax, amean, '
 short_options = short_options .. 'r_,      s_,      t_,      u_,   v_,   w_,   '
 long_options  = long_options  .. 'cAngleX, cAngleY, cAnglez, xorg, yorg, zorg, '
