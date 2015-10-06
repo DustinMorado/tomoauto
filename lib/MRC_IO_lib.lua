@@ -297,7 +297,8 @@ function MRC_IO_lib.get_tilt_angles(input_filename, output_filename)
    if output_filename then
       output_file = io.open(output_filename, 'w')
    end
-   if type(extended_header) == 'table' and extended_header[1].a_tilt then
+   if type(extended_header) == 'table' and type(extended_header[1]) == 'table'
+      and extended_header[1].a_tilt then
       for i = 1, nz do
          if not extended_header[i].a_tilt then
             error(string.format('Error: No tilt angle for %s section %d.\n',
