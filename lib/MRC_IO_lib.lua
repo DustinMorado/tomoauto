@@ -297,7 +297,7 @@ function MRC_IO_lib.get_tilt_angles(input_filename, output_filename)
    if output_filename then
       output_file = io.open(output_filename, 'w')
    end
-   if extended_header[1].a_tilt then
+   if type(extended_header) == 'table' and extended_header[1].a_tilt then
       for i = 1, nz do
          if not extended_header[i].a_tilt then
             error(string.format('Error: No tilt angle for %s section %d.\n',
@@ -308,16 +308,16 @@ function MRC_IO_lib.get_tilt_angles(input_filename, output_filename)
          end
       end
    else
-      mdoc_file = io.open(mdoc, 'r')
+      mdoc_file = io.open(mdoc_filename, 'r')
       if mdoc_file then
-         for line in mdoc_output_file:lines('*l') do
+         for line in mdoc_file:lines('*l') do
             local tilt_angle = string.match(line, 'TiltAngle%s=%s(-?%d+%.%d+)')
             tilt_angle = tonumber(tilt_angle)
             if tilt_angle then
                output_file:write(string.format('% 6.2f\n', tilt_angle))
             end
          end
-         mdoc_output_file:close()
+         mdoc_file:close()
       else
          error(string.format(
             'Error: No tilt angles found in %s\'s extend header\n',
