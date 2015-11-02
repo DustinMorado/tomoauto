@@ -1,52 +1,72 @@
 #!/usr/bin/env talua
---- Changes 3dmod model file produced by RAPTOR to better erase gold.
---
--- This program takes a fiducial model generated automatically by RAPTOR and
--- scales and changes its properties to make it better for erasing gold and for
--- computing the alignment using IMOD tiltalign
---
--- Dependencies: `MRC_IO_lib`
---
--- @script scale_RAPTOR_model
--- @author Dustin Morado
--- @license GPLv3
--- @release 0.2.10
+--[[
+  Copyright (c) 2015 Dustin Reed Morado
 
-local MRC_IO_lib  = require 'MRC_IO_lib'
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
---- Alters 3dmod model file produced by RAPTOR to better erase gold.
--- Scales the model to the original dataset, and makes the model point size
--- bigger to better erase gold.
--- @param input_filename RAPTOR generated fiducial model e.g image.fid.txt
--- @param output_filename Output fiducial model filename e.g image.fid
-function scale_RAPTOR_model(input_filename, output_filename)
-   local input_file  = assert(io.open(input_filename, 'r'))
-   local output_file = assert(io.open(output_filename, 'w'))
-   local header = MRC_IO_lib.get_header(input_filename)
-   local refcurscale_string = string.format('#refcurscale %5.3f %5.3f %5.3f',
-      header.xlen / header.mx, header.ylen / header.my, header.zlen / header.mz)
-   for line in input_file:lines('*l') do
-      line = string.gsub(line, 'drawmode%s+%d+', 'drawmode\t1\n\z
-         symbol\t\t0\nsymsize\t\t7')
-      line = string.gsub(line, 'symbol%s+circle', refcurscale_string)
-      line = string.gsub(line, '^size%s+%d+', '')
-      output_file:write(line,'\n')
-   end
-   input_file:close()
-   output_file:close()
-   header = nil
-end
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
 
-if not arg[1] or not arg[2] then
-   io.write('\nUsage: scale_RAPTOR_model <image.fid.txt> <image.fid>\n\n')
-   os.exit(0)
-end
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+--]]
 
-local status, err = pcall(scale_RAPTOR_model, arg[1], arg[2])
-if not status then
-   io.stderr:write(err)
-   os.exit(1)
+local tomoauto = require('tomoauto')
+local yalgo = require('yalgo')
+local io, os, string = io, os, string
+local assert = assert
+
+_ENV = nil
+
+local parser = yalgo:new_parser('Scale RAPTOR fiducial model for beadtrack.')
+
+parser:add_argument({
+  name = 'input',
+  is_positional = true,
+  is_required = true,
+  description = 'RAPTOR fiducial model.',
+  meta_value = 'INPUT.fid.txt'
+})
+
+parser:add_argument({
+  name = 'output',
+  is_positional = true,
+  description = 'Output fiducial model.',
+  meta_value = 'OUTPUT.fid'
+})
+
+local options = parser:get_arguments()
+assert(tomoauto.utils.is_file(options.input))
+
+local input_file = assert(io.open(options.input, 'r'))
+
+local output
+if options.output then
+  output = options.output
 else
-   os.exit(0)
+  local suffix = tomoauto.utils.get_suffix(options.input)
+  output = tomauto.utils.basename(options.input, suffix)
 end
+local ouput_file = assert(io.open(output, 'w'))
+
+for line in input_file:lines() do
+  line:gsub('drawmode%s+%d+', 'drawmode\t1\nsymbol\t\t0\nsymsize\t\t7')
+  line:gsub('symbol%s+circle', '#refcurscale 1.00 1.00 1.00')
+  line:gsub('^size%s+%d+', '')
+  output_file:write(line .. '\n')
+end
+
+input_file:close()
+output_file:close()
+os.exit(0)
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

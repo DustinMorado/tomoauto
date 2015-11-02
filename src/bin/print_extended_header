@@ -1,184 +1,61 @@
 #!/usr/bin/env talua
---- Prints section of extended header to the screen.
---
--- This program prints information in the extended header to the screen. It is
--- similar to extracttilts in IMOD, but also displays the information in the
--- extended header for files with Agard style MRC headers.
---
--- Dependencies: `MRC_IO_lib`, `yago`
---
--- @script print_extended_header
--- @author Dustin Morado
--- @license GPLv3
--- @release 0.2.10
+--[[
+  Copyright (c) 2015 Dustin Reed Morado
 
-local MRC_IO_lib = require 'MRC_IO_lib'
-local yago       = require 'yago'
-local io         = io
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
---- Prints section of extended header to the screen.
--- Reads the header to determine header format and then checks if desired
--- section exists. If the desired data is available it prints the data to the
--- screen.
--- @param input_filename MRC file to read e.g. 'image.st'
--- @param options_table table object with option flags from yago
-function print_extended_header(input_filename, options_table)
-   if options_table.h then
-      io.stdout:write('\nUsage: readExtHeader [OPTION..] MRC file\n\n')
-      io.stdout:write('-a, --aDef \t\tprint applied defoci (approximate)\n')
-      io.stdout:write('-b, --bin  \t\tprint applied binning\n')
-      io.stdout:write('-c, --coord\t\tprint stage coordinates\n')
-      io.stdout:write('-d, --def  \t\tprint defoci (approximate)\n')
-      io.stdout:write('-e, --exp  \t\tprint exposure times (approximate)\n')
-      io.stdout:write('-E, --dose \t\tprint exposure doses (approximate)\n')
-      io.stdout:write('-h, --help \t\tprint this help and then exit\n')
-      io.stdout:write('-H, --ht   \t\tprint screen high tension\n')
-      io.stdout:write('-i, --int  \t\tprint intensities\n')
-      io.stdout:write('-m, --mean \t\tprint mean values\n')
-      io.stdout:write('-M, --Mag  \t\tprint magnifications\n')
-      io.stdout:write('-p, --pix  \t\tprint pixel size\n')
-      io.stdout:write('-t, --tlt  \t\tprint tilt angles\n')
-      io.stdout:write('-T, --tltAx\t\tprint tilt axis offsets\n')
-      io.stdout:write('-s, --stg  \t\tprint stage coordinates\n')
-      io.stdout:write('-S, --shift\t\tprint image shifts\n')
-      return
-   end
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
 
-   local reference       = ''
-   local reference_name  = ''
-   local header          = MRC_IO_lib.get_header(input_filename)
-   local extended_header = MRC_IO_lib.get_extended_header(input_filename)
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+--]]
 
-   if options_table.a then
-      reference      = 'appliedDefocus'
-      reference_name = 'Applied Defocus'
-   elseif options_table.b then
-      reference      = 'binning'
-      reference_name = 'Binning'
-   elseif options_table.c then
-      reference      = 'mon'
-      reference_name = 'Montage Coordinates'
-   elseif options_table.d then
-      reference      = 'defocus'
-      reference_name = 'Defocus'
-   elseif options_table.e then
-      reference      = 'exp_time'
-      reference_name = 'Exposure Time'
-   elseif options_table.E then
-      reference      = 'exp_dose'
-      reference_name = 'Exposure Dose'
-   elseif options_table.H then
-      reference      = 'ht'
-      reference_name = 'High Tension'
-   elseif options_table.i then
-      reference      = 'intensity'
-      reference_name = 'Intensity'
-   elseif options_table.m then
-      reference      = 'mean_int'
-      reference_name = 'Mean integers'
-   elseif options_table.M then
-      reference      = 'magnification'
-      reference_name = 'Magnification'
-   elseif options_table.p then
-      reference      = 'pixel_size'
-      reference_name = 'Pixel Size'
-   elseif options_table.t then
-      reference      = 'a_tilt'
-      reference_name = 'Tilt Angles'
-   elseif options_table.T then
-      reference      = 'tilt_axis'
-      reference_name = 'Tilt Axis Offset'
-   elseif options_table.s then
-      reference      = 'x_stage'
-      reference_name = 'Stage position'
-   elseif options_table.S then
-      reference      = 'x_shift'
-      reference_name = 'Image Shift'
-   else
-      reference      = 'a_tilt'
-      reference_name = 'Tilt Angles'
-   end
+local tomoauto = require('tomoauto')
+local yalgo = require('yalgo')
+local io, os = io, os
+local assert, ipairs, pairs = assert, ipairs, pairs
 
-   io.stdout:write(string.format('\n\nInput Filename\t%s\n\n', input_filename))
+_ENV = nil
 
-   if not extended_header[1][reference] then
-      error(string.format('No %s found in the extended header.\n\n',
-         reference_name), 0)
-   end
+local parser = yalgo:new_parser('Print MRC extended header to stdout.')
 
-   for i = 1, header.nz do
-      if reference == 'pixel_size' then
-         io.stdout:write(string.format('%s (%03d):\t%5.4e\n', reference_name, i,
-            extended_header[i][reference]))
-      elseif reference == 'a_tilt' and extended_header[i].b_tilt then
-         io.stdout:write(string.format('%s (%03d):\t%05.2f\t%05.2f\n',
-            reference_name, i, extended_header[i][reference],
-            extended_header[i].b_tilt))
-      elseif reference == 'x_stage' then
-         if extended_header[i].z_stage then
-            io.stdout:write(string.format(
-               '%s (%03d):\t%05.2f\t%05.2f\t%05.2f\n', reference_name, i,
-               extended_header[i][reference], extended_header[i].y_stage,
-               extended_header[i].z_stage))
-         else
-            io.stdout:write(string.format('%s (%03d):\t%05.2f\t%05.2f\n',
-               reference_name, i, extended_header[i][reference],
-               extended_header[i].y_stage))
-         end
-      elseif reference == 'x_shift' then
-         io.stdout:write(string.format('%s (%03d):\t%05.2f\t%05.2f\n',
-               reference_name, i, extended_header[i][reference],
-               extended_header[i].y_shift))
-      elseif reference == 'intensity' then
-         io.stdout:write(string.format('%s (%03d):\t%07.5f\n', reference_name,
-               i, extended_header[i][reference]))
-      else
-         io.stdout:write(string.format('%s (%03d):\t% 06.2f\n', reference_name,
-               i, extended_header[i][reference]))
-      end
-   end
-end
+parser:add_argument({
+  name = 'input',
+  description = 'Input tilt-series to get extended header.',
+  meta_value = 'INPUT.st',
+  is_positional = true,
+  is_required = true
+})
 
-if not arg[1] then
-   io.write('\nUsage: print_extended_header [options] <MRC file>\n\n' ..
-      '-a, --adef \t\tprint applied defoci (approximate)\n' ..
-      '-b, --bin  \t\tprint applied binning\n' ..
-      '-c, --coord\t\tprint stage coordinates\n' ..
-      '-d, --def  \t\tprint defoci (approximate)\n' ..
-      '-e, --exp  \t\tprint exposure times (approximate)\n' ..
-      '-e, --dose \t\tprint exposure doses (approximate)\n' ..
-      '-h, --help \t\tprint this help and then exit\n' ..
-      '-h, --ht   \t\tprint screen high tension\n' ..
-      '-i, --int  \t\tprint intensities\n' ..
-      '-m, --mean \t\tprint mean values\n' ..
-      '-m, --mag  \t\tprint magnifications\n' ..
-      '-p, --pix  \t\tprint pixel size\n' ..
-      '-t, --tlt  \t\tprint tilt angles\n' ..
-      '-t, --tltax\t\tprint tilt axis offsets\n' ..
-      '-s, --stg  \t\tprint stage coordinates\n' ..
-      '-s, --shift\t\tprint image shifts\n')
-   os.exit(0)
-end
+local options = parser:get_arguments()
 
-local short_options  = 'a,    b,   c,     d,   e,   E,    h,    H,  i,   m,    '
-local long_options   = 'aDef, bin, coord, def, exp, dose, help, ht, int, mean, '
-short_options = short_options .. 'M,   p,   t,   T,     s,   S'
-long_options  = long_options  .. 'mag, pix, tlt, tltAx, stg, shft'
+assert(tomoauto.utils.is_file(options.input))
+local input_MRC = assert(tomoauto.mrcio.new_MRC(options.input))
 
-local status, arg, options_table = pcall(yago.get_options, arg, short_options,
-   long_options)
-
-if not status then
-   local err = arg
-   io.stderr:write(err)
-   os.exit(1)
-end
-
-status, err = pcall(print_extended_header, arg[1], options_table)
-if not status then
-   io.stderr:write(err)
-   os.exit(1)
+if not input_MRC.extended_header then
+  os.exit(1)
 else
-   os.exit(0)
+  for i, section in ipairs(input_MRC.extended_header) do
+    io.stdout:write('[Z = ' .. i .. ']\n')
+
+    for field, value in pairs(section) do
+      io.stdout:write('\t' .. field .. ':\t\t' .. value .. '\n')
+    end
+
+    io.stdout:write('\n')
+  end
+
+  os.exit(0)
 end
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

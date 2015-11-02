@@ -1,21 +1,32 @@
 #!/usr/bin/env talua
---- Generates IMOD command files for tilt-series alignment and reconstruction
---
--- This is a program that writes the IMOD command files used by tomoauto so that
--- the process of reconstruction can be stepped through at the command line.
---
--- Dependencies: `COM_file_lib`, `yago`
---
--- @script generate_command_files
--- @author Dustin Morado
--- @license GPLv3
--- @release 0.2.10
+--[[
+  Copyright (c) 2015 Dustin Reed Morado
 
-local config = require('tomoauto.config')
-local yalgo = require('yalgo')
-local lfs = require('lfs')
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-local os, string = os, string
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+--]]
+
+local tomoauto = require('tomoauto')
+local yalgo    = require('yalgo')
+local os, table = os, table
+local assert = assert
+
+_ENV = nil
 
 local parser = yalgo:new_parser('Write the command files as used by tomoauto.')
 parser:add_argument({
@@ -31,17 +42,93 @@ parser:add_argument({
   description = 'Fiducial marker diameter in nm.',
   meta_value = 'DIAMETER',
   is_positional = true,
-  default_value = config.tomoauto.fiducial_diameter_nm
+  default_value = settings.tomoauto.fiducial_diameter_nm
 })
 
 parser:add_argument({
-  name = 'local_config',
+  name = 'do_CTF',
+  long_option = '--CTF',
+  short_option = '-c',
+  description = 'Write command files for CTF estimation and correction.',
+})
+
+parser:add_argument({
+  name = 'defocus',
+  long_option = '--defocus',
+  short_option = '-d',
+  description = 'Target defocus in microns (positive value is underfocus).',
+  has_argument = true,
+  meta_value = 'DEFOCUS'
+})
+
+parser:add_argument({
+  name = 'configuration',
+  long_option = '--configuration',
+  short_option = '-C',
+  description = 'Write this specific configuration file.',
+  has_argument = true,
+  meta_value = 'CONFIGURATION'
+})
+
+parser:add_argument({
+  name = 'local_configuration',
   description = 'Use local configuration file.',
   meta_value = 'CONFIG_FILE',
-  long_option = '--local-config',
+  long_option = '--local-configuration',
   short_option = '-L',
   has_argument = true
 })
 
+parser:add_argument({
+  name = 'mdoc',
+  long_option = '--mdoc',
+  short_option = '-m',
+  has_argument = true,
+  description = 'Use provided mdoc file as opposed to default.',
+  meta_value = 'MDOC_FILE'
+})
+
 local options = parser:get_arguments()
+assert(utils.is_file(options.input))
+local input_MRC = assert(tomoauto.mrcio.new_MRC(options.input))
+
+if options.local_configuration then
+  assert(utils.is_file(options.local_configuration))
+  assert(tomoauto.config.load_local_configuration(options.local_configuration))
+end
+
+if options.configuration then
+  assert(utils.is_table(settings[options.configuration]))
+  assert(settings[options.configuration]:setup(input_MRC))
+  assert(settings[options.configuration]:write())
+  os.exit(0)
+end
+
+local sections = {
+  'ccderaser',
+  'tiltxcorr',
+  'xftoxg',
+  'prenewstack',
+  settings.tomoauto.tracking,
+  'beadtrack',
+  'tiltalign',
+  'xfproduct',
+  'newstack',
+  'xfmodel',
+  'gold_ccderaser',
+  settings.tomoauto.reconstruction,
+}
+
+if options.do_CTF then
+  input_MRC:get_defocus()
+  table.insert(sections, settings.tomoauto.CTF)
+  table.insert(sections, 'ctfphaseflip')
+end
+
+for _, section in ipairs(sections) do
+  assert(settings[section]:setup(input_MRC))
+  assert(settings[section]:write())
+end
+
+os.exit(0)
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

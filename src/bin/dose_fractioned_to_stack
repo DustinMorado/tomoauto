@@ -1,53 +1,274 @@
 #!/usr/bin/env talua
 --[[
-Copyright (c) 2015 Dustin Reed Morado
+  Copyright (c) 2015 Dustin Reed Morado
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
 --]]
 
---- Make a tilt-series with proper header from motion-corrected micrographs.
---
--- MOTIONCORR currently destroys all of the header and extended-header data
--- included in dose-fractionated micrographs which makes it impossible to get
--- important information such as pixel size and tilt-axis rotation angle
--- automatically. This program takes the original tilt-series as produced by
--- SerialEM and the associated .mdoc or .log file and uses newstack to produce a
--- tilt-series from the motion-corrected micrographs. If MOTIONCORR has not
--- already been run on the raw subframes it can be executed here. Finally the
--- header information is set correctly in the new tilt-series and if a .mdoc
--- file was created for the original tilt-series an associated one is created
--- for the new tilt-series as well.
---
--- Dependencies: `tomoauto`, `yalgo`
---
--- @script dose_fractioned_to_stack
--- @author Dustin Morado
--- @license MIT
--- @release 0.2.30
-
-local yalgo = require('yalgo')
+local yalgo    = require('yalgo')
 local tomoauto = require('tomoauto')
-local io, string, table = io, string, table
+local lfs      = require('lfs')
+local io, math, os, string, table = io, math, os, string, table
+local assert, ipairs, tostring, tonumber = assert, ipairs, tostring, tonumber
+local pairs, print = pairs, print
+
+_ENV = nil
+
+local timestamp_regex = '%u%l%l%d%d_%d%d%.%d%d%.%d%d%.mrc'
+
+local function sort_subframes (subframe_1, subframe_2)
+  return tonumber(subframe_1[2]) <= tonumber(subframe_2[2])
+end
+
+local function get_subframes_from_mdoc (MRC)
+  local result = {}
+  local paths  = tomoauto.mdoc.get_field_from_section_data(MRC, 'SubFramePath')
+  local angles = tomoauto.mdoc.get_field_from_section_data(MRC, 'TiltAngle')
+  local dirname = MRC.dirname
+
+  for i, path in ipairs(paths) do
+    result[i] = { path:match(timestamp_regex), angles[i] }
+    result[i][1] = tomoauto.utils.join_paths(dirname, result[i][1])
+  end
+  
+  table.sort(result, sort_subframes)
+  return result
+end
+
+local function process_log_line(line, dirname, result, path, angle)
+  if line:match('Opened new file') then
+    return {}, false, false
+  elseif line:match('%d+ frames were saved') then
+    path = line:match(timestamp_regex)
+    path = tomoauto.utils.join_paths(dirname, path)
+  elseif line:match('Saved Z') then
+    angle = line:match('Tilt = (-?%d+%.%d+)')
+  end
+
+  if path and angle then
+    table.insert(result, { path, angle })
+    return result, false, false
+  else
+    return result, path, angle
+  end
+end
+
+local function get_subframes_from_log(MRC)
+  local log     = assert(io.open(MRC.log, 'r'))
+  local result  = {}
+  local path    = false
+  local angle   = false
+  local dirname = MRC.dirname
+
+  for line in log:lines() do
+    result, path, angle = process_log_line(line, dirname, result, path, angle)
+  end
+
+  log:close()
+  table.sort(result, sort_subframes)
+  return result
+end
+
+local function motion_correct_subframes (subframes, sandbox)
+  local MOTIONCORR = tomoauto.settings.MOTIONCORR
+  local _MOTIONCORR = {
+    CorrectedSumOutput = { use   = true,
+			   value = '-fcs TOMOAUTO{basepath}_driftcorr.mrc \\'
+			 },
+    LogFileOutput = {
+      use = true,
+      value = '-flg TOMOAUTO{basepath}_driftcorr.log \\'
+    }
+  }
+  MOTIONCORR = MOTIONCORR:update(_MOTIONCORR)
+  MOTIONCORR = MOTIONCORR:apply_local_configuration(sandbox)
+
+  for _, subframe in ipairs(subframes) do
+    local MRC = assert(tomoauto.mrcio.new_MRC(subframe[1]))
+    local subframe_MOTIONCORR = MOTIONCORR:setup(MRC)
+    subframe_MOTIONCORR:write()
+    subframe_MOTIONCORR:run()
+    assert(os.remove(subframe_MOTIONCORR.Name))
+  end
+
+  return true
+end
+
+local function get_driftcorr_subframe_paths (subframes, sandbox)
+  local result = {}
+
+  for i, subframe in ipairs(subframes) do
+    local path = subframe[1]:gsub('%.mrc$', '_driftcorr.mrc')
+    if tomoauto.utils.is_file(path) then
+      table.insert(result, { path, subframe[2] })
+    end
+  end
+
+  if #result == 0 then
+    motion_correct_subframes(subframes, sandbox)
+    return get_driftcorr_subframe_paths(subframes, sandbox)
+  else
+    return result
+  end
+end
+
+local function write_filelist (subframes, MRC)
+  local list = assert(io.open(MRC.basename .. '_filelist.txt', 'w'))
+  list:write(tostring(#subframes) .. '\n')
+
+  for _, subframe in ipairs(subframes) do
+    list:write(subframe[1] .. '\n0\n')
+  end
+
+  return list:close()
+end
+
+local function make_temp_driftcorr_stack (MRC, subframes, sandbox)
+  assert(write_filelist(subframes, MRC))
+  local newstack  = tomoauto.settings.newstack
+  local _newstack = {
+    FileOfInputs = { use = true, value = 'TOMOAUTO{basename}_filelist.txt' },
+    OutputFile   = { use = true, value = 'TOMOAUTO{basename}_temp.st' }
+  }
+  local new_newstack, newstack_log = assert(
+    newstack:run_full_cycle(_newstack, MRC, sandbox)
+  )
+  assert(os.remove(new_newstack.FileOfInputs.value))
+  return assert(tomoauto.mrcio.new_MRC(new_newstack.OutputFile.value))
+end
+
+local function update_temp_header (MRC_1, MRC_2)
+  MRC_2.header.mx = MRC_2.header.nx
+  MRC_2.header.my = MRC_2.header.ny
+  MRC_2.header.mz = MRC_2.header.nz
+
+  MRC_2.header.xlen = MRC_1.pixel_size * MRC_2.header.mx
+  MRC_2.header.ylen = MRC_1.pixel_size * MRC_2.header.my
+  MRC_2.header.zlen = MRC_1.pixel_size * MRC_2.header.mz
+
+  MRC_2.header.labels_1 = MRC_1.header.labels_1
+  MRC_2.header.labels_2 = MRC_1.header.labels_2
+
+  return MRC_2
+end
+
+local function add_tilt_to_temp_MRC (MRC, subframes)
+  local a_tilt = {}
+
+  for _, subframe in ipairs(subframes) do
+    table.insert(a_tilt, tonumber(subframe[2]))
+  end
+
+  MRC:add_IMOD_extended_header_field('a_tilt', a_tilt)
+
+  return MRC
+end
+
+local function copy_extended_header_field (MRC_1, MRC_2, field)
+  local shift = 0
+
+  for index_2 = 1, MRC_2.header.nz do
+    local index_1 = index_2 + shift
+    local tilt_1 = MRC_1.extended_header[index_1]['a_tilt']
+    local tilt_2 = MRC_2.extended_header[index_2]['a_tilt']
+
+    if math.abs(tilt_1 - tilt_2) < 0.1 then
+      local value = MRC_1.extended_header[index_1][field]
+      MRC_2.extended_header[index_2][field] = value
+    else
+      shift = shift + 1
+    end
+  end
+
+  return MRC_2
+end
+
+local function copy_extended_header (MRC_1, MRC_2)
+  if not MRC_1.extended_header then
+    return MRC_2
+  elseif not MRC_1.extended_header[1]['a_tilt'] then
+    return MRC_2
+  end
+
+  for field, _ in pairs(MRC_1.extended_header[1]) do
+    MRC_2 = copy_extended_header_field(MRC_1, MRC_2, field)
+  end
+
+  return MRC_2
+end
+
+local function update_global_data (MRC_1, MRC_2, output)
+  local global_data_1 = tomoauto.mdoc.get_global_data(MRC_1)
+  local global_data_2 = {}
+
+  for field, value in pairs(global_data_1) do
+    global_data_2[field] = value
+  end
+
+  global_data_2.ImageFile = output
+  global_data_2.ImageSize = MRC_2.header.nx .. '' .. MRC_2.header.ny
+  global_data_2.DataMode  = MRC_2.header.mode
+
+  return global_data_2
+end
+
+local function update_section_data (MRC_1, MRC_2)
+  local section_data_2 = {}
+  local section_data_1 = tomoauto.mdoc.get_section_data(MRC)
+  local shift = 0
+
+  for section_2 = 1, MRC_2.header.nz do
+    local section_1 = section_2 + shift
+    local tilt_1 = section_data_1[section_1]['TiltAngle']
+    local tilt_2 = MRC_2.extended_header[section_2]['a_tilt']
+
+    if math.abs(tilt_1 - tilt_2) < 0.1 then
+      section_data_2[section_2] = {}
+      for field, value in pairs(section_data_1[section_1]) do
+	if field == 'SubFramePath' then
+	  section_data_2[section_2][field] = nil
+	elseif field == 'MinMaxMean' then
+	  section_data_2[section_2][field] = nil
+	else
+	  section_data_2[section_2][field] = value
+	end
+      end
+    else
+      shift = shift + 1
+    end
+  end
+  
+  return section_data_2
+end
+
+local function write_driftcorr_mdoc (MRC_1, MRC_2, output)
+  local global_data = update_global_data(MRC_1, MRC_2, output)
+  local label_data = tomoauto.mdoc.get_label_data(MRC_1)
+  local section_data = update_section_data(MRC_1, MRC_2) 
+
+  tomoauto.mdoc.write_mdoc(output .. '.mdoc', global_data, label_data,
+			   section_data)
+end
 
 local parser = yalgo:new_parser('Make a tilt-series with proper header from ' ..
   'motion-corrected micrographs.')
 
--- Handle command-line arguments
 parser:add_argument({
   name = 'input',
   is_positional = true,
@@ -59,21 +280,22 @@ parser:add_argument({
 parser:add_argument({
   name = 'output',
   is_positional = true,
-  default_value = 'TOMOAUTO{basename}_driftcorr.st',
   description = 'Output motion corrected tilt-series',
   meta_value = 'OUTPUT.st'
 })
 
 parser:add_argument({
-  name = 'run_motioncorr',
-  long_option = '--MOTIONCORR',
-  short_option = '-M',
-  description = 'Run MOTIONCORR on non corrected sub-frames if needed',
+  name = 'mdoc',
+  long_option = '--mdoc',
+  short_option = '-m',
+  has_argument = true,
+  description = 'Use provided mdoc file as opposed to default.',
+  meta_value = 'MDOC_FILE'
 })
 
 parser:add_argument({
-  name = 'local_config',
-  long_option = '--local-config',
+  name = 'local_configuration',
+  long_option = '--local-configuration',
   short_option = '-L',
   has_argument = true,
   description = 'Use provided local configuration file.',
@@ -81,136 +303,25 @@ parser:add_argument({
 })
 
 local options = parser:get_arguments()
+assert(tomoauto.utils.is_file(options.input))
+local local_conf = options.local_configuration
+local sandbox = tomoauto.config.load_local_configuration(local_conf)
 
--- Error if input file does not exist
-if not tomoauto.utils.is_file(options.input) then
-  error('ERROR: dose_fractioned_to_stack: Input file does not exist.\n')
+local MRC = assert(tomoauto.mrcio.new_MRC(options.input, nil, options.mdoc))
+assert(MRC.log or MRC.mdoc, 'MDOC or SerialEM log required')
+local subframes = MRC.mdoc and get_subframes_from_mdoc(MRC) or
+			       get_subframes_from_log(MRC)
+
+subframes = get_driftcorr_subframe_paths(subframes)
+local temp_MRC = assert(make_temp_driftcorr_stack(MRC, subframes, sandbox))
+temp_MRC = update_temp_header(MRC, temp_MRC)
+temp_MRC = add_tilt_to_temp_MRC(temp_MRC, subframes)
+temp_MRC = copy_extended_header(MRC, temp_MRC)
+
+local output = options.output or MRC.basename .. '_driftcorr.st'
+assert(temp_MRC:write(output))
+
+if MRC.mdoc then
+  write_driftcorr_mdoc(input_MRC, temp_MRC, output)
 end
-
--- Create MRC object for the original SerialEM tilt-series
-local input_mrc = tomoauto.mrcio:new_mrc(options.input)
-local log_filename = input_mrc.basename .. '.log'
-
-if not input_mrc.has_mdoc and not tomoauto.utils.is_file(log_filename) then
-  error('ERROR: dose_fractioned_to_stack: No mdoc or log file to make stack.\n')
-end
-
-local timestamp_regex = '%u%l%l%d%d_%d%d%.%d%d%.%d%d%.mrc'
-local subframes = {}
-
--- mdoc routine
-if input_mrc.has_mdoc then
-  local mdoc_file = io.open(input_mrc.mdoc_filename, 'r')
-  for line in mdoc_file:lines('*l') do
-    if string.match(line, 'ZValue') then
-      table.insert(subframes, {})
-
-    elseif string.match(line, 'TiltAngle') then
-      local tilt_angle = string.match(line, 'TiltAngle = (-?%d+%.%d+)')
-      subframes[#subframes][2] = tilt_angle
-
-    elseif string.match(line, 'SubFramePath') then
-      local subframe = string.match(line, timestamp_regex)
-      subframes[#subframes][1] = subframe
-    end
-  end
-
-else
-  local log_file = io.open(log_filename, 'r')
-  for line in log_file:lines('*l') do
-    if string.match(line, 'Opened new file') then
-      subframes = {}
-
-    elseif string.match(line, '%d+ frames were saved') then
-      local subframe = string.match(line, timestamp_regex)
-      if #subframes ~= 0 and #subframes[#subframes] == 1 then
-	subframes[#subframes][1] = subframe
-
-      else
-	table.insert(subframes, { subframe })
-      end
-
-    elseif string.match(line, 'Saved Z') then
-      local tilt_angle = string.match(line, 'Tilt = (-?%d+%.%d+)')
-      subframes[#subframes][2] = tilt_angle
-    end
-  end
-
-  if #subframes ~= 0 and #subframes[#subframes] == 1 then
-    table.remove(subframes)
-  end
-end
-
-if #subframes == 0 then
-  error('ERROR: dose_fractioned_to_stack: No subframes found in mdoc or log ' ..
-	'file.\n')
-end
-
-table.sort(subframes, function (t1, t2) return t1[2] <= t2[2] end)
-if options.run_motioncorr then
-  for _, subframe in ipairs(subframes) do
-    subframe_mrc = tomoauto.mrcio:new_mrc(subframe[1])
-    if options.local_config then
-      tomoauto.config:load_local_config(options.local_config)
-    end
-
-    tomoauto.config.MOTIONCORR:run(subframe_mrc)
-    subframe_mrc = nil
-  end
-end
-
-local driftcorr_subframes = {}
-for _, subframe in ipairs(subframes)  do
-  local driftcorr_subframe = tomoauto.utils.basename(subframe[1], '.mrc') ..
-    '_driftcorr.mrc'
-
-  if tomoauto.utils.is_file(driftcorr_subframe) then
-    table.insert(driftcorr_subframes, { driftcorr_subframe, subframe[2] })
-
-  else
-    io.stderr:write('WARNING: dose_fractioned_to_stack: ' ..
-      driftcorr_subframe .. ' does not exist.\n')
-
-  end
-end
-
-local list_data = #driftcorr_subframes .. '\n'
-for _, subframe in ipairs(driftcorr_subframes) do
-  list_data = list_data .. subframe[1] .. '\n0\n'
-end
-
-local list_filename = input_mrc.basename .. '_filelist.txt'
-local list_file = io.open(list_filename, 'w')
-list_file:write(list_data)
-list_file:close()
-list_data = nil
-
-local temp_filename = input_mrc.basename .. '_temp.st'
-local newstack = {
-  FileOfInputs = { use = true, value = list_filename },
-  OutputFile = { use = true, value = temp_filename }
-}
-
-tomoauto.config.newstack:clear()
-tomoauto.config.newstack:update(newstack)
-
-if options.local_config then
-  tomoauto.config:load_local_config(options.local_config)
-end
-
-tomoauto.config.newstack:run(input_mrc)
-tomoauto.utils.run('rm ' .. list_filename)
-tomoauto.utils.run('rm ' .. input_mrc.basename .. '_newstack.com')
-tomoauto.utils.run('rm ' .. input_mrc.basename .. '_newstack.log')
-
-temp_mrc = tomoauto.mrcio:new_mrc(temp_filename)
-temp_mrc.header.mx = temp_mrc.header.nx
-temp_mrc.header.my = temp_mrc.header.ny
-temp_mrc.header.mz = temp_mrc.header.nz
-temp_mrc.header.xlen = input_mrc.pixel_size_A * temp_mrc.header.mx
-temp_mrc.header.ylen = input_mrc.pixel_size_A * temp_mrc.header.my
-temp_mrc.header.zlen = input_mrc.pixel_size_A * temp_mrc.header.mz
-temp_mrc.header.label_1 = input_mrc.header.label_1
-temp_mrc.header.label_2 = input_mrc.header.label_2
-
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

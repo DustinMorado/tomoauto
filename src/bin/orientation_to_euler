@@ -1,159 +1,63 @@
 #!/usr/bin/env lua
--- orientation2euler.lua
--- Reads a position file specifying a center and rough orientation of a particle
--- and generates a file with euler angles in the Dynamo format to be put in a
--- project table.
+--[[
+  Copyright (c) 2015 Dustin Reed Morado
 
-local io, math, table, string = io, math, table, string
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+--]]
+
+local tomoauto = require('tomoauto')
 local yalgo = require('yalgo')
+local io, os, table, string = io, os, table, string
+local assert, error = assert, error
 
---- Normalizes a vector within a specified tolerance
--- @param v A n-dimensional sequence describing a row vector
--- @return nv normalized v
-local function normalize (v)
-  local EPSILON = 1E-12
+_ENV = nil
 
-  local norm = 0
-  for i = 1, #v do
-    norm = norm + v[i]^2
-  end
+local parser, options, coordinates, object_regex, contour_regex, points_regex
+local has_object, has_contour, has_points
+local object_1, object_1, contour_1, contour_2, x1, x2, y1, y2, z1, z2
+local z_axis, orientation, axis, angle, matrix
+local euler_1, euler_2, euler_3
 
-  norm = math.sqrt(norm)
-  inorm = 1 / norm
-  local nv = {}
-
-  if norm <= EPSILON then
-    for i = 1, #v do
-      nv[i] = 0
-    end
-  else
-    for i = 1, #v do
-      nv[i] = v[i] * inorm
-    end
-  end
-
-  return nv
-end
-
---- Calculates the cross product of two vectors in R3
--- @param v1 A 3-dimensional sequence describing a vector in R3
--- @param v2 Same a v1
--- @return cp A 3-dimensional sequence describing the cross product of v1, v2
-local function get_cross_product (v1, v2)
-  return {
-    v1[2] * v2[3] - v1[3] * v2[2],
-    v1[3] * v2[1] - v1[1] * v2[3],
-    v1[1] * v2[2] - v1[2] * v2[1]
-  }
-end
-
---- Calculates the dot product of two vectors
--- @param v1 A n-dimensional sequence describing a row vector in Rn
--- @param v2 Same as v2
--- @return dp The dot product of v1 and v2
-local function get_dot_product (v1, v2)
-  local dp = 0
-  for i = 1, #v1 do
-    dp = dp + v1[i] * v2[i]
-  end
-
-  return dp
-end
-
---- Calculate axis angle representation for two vectors in R3
--- This function determines the axis angle representation describing the
--- rotation from one vector to another.
--- @param v1 A 3-dimensional sequence describing a row vector in R3
--- @param v2 Same as v2
--- @return axis A 3-dimensional sequence of the unit axis of rotation
--- @return angle The angle describing the rotation.
-local function get_axis_angle (v1, v2)
-  local unit_v1 = normalize(v1)
-  local unit_v2 = normalize(v2)
-
-  -- v1 . v2 = ||v1|| * ||v2|| * cos(theta)
-  local angle = math.acos(get_dot_product(unit_v1, unit_v2))
-
-  -- || v1 x v2 || = || v1|| * ||v2|| * sin(theta)
-  local cp = get_cross_product(unit_v1, unit_v2)
-  local a_sin = math.sin(angle)
-  local a_csc = 1 / a_sin
-  local axis = {}
-  for i = 1, 3 do
-    axis[i] = cp[i] * a_csc
-  end
-
-  return axis, angle
-end
-
---- Convert axis angle to rotation matrix
--- Use Rodrigue's Rotation Formula to convert axis-angle to rotation matrix
--- @param axis A 3-dimensional sequence of the unit axis of rotation
--- @param angle The angle describing the rotation
--- @return R The rotation matrix
-local function axis_angle_to_rotation_matrix (axis, angle)
-  local a_sin = math.sin(angle)
-  local a_cos = math.cos(angle)
-  local a_ver = 1 - a_cos
-  local x, y, z = table.unpack(axis)
-
-  R = {
-    {
-      a_ver * x * x + a_cos,
-      a_ver * x * y - a_sin * z,
-      a_ver * x * z + a_sin * y
-    },
-    {
-      a_ver * x * y + a_sin * z,
-      a_ver * y * y + a_cos,
-      a_ver * y * z - a_sin * x
-    },
-    {
-      a_ver * x * z - a_sin * y,
-      a_ver * y * z + a_sin * x,
-      a_ver * z * z + a_cos
-    }
-  }
-
-  return R
-end
-
-local function rotation_matrix_to_euler_angles (rotation_matrix)
-  local EPSILON = 1E-4
-  local eulers = {}
-  if math.abs(rotation_matrix[3][3] - 1) < EPSILON then
-    eulers[1] = 0
-    eulers[2] = 0
-    eulers[3] = math.atan(rotation_matrix[2][1], rotation_matrix[1][1])
-    eulers[3] = eulers[3] * 180 / math.pi
-  elseif math.abs(rotation_matrix[3][3] + 1) < EPSILON then
-    eulers[1] = 0
-    eulers[2] = 180
-    eulers[3] = math.atan(rotation_matrix[2][1], rotation_matrix[1][1])
-    eulers[3] = eulers[3] * 180 / math.pi
-  else
-    eulers[1] = math.atan(rotation_matrix[3][1], rotation_matrix[3][2])
-    eulers[2] = math.acos(rotation_matrix[3][3])
-    eulers[3] = math.atan(rotation_matrix[1][3], -1 * rotation_matrix[2][3])
-    eulers[1] = eulers[1] * 180 / math.pi
-    eulers[2] = eulers[2] * 180 / math.pi
-    eulers[3] = eulers[3] * 180 / math.pi
-  end
-
-  return eulers
-end
+z_axis = { n = 1, { n = 3, 0, 0, 1 } }
 
 parser = yalgo:new_parser('Transform pos file to Euler angles')
 parser:add_argument({
-  name  = 'dynamo',
-  long_option = '--dynamo',
-  description = 'Generate Euler angles used in Dynamo table'
+  name = 'center',
+  long_option = '--center',
+  short_option = '-c',
+  description = 'Use Cell center (last coordinate) to define orientation.'
 })
 
 parser:add_argument({
-  name  = 'i3',
-  long_option = '--i3',
-  description = 'Generate Euler angles used in i3 table [default]'
+  name  = 'format',
+  long_option = '--format',
+  description = 'Type of euler angles to output [i3 or dynamo]',
+  has_argument = true,
+  default_value = 'I3',
+  meta_value = 'FORMAT'
+})
+
+parser:add_argument({
+  name = 'reverse',
+  long_option = '--reverse',
+  short_option = '-r',
+  description = 'Reverse orientation order definiton.',
 })
 
 parser:add_argument({
@@ -168,69 +72,153 @@ parser:add_argument({
   name = 'output',
   is_positional = true,
   description = 'Output filename [default is stdout]',
+  default_value = io.stdout,
   meta_value = 'OUTPUT_FILE'
 })
 
 options = parser:get_arguments()
+options.format = string.upper(options.format)
+if options.format ~= 'I3' or options.format ~= 'DYNAMO' then
+  io.stderr:write('\n\nWARNING: orientation_to_euler:\n\t' ..
+		  'Invalid format: ' .. options.format .. ' given ' ..
+		  'defaulting to i3 format.\n')
 
-if options.dyanmo and options.i3 then
-  error('ERROR: orientation2euler: You cannot specify both --dynamo and --i3.')
+  options.format = 'I3'
 end
 
--- First we need to open the pos file
-input_file = assert(io.open(options.input, 'r'))
-reverse_eulers = not options.dynamo or options.i3
+assert(tomoauto.utils.is_file(options.input))
+assert(io.input(options.input))
+assert(io.output(options.output))
 
-pos_table = {}
-for line in input_file:lines('l') do
-  table.insert(pos_table, {})
-  for field in string.gmatch(line, '%d+') do
-    table.insert(pos_table[#pos_table], field)
+coordinates = {}
+object_regex  = '(%d+)%s+(%d+)%s+(%d+)%s+(%d+)%s+(%d+)'
+contour_regex = '(%d+)%s+(%d+)%s+(%d+)%s+(%d+)'
+points_regex  = '(%d+)%s+(%d+)%s+(%d+)'
+for line in io.lines() do
+  if line ~= '' and not string.match(line, '^#') then
+    if not has_points then -- Define posfile type
+      has_object  = string.match(line, object_regex) and true
+      has_contour = string.match(line, contour_regex) and true
+      has_points  = string.match(line, points_regex) and true
+      if not has_points then
+	error('\n\nERROR: orientation_to_euler:\n  ' ..
+	      'Malformed posfile, first used line contains less than ' ..
+	      'three fields.\n')
+      end
+    end
+
+    if has_object then
+      table.insert(coordinates, table.pack(string.match(line, object_regex)))
+      if coordinates[#coordinates].n ~= 5 then
+	error('\n\nERROR: orientation_to_euler:\n  ' ..
+	      'Malformed posfile, number of fields varies across lines.\n')
+      end
+    elseif has_contour then
+      table.insert(coordinates, table.pack(string.match(line, contour_regex)))
+      if coordinates[#coordinates].n ~= 4 then
+	error('\n\nERROR: orientation_to_euler:\n  ' ..
+	      'Malformed posfile, number of fields varies across lines.\n')
+      end
+    else
+      table.insert(coordinates, table.pack(string.match(line, points_regex)))
+      if coordinates[#coordinates].n ~= 3 then
+	error('\n\nERROR: orientation_to_euler:\n  ' ..
+	      'Malformed posfile, number of fields varies across lines.\n')
+      end
+    end
   end
 end
-input_file:close()
-pos_start_index = #pos_table[1] - 3 + 1
 
-coord_table = {}
-for i = 1, #pos_table, 2 do
-  local coord = {}
-  for j = pos_start_index, #pos_table[1] do
-    table.insert(coord, pos_table[i + 1][j] - pos_table[i][j])
+if #coordinates < 2 then
+  error('\n\nERROR: orientation_to_euler:\n  ' ..
+	'Malformed posfile, less than two coordinates found.\n')
+elseif not options.center and #coordinates % 2 ~= 0 then
+  error('\n\nERROR: orientation_to_euler:\n  ' ..
+	'Malformed posfile, Odd number of coordinates for two point method.\n')
+end
+
+if options.center then
+  local reference_index, coordinate_start, coordinate_end
+
+  if options.reverse then
+    reference_index  = 1
+    coordinate_start = 2
+    coordinate_end   = #coordinates
+  else
+    reference_index  = #coordinates
+    coordinate_start = 1
+    coordinate_end   = #coordinates - 1
   end
 
-  table.insert(coord_table, coord)
-end
-
-pos_table = nil
-euler_table = {}
-for i = 1, #coord_table do
-  local axis, angle = get_axis_angle({0, 0, 1}, coord_table[i])
-  local rotation_matrix = axis_angle_to_rotation_matrix(axis, angle)
-  local eulers = rotation_matrix_to_euler_angles(rotation_matrix)
-  if reverse_eulers then
-    local new_eulers = {
-      -1 * eulers[3],
-      -1 * eulers[2],
-      -1 * eulers[1]
-    }
-    eulers = new_eulers
-    new_eulers = nil
+  if has_object then
+    object_1, contour_1, x1, y1, z1 = table.unpack(coordinates[reference_index])
+  elseif has_contour then
+    contour_1, x1, y1, z1 = table.unpack(coordinates[reference_index])
+  else
+    x1, y1, z1 = table.unpack(coordinates[reference_index])
   end
 
-  table.insert(euler_table, eulers)
+  for i = coordinate_start, coordinate_end do
+    if has_object then
+      object_2, contour_2, x2, y2, z2 = table.unpack(coordinates[i])
+    elseif has_contour then
+      contour_2, x2, y2, z2 = table.unpack(coordinates[i])
+    else
+      x2, y2, z2 = table.unpack(coordinates[i])
+    end
+
+    orientation = { n = 1, { n = 3, x2 - x1, y2 - y1, z2 -z1 } }
+    axis, angle = tomoauto.transforms.axis_angle(z_axis, orientation)
+    rot_matrix = tomoauto.transforms.axis_angle_to_rotation_matrix(axis, angle)
+    if options.format == 'I3' then
+      rot_matrix = tomoauto.transforms.transpose(rot_matrix)
+    end
+
+    euler_1, euler_2, euler_3 = tomoauto.transforms.rotation_matrix_to_euler_angles(
+      rot_matrix, nil, true)
+    io.write(string.format('%10.4f %10.4f %10.4f\n', euler_1, euler_2, euler_3))
+  end
+else
+  for i = 1, #coordinates, 2 do
+    if options.reverse then
+      if #coordinates[i] == 5 then
+	object_2, contour_2, x2, y2, z2 = table.unpack(coordinates[i])
+	object_1, contour_1, x1, y1, z1 = table.unpack(coordinates[i + 1])
+      elseif #coordinates[i] == 4 then
+	contour_2, x2, y2, z2 = table.unpack(coordinates[i])
+	contour_1, x1, y1, z1 = table.unpack(coordinates[i + 1])
+      else
+	x2, y2, z2 = table.unpack(coordinates[i])
+	x1, y1, z1 = table.unpack(coordinates[i + 1])
+      end
+    else
+      if #coordinates[i] == 5 then
+	object_1, contour_1, x1, y1, z1 = table.unpack(coordinates[i])
+	object_2, contour_2, x2, y2, z2 = table.unpack(coordinates[i + 1])
+      elseif #coordinates[i] == 4 then
+	contour_1, x1, y1, z1 = table.unpack(coordinates[i])
+	contour_2, x2, y2, z2 = table.unpack(coordinates[i + 1])
+      else
+	x1, y1, z1 = table.unpack(coordinates[i])
+	x2, y2, z2 = table.unpack(coordinates[i + 1])
+      end
+    end
+
+    z_axis = { n = 1, { n = 3, 1, 0, 0 } }
+    orientation = { n = 1, { n = 3, x2 - x1, y2 - y1, z2 -z1 } }
+    axis, angle = tomoauto.transforms.axis_angle(z_axis, orientation)
+    rot_matrix = tomoauto.transforms.axis_angle_to_rotation_matrix(axis, angle)
+    if options.format == 'I3' then
+      rot_matrix = tomoauto.transforms.transpose(rot_matrix)
+    end
+
+    euler_1, euler_2, euler_3 = tomoauto.transforms.rotation_matrix_to_euler_angles(
+      rot_matrix, nil, true)
+    io.write(string.format('%10.4f %10.4f %10.4f\n', euler_1, euler_2, euler_3))
+  end
 end
 
-coord_table = nil
-trf_file = io.stdout
-if options.output then
-  trf_file = assert(io.open(options.output, 'w'))
-end
-
-for _, v in ipairs(euler_table) do
-  trf_file:write(string.format('%10.4f %10.4f %10.4f\n', table.unpack(v)))
-end
-
-if options.output then
-  trf_file:close()
-end
+io.flush()
+io.close()
+os.exit(0)
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

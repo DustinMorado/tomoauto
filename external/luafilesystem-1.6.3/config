@@ -1,7 +1,7 @@
-# Installation directories
+#Installation directories
 
 # Default installation prefix
-PREFIX=${TOMOAUTOROOT}
+PREFIX= ${TOMOAUTOROOT}
 
 # System's libraries directory (where binary libraries are installed)
 LUA_LIBDIR= $(PREFIX)/lib/lua/5.3
@@ -17,7 +17,7 @@ LIBNAME= $T.so.$V
 
 # Compilation directives
 WARN= -O2 -Wall -fPIC -W -Waggregate-return -Wcast-align -Wmissing-prototypes -Wnested-externs -Wshadow -Wwrite-strings -pedantic
-INCS= -I$(LUA_INC)
+INCS= -I"$(LUA_INC)"
 CFLAGS= $(WARN) $(INCS)
 CC= gcc
 

@@ -1,108 +1,81 @@
 #!/usr/bin/env talua
---- Prints MRC standard header to screen.
--- This program prints the information of the standard header in an MRC file.
--- Similar to the IMOD command header, although this one puts out a littel more
--- information pertaining to whether or not the file is IMOD or Agard style.
---
--- Dependencies: `MRC_IO_lib`
---
--- @script print_header
--- @author Dustin Morado
--- @license GPLv3
--- @release 0.2.10
+--[[
+  Copyright (c) 2015 Dustin Reed Morado
 
-local MRC_IO_lib   = require 'MRC_IO_lib'
-local io, string = io, string
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
---- Prints MRC standard header to screen.
--- Reads the first 1024 bytes of an MRC and prints the information
--- @param input_filename MRC file to read e.g. 'image.mrc'
-function print_header(input_filename)
-   local header = MRC_IO_lib.get_header(input_filename)
-   io.stdout:write('\n')
-   io.stdout:write(string.format('Image Filename:\t\t%s\n\n', input_filename))
-   io.stdout:write(string.format(
-      'Number of columns, rows, sections ..........\t%d\t%d\t%d\n',
-      header.nx, header.ny, header.nz))
-   io.stdout:write(string.format(
-      'Map mode ...................................\t%d\n', header.mode))
-   io.stdout:write(string.format(
-      'Image size lower bounds ....................\t%d\t%d\t%d\n',
-      header.nxstart, header.nystart, header.nzstart))
-   io.stdout:write(string.format(
-      'Cell Pixel Spacing (Angstroms) .............\t%6.4f\t%6.4f\t%6.4f\n',
-      header.xlen/header.mx, header.ylen/header.my, header.zlen/header.mz))
-   io.stdout:write(string.format(
-      'Cell Angles (degrees) ......................\t%5.2f\t%5.2f\t%5.2f\n',
-      header.alpha, header.beta, header.gamma))
-   local axes = { 'X', 'Y', 'Z'}
-   io.stdout:write(string.format(
-      'Axis Mappings ..............................\t%s\t%s\t%s\n',
-      axes[header.mapc], axes[header.mapr], axes[header.maps]))
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
 
-	if header.mode ~= 2 then
-	   io.stdout:write(string.format(
-         'Minimum density ............................\t%d\n',
-         header.amin))
-	   io.stdout:write(string.format(
-         'Maximum density ............................\t%d\n',
-         header.amax))
-	   io.stdout:write(string.format(
-         'Mean density ...............................\t%d\n',
-         header.amean))
-	else
-	   io.stdout:write(string.format(
-         'Minimum density ............................\t%10.4f\n',
-         header.amin))
-	   io.stdout:write(string.format(
-         'Maximum density ............................\t%10.4f\n',
-         header.amax))
-	   io.stdout:write(string.format(
-         'Mean density ...............................\t%10.4f\n',
-         header.amean))
-	end
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+--]]
 
-	io.stdout:write(string.format(
-      'Extra bytes after header until image data ..\t%d\n',
-      header.Next))
-   io.stdout:write(string.format(
-      'Extended header Information (nint, nreal) ..\t%d\t%d\n',
-      header.nint, header.nreal))
-	io.stdout:write(string.format(
-      'Image header fields nd1, nd2, vd1, vd2 .....\t%d\t%d\t%d\t%d\n',
-      header.nd1, header.nd2, header.vd1, header.vd2))
-	io.stdout:write(string.format(
-      'Original tilt angles .......................\t%5.2f\t%5.2f\t%5.2f\n',
-      header.tiltAngles[1], header.tiltAngles[2], header.tiltAngles[3]))
-	io.stdout:write(string.format(
-      'Current tilt angles ........................\t%5.2f\t%5.2f\t%5.2f\n',
-      header.tiltAngles[4], header.tiltAngles[5], header.tiltAngles[6]))
-	io.stdout:write(string.format(
-      'Origin of image ............................\t%5.2f\t%5.2f\t%5.2f\n',
-      header.xorg, header.yorg, header.zorg))
+local tomoauto = require('tomoauto')
+local yalgo = require('yalgo')
+local io, os = io, os
+local assert, ipairs = assert, ipairs
 
-   local is_IMOD = MRC_IO_lib.is_IMOD(header.nint, header.nreal)
-	local mrcType = is_IMOD and 'IMOD' or 'AGARD'
-	io.stdout:write(string.format(
-      'MRC format .................................\t%s\n', mrcType))
-	io.stdout:write(string.format(
-      'Number of labels in header .................\t%d\n\n', header.nlabl))
+_ENV = nil
 
-	for i = 1, header.nlabl do
-	   io.stdout:write(string.format('%s\n', header.labels[i]))
-	end
+
+local parser = yalgo:new_parser('Print MRC header to stdout.')
+
+parser:add_argument({
+  name = 'input',
+  description = 'Input tilt-series to get header.',
+  meta_value = 'INPUT.st',
+  is_positional = true,
+  is_required = true
+})
+
+local options = parser:get_arguments()
+
+assert(tomoauto.utils.is_file(options.input))
+local input_MRC = assert(tomoauto.mrcio.new_MRC(options.input))
+
+local header_fields = {
+  'nx', 'ny', 'nz',
+  'mode',
+  'nxstart', 'nystart', 'nzstart',
+  'mx', 'my', 'mz',
+  'xlen', 'ylen', 'zlen',
+  'alpha', 'beta', 'gamma',
+  'mapc', 'mapr', 'maps',
+  'amin', 'amax', 'amean',
+  'ispg',
+  'Next',
+  'dvid',
+  'extra_1',
+  'extType',
+  'nversion',
+  'extra_2',
+  'nint', 'nreal',
+  'extra_3',
+  'imodStamp', 'imodFlags',
+  'idtype', 'lens',
+  'nd1', 'nd2', 'vd1', 'vd2',
+  'tiltAngles_1', 'tiltAngles_2', 'tiltAngles_3',
+  'tiltAngles_4', 'tiltAngles_5', 'tiltAngles_6',
+  'xorg', 'yorg', 'zorg',
+  'cmap', 'stamp', 'rms', 'nlabl',
+  'labels_1', 'labels_2', 'labels_3', 'labels_4', 'labels_5',
+  'labels_6', 'labels_7', 'labels_8', 'labels_9', 'labels_10'
+}
+
+for _, field in ipairs(header_fields) do
+  io.stdout:write(field .. ':\t\t' .. input_MRC.header[field] .. '\n')
 end
 
-if not arg[1] then
-   io.write('\nUsage: print_header <MRC file>\n\n')
-   os.exit(0)
-end
-
-local status, err = pcall(print_header, arg[1])
-if not status then
-   io.stderr:write(err)
-   os.exit(1)
-else
-   os.exit(0)
-end
+os.exit(0)
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :
