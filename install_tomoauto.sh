@@ -1,144 +1,191 @@
-#!/bin/sh
-#------------------------------------------------------------------------------#
+#!/bin/bash
+################################################################################
+#                                                                              #
 #                             install_tomoauto.sh                              #
+#                                                                              #
 #------------------------------------------------------------------------------#
 # This shell script handles the installation of tomoauto.                      #
 #------------------------------------------------------------------------------#
-# Author: Dustin Morado                                                        #
-# Written: December 2nd 2014                                                   #
-# Contact: Dustin dot Morado at gmail                                          #
-#------------------------------------------------------------------------------#
-printf "Hello \"$USER\"!\n"
+# AUTHOR: Dustin Morado                                                        #
+# VERSION: 0.2.20                                                              #
+# DATE: 12.02.2015                                                             #
+################################################################################
+SYSTEM_TYPE=$(uname)
+case ${SYSTEM_TYPE} in
+  Darwin)
+    PLATFORM=macosx
+    ;;
+  Linux)
+    PLATFORM=linux
+    ;;
+  *)
+    printf "Error: tomoauto is not designed for system type: ${SYSTEM_TYPE}"
+    printf "\nAborting installation... Goodbye!\n\n"
+    exit 1
+    ;;
+esac
+
+printf "Hello ${USER}\n"
 printf "This shell script handles the installation of tomoauto\n"
 printf "======================================================\n\n"
+
 printf "Where is tomoauto currently located?\n"
-printf "\t(Default: \"$PWD\"): "
-read tomoauto_answer
+printf "\t(Default: ${PWD}): "
+read TOMOAUTO_DIR
 
-if [ "$tomoauto_answer" ]; then
-    tomoauto_dir="$tomoauto_answer"
-else
-    tomoauto_dir="$PWD"
+if [[ -z "${TOMOAUTO_DIR}" ]]
+then
+  TOMOAUTO_DIR="${PWD}"
 fi
 
-printf "\nInstalling tomoauto to: \"$tomoauto_dir\"\n\n"
+if [[ ! -d "${TOMOAUTO_DIR}" || ! -w "${TOMOAUTO_DIR}" ]]
+  then
+    printf "ERROR: ${TOMOAUTO_DIR} is not a writeable-directory!\n"
+    printf "Aborting the installation... Goodbye!\n\n"
+    exit 1
+fi
 
-printf "Do you want to proceed with the installation? [Y/N]: "
-read user_approval
+while true
+do
+  printf "\nInstalling tomoauto to: ${TOMOAUTO_DIR}\n\n"
+  printf "\tDo you want to proceed with the installation? [Y/N]: "
+  read DO_INSTALL
 
-case "$user_approval" in
+  case "$DO_INSTALL" in
     Y|y)
-        printf "Proceeding...\n\n"
-        ;;
+      printf "Proceeding...\n\n"
+      break
+      ;;
     N|n)
-        printf "Aborting installation... Goodbye!\n\n"
-        exit 0
-        ;;
+      printf "Aborting installation... Goodbye!\n\n"
+      exit 0
+      ;;
     *)
-        printf "Error: Invalid user input.\n"
-        printf "Aborting installation... Goodbye!\n\n"
-        exit 1
-        ;;
-esac
+      printf "Error: Invalid user input.\n"
+      printf "Try again or press Ctrl-C or N to abort installation\n\n"
+      ;;
+  esac
+done
 
-user_shell=$(basename "$SHELL")
-tomoauto_init_file="$tomoauto_dir"/tomoauto_init."$user_shell"
-export TOMOAUTOROOT="$(echo "$tomoauto_dir" | sed 's/ /\\ /g')"
-lua_dir="$tomoauto_dir"/lua
-lua_install="lua-5.2.3"
-lfs_install="luafilesystem-1.6.2"
-struct_install="struct-0.2"
+# tomoauto variables
+export TOMOAUTOROOT="${TOMOAUTO_DIR}"
+SHELL_TYPE=$(basename ${SHELL})
+TOMOAUTOINIT="${TOMOAUTOROOT}/tomoauto_init.${SHELL_TYPE}"
 
-case $(uname) in
-    Darwin)
-        platform=macosx
-        ;;
-    Linux)
-        platform=linux
-        ;;
-    *)
-        printf "Error: Could not configure tomoauto for $(uname)\n"
-        printf "Aborting installation... Goodbye!\n\n"
-        exit 1
-        ;;
-esac
+# Lua variables
+LUA_VERSION="5.3.1"
+LUA_DIR="${TOMOAUTOROOT}/external/lua-${LUA_VERSION}"
 
-if [ ! -w "$tomoauto_dir" ]; then
-    printf "Error: You don't have write permissions for \"$tomoauto_dir\"\n"
-    printf "Aborting installation... Goodbye!\n\n"
-fi
+# LFS variables
+LFS_VERSION="1.6.3"
+LFS_DIR="${TOMOAUTOROOT}/external/luafilesystem-${LFS_VERSION}"
 
 set -e
+START_DIR="${PWD}"
+# Lua configuration and install
+printf "Configuring and installing Lua: Log at $TOMAUTOROOT/lua_install.log\n"
+printf "======================================================\n\n"
+cd "${LUA_DIR}"
+awk -v tomoautoroot="${TOMOAUTOROOT}" \
+  '$0 ~ "#define LUA_ROOT" \
+    { sub(/TOMOAUTOROOT/, tomoautoroot); print } \
+   $0 !~ "#define LUA_ROOT" \
+    { print }' src/luaconf.h > src/luaconf.h.new
 
-if [ -d "$lua_dir"/"$lua_install" ]; then
-    rm -rf "$lua_dir"/"$lua_install"
-fi
-tar xvJf "$lua_dir"/"$lua_install".tar.xz --directory "$lua_dir" > \
-    /dev/null 2>&1
-cd "$lua_dir"/"$lua_install"
-make "$platform" > "$lua_dir"/lua_install.log 2>&1
-make "$platform" install >> "$lua_dir"/lua_install.log 2>&1
-cd - > /dev/null
-if [ -L "$tomoauto_dir"/bin/talua ]; then
-    rm "$tomoauto_dir"/bin/talua
-fi
-ln -s "$tomoauto_dir"/lua/bin/lua "$tomoauto_dir"/bin/talua
+mv src/luaconf.h src/luaconf.h.bak && mv src/luaconf.h.new src/luaconf.h
+make ${PLATFORM} 2>&1 | tee "${TOMOAUTOROOT}/lua_install.log"
 
-if [ -d "$lua_dir"/"$lfs_install" ]; then
-    rm -rf "$lua_dir"/"$lfs_install"
+if [[ ! -x src/talua || ! -x src/taluac ]]
+then
+  make clean &> /dev/null
+  mv src/luaconf.h.bak src/luaconf.h
+  cd "${START_DIR}"
+  printf "ERROR: Compilation of Lua failed please see log file.\n"
+  printf "Aborting installation... Goodbye!\n\n"
+  exit 1
 fi
-tar xvJf "$lua_dir"/"$lfs_install".tar.xz --directory "$lua_dir" > \
-    /dev/null 2>&1
-cd "$lua_dir"/"$lfs_install"
-awk -v platform=${platform} \
-    '$0 ~ platform { sub(/#/, ""); print } \
-    $0 !~ platform { print }' config > config.new
+
+make "${PLATFORM}" install 2>&1 | tee -a "${TOMOAUTOROOT}/lua_install.log"
+
+if [[ ! -x "${TOMOAUTOROOT}/bin/talua" || ! -x "${TOMOAUTOROOT}/bin/taluac" ]]
+then
+  make clean &> /dev/null
+  mv src/luaconf.h.bak src/luaconf.h
+  cd "${START_DIR}"
+  printf "ERROR: Installation of Lua failed please see log file.\n"
+  printf "Aborting installation... Goodbye!\n\n"
+  exit 1
+fi
+
+make clean &> /dev/null
+mv src/luaconf.h.bak src/luaconf.h
+cd "${START_DIR}"
+
+# LFS configuration and install
+printf "\n\n"
+printf "Configuring and installing LFS: Log at $TOMAUTOROOT/lfs_install.log\n"
+printf "======================================================\n\n"
+cd "${LFS_DIR}"
+awk -v platform="${PLATFORM}" \
+  '$0 ~ platform { sub(/^#/, ""); print } \
+  $0 !~ platform { print }' config > config.new
+
 mv config config.bak && mv config.new config
-make > "$lua_dir"/lfs_install.log 2>&1
-make install >> "$lua_dir"/lfs_install.log 2>&1
-cd - > /dev/null
+make 2>&1 | tee "${TOMOAUTOROOT}/lfs_install.log"
 
-if [ -d "$lua_dir"/"$struct_install" ]; then
-    rm -rf "$lua_dir"/"$struct_install"
-fi
-tar xvJf "$lua_dir"/"$struct_install".tar.xz --directory "$lua_dir" > \
-    /dev/null 2>&1
-cd "$lua_dir"/"$struct_install"
-awk -v platform=${platform} \
-    '$0 ~ platform { sub(/#/, ""); print } \
-    $0 !~ platform { print }' makefile > makefile.new
-mv makefile makefile.bak && mv makefile.new makefile
-make > "$lua_dir"/struct_install.log 2>&1
-make install >> "$lua_dir"/struct_install.log 2>&1
-cd - > /dev/null
-
-if [ -f "$tomoauto_init_file" ]; then
-    mv "$tomoauto_init_file" "$tomoauto_init_file".bak
+if [[ ! -r src/lfs.so ]]
+then
+  make clean &> /dev/null
+  mv config.bak config
+  cd "${START_DIR}"
+  printf "ERROR: Compilation of Luafilesystem failed please see log file.\n"
+  printf "Aborting installation... Goodbye!\n\n"
+  exit 1
 fi
 
-touch "$tomoauto_init_file"
-case "$user_shell" in
-    sh|bash|zsh|ksh)
-        printf "export TOMOAUTOROOT=\"$tomoauto_dir\"\n" >> \
-            "$tomoauto_init_file"
-        printf "export PATH=\"$tomoauto_dir/bin:\$PATH\"\n" >> \
-            "$tomoauto_init_file"
-        printf "export LUA_PATH=\"$tomoauto_dir/lib/?.lua;;\"\n" >> \
-            "$tomoauto_init_file"
-        printf "export LUA_CPATH=\"$tomoauto_dir/lua/lib/lua/5.2/?.so;;\"\n">> \
-            "$tomoauto_init_file"
-        ;;
-    csh|tcsh)
-        printf "setenv TOMOAUTOROOT \"$tomoauto_dir\"\n" >> \
-            "$tomoauto_init_file"
-        printf "setenv PATH \"$tomoauto_dir/bin:$PATH\"\n" >> \
-            "$tomoauto_init_file"
-        printf "setenv LUA_PATH=\"$tomoauto_dir/lib/?.lua;;\"\n" >> \
-            "$tomoauto_init_file"
-        printf "setenv LUA_CPATH=\"$tomoauto_dir/lua/lib/lua/5.2/?.so;;\"\n">> \
-            "$tomoauto_init_file"
-        ;;
+make install 2>&1 | tee -a "${TOMOAUTOROOT}/lfs_install.log"
+
+if [[ ! -r "${TOMOAUTOROOT}/lib/lua/5.3/lfs.so" ]]
+then
+  make clean &> /dev/null
+  mv config.bak config
+  cd "${START_DIR}"
+  printf "ERROR: Installation of Luafilesystem failed please see log file.\n"
+  printf "Aborting installation... Goodbye!\n\n"
+  exit 1
+fi
+
+make clean &> /dev/null
+mv config.bak config
+cd "${START_DIR}"
+
+# tomoauto configuration and install
+printf "\n\n"
+printf "Configuring and installing tomoauto\n"
+printf "======================================================\n\n"
+install -m 0644 "${TOMOAUTOROOT}"/external/yalgo.lua \
+  "${TOMOAUTOROOT}"/lib/lua/5.3/
+install -m 0755 "${TOMOAUTOROOT}"/src/bin/* "${TOMOAUTOROOT}"/bin
+mkdir -p "${TOMOAUTOROOT}"/lib/lua/5.3/tomoauto/settings
+install -m 0644 "${TOMOAUTOROOT}"/src/lib/*.lua \
+  "${TOMOAUTOROOT}"/lib/lua/5.3/tomoauto
+install -m 0644 "${TOMOAUTOROOT}"/src/lib/settings/*.lua \
+  "${TOMOAUTOROOT}"/lib/lua/5.3/tomoauto/settings
+
+if [[ -a "${TOMOAUTOINIT}" ]]
+then
+  mv "${TOMOAUTOINIT}" "${TOMOAUTOINIT}.bak"
+fi
+
+case "${SHELL_TYPE}" in
+  sh|bash|zsh|ksh)
+    printf "export TOMOAUTOROOT=\"${TOMOAUTOROOT}\"\n" > "${TOMOAUTOINIT}"
+    printf "export PATH=\"${TOMOAUTOROOT}/bin:\${PATH}\"\n" >> "${TOMOAUTOINIT}"
+    ;;
+  csh|tcsh)
+    printf "setenv TOMOAUTOROOT \"$TOMOAUTOROOT\"\n" >> "$TOMOAUTOINIT"
+    printf "setenv PATH \"$TOMOAUTOROOT/bin:$PATH\"\n" >> "$TOMOAUTOINIT"
+    ;;
 esac
 
-printf "Installation complete! "
-printf "Source \n\t\"$tomoauto_init_file\"\nin your shell rc file if you'd like\n"
+printf "Installation complete\n\n"

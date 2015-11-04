@@ -1,0 +1,224 @@
+#!/usr/bin/env lua
+--[[
+  Copyright (c) 2015 Dustin Reed Morado
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+--]]
+
+local tomoauto = require('tomoauto')
+local yalgo = require('yalgo')
+local io, os, table, string = io, os, table, string
+local assert, error = assert, error
+
+_ENV = nil
+
+local parser, options, coordinates, object_regex, contour_regex, points_regex
+local has_object, has_contour, has_points
+local object_1, object_1, contour_1, contour_2, x1, x2, y1, y2, z1, z2
+local z_axis, orientation, axis, angle, matrix
+local euler_1, euler_2, euler_3
+
+z_axis = { n = 1, { n = 3, 0, 0, 1 } }
+
+parser = yalgo:new_parser('Transform pos file to Euler angles')
+parser:add_argument({
+  name = 'center',
+  long_option = '--center',
+  short_option = '-c',
+  description = 'Use Cell center (last coordinate) to define orientation.'
+})
+
+parser:add_argument({
+  name  = 'format',
+  long_option = '--format',
+  description = 'Type of euler angles to output [i3 or dynamo]',
+  has_argument = true,
+  default_value = 'I3',
+  meta_value = 'FORMAT'
+})
+
+parser:add_argument({
+  name = 'reverse',
+  long_option = '--reverse',
+  short_option = '-r',
+  description = 'Reverse orientation order definiton.',
+})
+
+parser:add_argument({
+  name  = 'input',
+  is_positional = true,
+  is_required = true,
+  description = 'Input pos filename',
+  meta_value = 'INPUT_FILE'
+})
+
+parser:add_argument({
+  name = 'output',
+  is_positional = true,
+  description = 'Output filename [default is stdout]',
+  default_value = io.stdout,
+  meta_value = 'OUTPUT_FILE'
+})
+
+options = parser:get_arguments()
+options.format = string.upper(options.format)
+if options.format ~= 'I3' or options.format ~= 'DYNAMO' then
+  io.stderr:write('\n\nWARNING: orientation_to_euler:\n\t' ..
+		  'Invalid format: ' .. options.format .. ' given ' ..
+		  'defaulting to i3 format.\n')
+
+  options.format = 'I3'
+end
+
+assert(tomoauto.utils.is_file(options.input))
+assert(io.input(options.input))
+assert(io.output(options.output))
+
+coordinates = {}
+object_regex  = '(%d+)%s+(%d+)%s+(%d+)%s+(%d+)%s+(%d+)'
+contour_regex = '(%d+)%s+(%d+)%s+(%d+)%s+(%d+)'
+points_regex  = '(%d+)%s+(%d+)%s+(%d+)'
+for line in io.lines() do
+  if line ~= '' and not string.match(line, '^#') then
+    if not has_points then -- Define posfile type
+      has_object  = string.match(line, object_regex) and true
+      has_contour = string.match(line, contour_regex) and true
+      has_points  = string.match(line, points_regex) and true
+      if not has_points then
+	error('\n\nERROR: orientation_to_euler:\n  ' ..
+	      'Malformed posfile, first used line contains less than ' ..
+	      'three fields.\n')
+      end
+    end
+
+    if has_object then
+      table.insert(coordinates, table.pack(string.match(line, object_regex)))
+      if coordinates[#coordinates].n ~= 5 then
+	error('\n\nERROR: orientation_to_euler:\n  ' ..
+	      'Malformed posfile, number of fields varies across lines.\n')
+      end
+    elseif has_contour then
+      table.insert(coordinates, table.pack(string.match(line, contour_regex)))
+      if coordinates[#coordinates].n ~= 4 then
+	error('\n\nERROR: orientation_to_euler:\n  ' ..
+	      'Malformed posfile, number of fields varies across lines.\n')
+      end
+    else
+      table.insert(coordinates, table.pack(string.match(line, points_regex)))
+      if coordinates[#coordinates].n ~= 3 then
+	error('\n\nERROR: orientation_to_euler:\n  ' ..
+	      'Malformed posfile, number of fields varies across lines.\n')
+      end
+    end
+  end
+end
+
+if #coordinates < 2 then
+  error('\n\nERROR: orientation_to_euler:\n  ' ..
+	'Malformed posfile, less than two coordinates found.\n')
+elseif not options.center and #coordinates % 2 ~= 0 then
+  error('\n\nERROR: orientation_to_euler:\n  ' ..
+	'Malformed posfile, Odd number of coordinates for two point method.\n')
+end
+
+if options.center then
+  local reference_index, coordinate_start, coordinate_end
+
+  if options.reverse then
+    reference_index  = 1
+    coordinate_start = 2
+    coordinate_end   = #coordinates
+  else
+    reference_index  = #coordinates
+    coordinate_start = 1
+    coordinate_end   = #coordinates - 1
+  end
+
+  if has_object then
+    object_1, contour_1, x1, y1, z1 = table.unpack(coordinates[reference_index])
+  elseif has_contour then
+    contour_1, x1, y1, z1 = table.unpack(coordinates[reference_index])
+  else
+    x1, y1, z1 = table.unpack(coordinates[reference_index])
+  end
+
+  for i = coordinate_start, coordinate_end do
+    if has_object then
+      object_2, contour_2, x2, y2, z2 = table.unpack(coordinates[i])
+    elseif has_contour then
+      contour_2, x2, y2, z2 = table.unpack(coordinates[i])
+    else
+      x2, y2, z2 = table.unpack(coordinates[i])
+    end
+
+    orientation = { n = 1, { n = 3, x2 - x1, y2 - y1, z2 -z1 } }
+    axis, angle = tomoauto.transforms.axis_angle(z_axis, orientation)
+    rot_matrix = tomoauto.transforms.axis_angle_to_rotation_matrix(axis, angle)
+    if options.format == 'I3' then
+      rot_matrix = tomoauto.transforms.transpose(rot_matrix)
+    end
+
+    euler_1, euler_2, euler_3 = tomoauto.transforms.rotation_matrix_to_euler_angles(
+      rot_matrix, nil, true)
+    io.write(string.format('%10.4f %10.4f %10.4f\n', euler_1, euler_2, euler_3))
+  end
+else
+  for i = 1, #coordinates, 2 do
+    if options.reverse then
+      if #coordinates[i] == 5 then
+	object_2, contour_2, x2, y2, z2 = table.unpack(coordinates[i])
+	object_1, contour_1, x1, y1, z1 = table.unpack(coordinates[i + 1])
+      elseif #coordinates[i] == 4 then
+	contour_2, x2, y2, z2 = table.unpack(coordinates[i])
+	contour_1, x1, y1, z1 = table.unpack(coordinates[i + 1])
+      else
+	x2, y2, z2 = table.unpack(coordinates[i])
+	x1, y1, z1 = table.unpack(coordinates[i + 1])
+      end
+    else
+      if #coordinates[i] == 5 then
+	object_1, contour_1, x1, y1, z1 = table.unpack(coordinates[i])
+	object_2, contour_2, x2, y2, z2 = table.unpack(coordinates[i + 1])
+      elseif #coordinates[i] == 4 then
+	contour_1, x1, y1, z1 = table.unpack(coordinates[i])
+	contour_2, x2, y2, z2 = table.unpack(coordinates[i + 1])
+      else
+	x1, y1, z1 = table.unpack(coordinates[i])
+	x2, y2, z2 = table.unpack(coordinates[i + 1])
+      end
+    end
+
+    z_axis = { n = 1, { n = 3, 1, 0, 0 } }
+    orientation = { n = 1, { n = 3, x2 - x1, y2 - y1, z2 -z1 } }
+    axis, angle = tomoauto.transforms.axis_angle(z_axis, orientation)
+    rot_matrix = tomoauto.transforms.axis_angle_to_rotation_matrix(axis, angle)
+    if options.format == 'I3' then
+      rot_matrix = tomoauto.transforms.transpose(rot_matrix)
+    end
+
+    euler_1, euler_2, euler_3 = tomoauto.transforms.rotation_matrix_to_euler_angles(
+      rot_matrix, nil, true)
+    io.write(string.format('%10.4f %10.4f %10.4f\n', euler_1, euler_2, euler_3))
+  end
+end
+
+io.flush()
+io.close()
+os.exit(0)
+-- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

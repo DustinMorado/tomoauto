@@ -1,0 +1,119 @@
+#!/usr/bin/env talua
+--[[
+  Copyright (c) 2015 Dustin Reed Morado
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+--]]
+
+local tomoauto = require('tomoauto')
+local yalgo = require('yalgo')
+local io, os = io, os
+local assert = assert
+
+_ENV = nil
+
+local parser = yalgo:new_parser('Use IMOD to align dose-fractionated data.')
+parser:add_argument({
+  name = 'input',
+  is_positional = true,
+  is_required = true,
+  description = 'Input dose-fractionated data stack',
+  meta_value = 'INPUT.mrc'
+})
+
+parser:add_argument({
+  name = 'output',
+  is_positional = true,
+  description = 'Output aligned micrograph',
+  default_value = 'TOMOAUTO{basename}_driftcorr.mrc',
+  meta_value = 'OUTPUT.mrc'
+})
+
+parser:add_argument({
+  name = 'local_configuration',
+  long_option = '--local-configuration',
+  short_option = '-L',
+  description = 'Use local configuration file.',
+  has_argument = true,
+  meta_value = 'CONFIGURATION_FILE'
+})
+
+local options = parser:get_arguments()
+
+assert(tomoauto.utils.is_file(options.input))
+local MRC = assert(tomoauto.mrcio:new_MRC(options.input))
+local config_path = options.local_configuration
+local sandbox = tomoauto.config.load_local_configuration(config_path)
+local log_filename = 'align_dose_fractioned_' .. MRC.basename .. '.log'
+local log = assert(io.open(log_filename, 'w'))
+
+local xfalign  = tomoauto.settings.xfalign
+local _xfalign = {
+  InputImageFile = { use = true, value = 'TOMOAUTO{path}' },
+  OutputTransformFile = { use = true, value = 'TOMOAUTO{basename}.xf' },
+  ReduceByBinning = { use = true, value = 2 },
+  PreCrossCorrelation = { use = true, value = nil },
+  XcorrFilter = { use = true, value = { 0.01, 0.02, 0, 0.3 } },
+}
+local new_xfalign, xfalign_log = assert(
+  xfalign:run_full_cycle(_xfalign, MRC, sandbox)
+)
+log:write(xfalign_log)
+
+local xftoxg  = tomoauto.settings.xftoxg
+local _xftoxg = {
+  InputFile = { use = true, value = 'TOMOAUTO{basename}.xf' },
+  GOutputFile = { use = true, value = 'TOMOAUTO{basename}.xg' },
+  NumberToFit = { use = true, value = 0 },
+}
+local new_xftoxg, xftoxg_log = assert(
+  xftoxg:run_full_cycle(_xftoxg, MRC, sandbox)
+)
+log:write(xftoxg_log)
+assert(os.remove(new_xfalign.OutputTransformFile.value))
+assert(os.remove(MRC.basename .. '.xcxf'))
+
+local newstack  = tomoauto.settings.newstack
+local _newstack = {
+  InputFile = { use = true, value = 'TOMOAUTO{path}' },
+  OutputFile = { use = true, value = 'TOMOAUTO{basename}.ali' },
+  TransformFile = { use = true, value = 'TOMOAUTO{basename}.xg' },
+  ModeToOutput = { use = true, value = 2 },
+  FloatDensities = { use = true, value = 2 },
+}
+local new_newstack, newstack_log = assert(
+  newstack:run_full_cycle(_newstack, MRC, sandbox)
+)
+log:write(newstack_log)
+assert(os.remove(new_xftoxg.GOutputFile.value))
+
+local xyzproj  = tomoauto.settings.xyzproj
+local _xyzproj = {
+  InputFile = { use = true, value = 'TOMOAUTO{basename}.ali' },
+  OutputFile = { use = true, value = options.output },
+  AxisToTiltAround = { use = true, value = 'Y' },
+}
+local new_xyzproj, xyzproj_log = assert(
+  xyzproj:run_full_cycle(_xyzproj, MRC, sandbox)
+)
+log:write(xyzproj_log)
+assert(os.remove(new_newstack.OutputFile.value))
+log:close()
+os.exit(0)
+-- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

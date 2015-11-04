@@ -1,0 +1,188 @@
+#!/usr/bin/env talua
+--[[
+  Copyright (c) 2015 Dustin Reed Morado
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+--]]
+
+local tomoauto = require('tomoauto')
+local yalgo    = require('yalgo')
+local io, math, os, string, table = io, math, os, string, table
+local assert, ipairs, tonumber, tostring = assert, ipairs, tonumber, tostring
+
+_ENV = nil
+
+local function get_even_span_indices(index, max, span)
+  if index < max / 2 then
+    local start  = index - (span / 2) + 1
+    local finish = index + (span / 2)
+
+    if start < 1 then
+      return 1, (finish - start + 1)
+    else
+      return start, finish
+    end
+  else
+    local start  = index - (span / 2)
+    local finish = index + (span / 2) - 1
+
+    if finish > max then
+      return (start - finish + max), max
+    else
+      return start, finish
+    end
+  end
+end
+
+local function get_odd_span_indices(index, max, span)
+  local start  = index - math.floor(span / 2)
+  local finish = index + math.floor(span / 2)
+
+  if start < 1 then
+    return 1, (finish + 1 - start)
+  elseif finish > max then
+    return (start - finish + max), max
+  else
+    return start, finish
+  end
+end
+
+local function get_span_indices (index, max, span)
+  if span % 2 == 0 then
+    return get_even_span_indices(index, max, span)
+  else
+    return get_odd_span_indices(index, max, span)
+  end
+end
+
+local function make_projections(MRC, span, local_configuration)
+  local projections = {}
+
+  for i = 1, MRC.header.nz do
+    projections[i] = string.format('%s.avg_%04d.mrc', MRC.basename, i)
+    local start, finish = get_span_indices(i, MRC.header.nz, span)
+
+    assert(tomoauto.settings.xyzproj:clear())
+    local xyzproj = {
+      InputFile =        { use = true, value = 'TOMOAUTO{path}' },
+      OutputFile =       { use = true, value = projections[i] },
+      ZMinAndMax =       { use = true, value = { start, finish } },
+      AxisToTiltAround = { use = true, value = 'Y' }
+    }
+
+    assert(tomoauto.settings.xyzproj:update(xyzproj))
+    if local_configuration then
+      tomoauto.config.load_local_configuration(local_configuration)
+    end
+    assert(tomoauto.settings.xyzproj:setup(MRC))
+    assert(tomoauto.settings.xyzproj:write())
+    assert(tomoauto.settings.xyzproj:run())
+    assert(tomoauto.settings.xyzproj:cleanup())
+    table.insert(projections, filename)
+  end
+
+  return projections
+end
+
+local function write_projection_filelist (MRC, projections)
+  local filename = MRC.basename .. '_list.txt'
+  local list = assert(io.open(filename, 'w'))
+  list:write(tostring(#projections) .. '\n')
+
+  for _, projection in ipairs(projections) do
+    list:write(projection .. '\n0\n')
+  end
+
+  return list:close() and true
+end
+
+local function cleanup_projections (projections)
+  for _, projection in ipairs(projections) do
+    assert(os.remove(projection))
+  end
+end
+
+local parser = yalgo:new_parser('Pseudo median filter along beam axis.')
+parser:add_argument({
+  name = 'input',
+  is_positional = true,
+  is_required = true,
+  description = 'Input MRC volume.',
+  meta_value = 'INPUT.mrc'
+})
+
+parser:add_argument({
+  name = 'filter_size',
+  long_option = '--filter-size',
+  short_option = '-n',
+  description = 'Number of slices to group together in projection.',
+  meta_value = 'NUMBER',
+  default_value = 7
+})
+
+parser:add_argument({
+  name = 'output',
+  is_positional = true,
+  description = 'Output MRC volume.',
+  meta_value = 'OUTPUT.mrc'
+})
+
+parser:add_argument({
+  name = 'local_configuration',
+  long_option = '--local-configuration',
+  short_option = '-L',
+  has_argument = true,
+  description = 'Use provided local configuration file.',
+  meta_value = 'CONFIG_FILE'
+})
+
+local options = parser:get_arguments()
+assert(tomoauto.utils.is_file(options.input))
+
+local input_MRC = assert(tomoauto.mrcio.new_MRC(options.input))
+local filter_size = tonumber(options.filter_size)
+
+local projections = make_projections(input_MRC, filter_size,
+				     options.local_configuration)
+
+assert(write_projection_filelist(input_MRC, projections))
+
+local output = options.output or
+	       input_MRC.filename .. '.med' .. options.filter_size
+
+assert(tomoauto.settings.newstack:clear())
+newstack = {
+  FileOfInputs = { use = true, value = list_name },
+  OutputFile   = { use = true, value = output }
+}
+
+assert(tomoauto.settings.newstack:update(newstack))
+
+if options.local_configuration then
+  tomoauto.config.load_local_configuration(options.local_configuration)
+end
+
+assert(tomoauto.settings.newstack:setup(input_MRC))
+assert(tomoauto.settings.newstack:write())
+assert(tomoauto.settings.newstack:run())
+assert(tomoauto.settings.newstack:cleanup())
+
+assert(cleanup_projections(projections))
+os.exit(0)
+-- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

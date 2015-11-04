@@ -1,0 +1,282 @@
+#!/usr/bin/env talua
+--[[
+  Copyright (c) 2015 Dustin Reed Morado
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+--]]
+
+local tomoauto = require('tomoauto')
+local yalgo = require('yalgo')
+local io, os, string, table = io, os, string, table
+local assert, ipairs, pairs = assert, ipairs, pairs
+local print = print
+
+_ENV = nil
+
+local function run_preprocessing (MRC, sandbox)
+  local ccderaser = tomoauto.settings.ccderaser
+  local new_ccderaser, ccderaser_log = assert(ccderaser:run_cycle(MRC, sandbox))
+  local output = new_ccderaser.OutputFile.value
+  assert(tomoauto.utils.is_file(output))
+  assert(
+    tomoauto.utils.run('mv ' .. MRC.filename .. ' ' ..  MRC.basename ..
+		       '_orig.st')
+  )
+  assert(
+    tomoauto.utils.run('mv ' .. output .. ' ' .. MRC.filename)
+  )
+  return ccderaser_log
+end
+
+local function run_coarse_alignment (MRC, sandbox)
+  assert(
+    tomoauto.utils.run('get_tilt_angles ' .. MRC.filename .. ' ' ..
+		       MRC.basename .. '.rawtlt')
+  )
+
+  local tiltxcorr = tomoauto.settings.tiltxcorr
+  local new_tiltxcorr, tiltxcorr_log = assert(tiltxcorr:run_cycle(MRC, sandbox))
+  local tiltxcorr_output = new_tiltxcorr.OutputFile.value
+  assert(tomoauto.utils.is_file(tiltxcorr_output))
+
+  local xftoxg = tomoauto.settings.xftoxg
+  local new_xftoxg, xftoxg_log = assert(xftoxg:run_cycle(MRC, sandbox))
+  local xftoxg_output = new_xftoxg.GOutputFile.value
+  assert(tomoauto.utils.is_file(xftoxg_output))
+  assert(os.remove(tiltxcorr_output))
+
+  local prenewstack = tomoauto.settings.prenewstack
+  local new_prenew, prenew_log = assert(prenewstack:run_cycle(MRC, sandbox))
+  local prenew_output = new_prenew.OutputFile.value
+  assert(tomoauto.utils.is_file(prenew_output))
+
+  return tiltxcorr_log .. '\n' .. xftoxg_log .. '\n' .. prenew_log
+end
+
+local function run_tracking (MRC, sandbox)
+  local beadtrack = tomoauto.settings.beadtrack
+  local new_beadtrack = assert(beadtrack:write_cycle(MRC, sandbox))
+
+  local program = tomoauto.settings.tomoauto.tracking
+  local tracking = tomoauto.settings[program]
+  local new_tracking, tracking_log = assert(tracking:run_cycle(MRC, sandbox))
+  local tracking_output = new_beadtrack.InputSeedModel.value
+  assert(tomoauto.utils.is_file(tracking_output))
+
+  if program == 'autofidseed' then
+    local new_tracking_ = {
+      RemoveTempFiles = { use = true, value = -1 }
+    }
+    new_tracking = new_tracking:update(new_tracking_)
+    new_tracking:write()
+    new_tracking:run()
+    new_tracking:cleanup()
+    assert(os.remove('autofidseed.info'))
+  end
+    
+  new_beadtrack:run()
+  local beadtrack_log = new_beadtrack:get_log()
+  new_beadtrack:cleanup()
+  local beadtrack_output = new_beadtrack.OutputModel.value
+  assert(tomoauto.utils.is_file(beadtrack_output))
+  assert(os.remove(tracking_output))
+
+  return tracking_log .. '\n' .. beadtrack_log
+end
+
+local function run_fine_alignment (MRC, sandbox)
+  local tiltalign = tomoauto.settings.tiltalign
+  local new_tiltalign, tiltalign_log = assert(tiltalign:run_cycle(MRC, sandbox))
+  assert(tomoauto.utils.is_file(new_tiltalign.OutputTiltFile.value))
+  assert(tomoauto.utils.is_file(new_tiltalign.OutputTransformFile.value))
+  assert(os.remove(new_tiltalign.ImageFile.value))
+  assert(os.remove(new_tiltalign.TiltFile.value))
+  assert(os.remove(new_tiltalign.ModelFile.value))
+  assert(os.remove(new_tiltalign.OutputModelAndResidual.value .. '.resid'))
+  assert(tomoauto.utils.run('mv ' ..
+			    new_tiltalign.OutputModelAndResidual.value ..
+			    '.3dmod ' .. new_tiltalign.ModelFile.value))
+
+  local xfproduct = tomoauto.settings.xfproduct
+  local new_xfproduct, xfproduct_log = assert(xfproduct:run_cycle(MRC, sandbox))
+  assert(tomoauto.utils.is_file(new_xfproduct.OutputFile.value))
+  assert(os.remove(new_xfproduct.InputFile1.value))
+  assert(os.remove(new_xfproduct.InputFile2.value))
+
+  local newstack = tomoauto.settings.newstack
+  local new_newstack, newstack_log = assert(newstack:run_cycle(MRC, sandbox))
+  assert(tomoauto.utils.is_file(new_newstack.OutputFile.value))
+
+  return tiltalign_log .. '\n' .. xfproduct_log .. '\n' .. newstack_log
+end
+
+local function estimate_CTF (MRC, sandbox)
+  local program = tomoauto.settings.tomoauto.CTF
+  local CTF = tomoauto.settings[program]
+  local new_CTF, CTF_log = assert(CTF:run_cycle(MRC, sandbox))
+  local CTF_output = new_CTF.DefocusFile.value
+  assert(tomoauto.utils.is_file(CTF_output))
+
+  local new_CTF_ = {
+    AutoFitRangeAndStep = { use = false, value = nil },
+    SaveAndExit = { use = false, value = nil }
+  }
+  new_CTF = new_CTF:update(new_CTF_)
+  new_CTF:write()
+
+  return CTF_log
+end
+
+local function correct_CTF (MRC, sandbox)
+  local phaseflip = tomoauto.settings.ctfphaseflip
+  local new_phaseflip, phaseflip_log = assert(phaseflip:run_cycle(MRC, sandbox))
+  assert(tomoauto.utils.is_file(new_phaseflip.OutputFileName.value))
+  assert(os.remove(new_phaseflip.DefocusFile.value))
+  assert(tomoauto.utils.run('mv ' .. new_phaseflip.OutputFileName.value ..
+			    ' ' .. new_phaseflip.InputStack.value))
+  
+  return phaseflip_log
+end
+
+local function run_reconstruction (MRC, sandbox)
+  local program = tomoauto.settings.tomoauto.reconstruction
+  local rec = tomoauto.settings[program]
+  local new_rec, rec_log = assert(rec:run_cycle(MRC, sandbox))
+  assert(tomoauto.utils.is_file(MRC.basename .. '_tomo3d.rec'))
+
+  return rec_log
+end
+
+local parser = yalgo:new_parser('Automatically process tilt-series.')
+
+parser:add_argument({
+  name = 'input',
+  description = 'Input tilt-series for processing.',
+  meta_value = 'INPUT.st',
+  is_positional = true,
+  is_required = true
+})
+
+parser:add_argument({
+  name = 'fiducial_diameter_nm',
+  description = 'Fiducial marker diameter in nm.',
+  meta_value = 'DIAMETER',
+  is_positional = true,
+  default_value = tomoauto.settings.tomoauto.fiducial
+})
+
+parser:add_argument({
+  name = 'do_CTF',
+  long_option = '--CTF',
+  short_option = '-c',
+  description = 'Write command files for CTF estimation and correction.',
+})
+
+parser:add_argument({
+  name = 'defocus',
+  long_option = '--defocus',
+  short_option = '-d',
+  description = 'Target defocus in microns (positive value is underfocus).',
+  has_argument = true,
+  meta_value = 'DEFOCUS'
+})
+
+parser:add_argument({
+  name = 'local_configuration',
+  description = 'Use local configuration file.',
+  meta_value = 'CONFIG_FILE',
+  long_option = '--local-configuration',
+  short_option = '-L',
+  has_argument = true
+})
+
+parser:add_argument({
+  name = 'mode',
+  long_option = '--mode',
+  short_option = '-m',
+  has_argument = true,
+  description = 'Select which mode you want to operate (align or reconstruct).',
+  meta_value = 'MODE'
+})
+
+parser:add_argument({
+  name = 'mdoc',
+  long_option = '--mdoc',
+  short_option = '-M',
+  has_argument = true,
+  description = 'Use provided mdoc file as opposed to default.',
+  meta_value = 'MDOC_FILE'
+})
+
+local options = parser:get_arguments()
+
+assert(tomoauto.utils.is_file(options.input))
+local MRC = assert(tomoauto.mrcio.new_MRC(options.input,
+						options.fiducial_diameter_nm,
+						options.mdoc))
+local config_path = options.local_configuration
+local sandbox = tomoauto.config.load_local_configuration(config_path)
+local log = assert(io.open('tomoauto_' .. MRC.basename .. '.log', 'w'))
+if options.mode ~= 'reconstruct' then
+  local preprocessing_log = run_preprocessing(MRC, sandbox)
+  log:write(preprocessing_log .. '\n')
+  preprocessing_log = nil
+
+  local coarse_align_log = run_coarse_alignment(MRC, sandbox)
+  log:write(coarse_align_log .. '\n')
+  coarse_align_log = nil
+
+  local tracking_log = run_tracking(MRC, sandbox)
+  log:write(tracking_log .. '\n')
+  tracking_log = nil
+
+  local fine_align_log = run_fine_alignment(MRC, sandbox)
+  log:write(fine_align_log .. '\n')
+  fine_align_log = nil
+
+  if options.do_CTF then
+    local CTF_log = estimate_CTF(MRC, sandbox)
+    log:write(CTF_log .. '\n')
+    CTF_log = nil
+  end
+
+  if tomoauto.utils.is_file(MRC.basename .. '_orig.st') then
+    tomoauto.utils.run('mv ' .. MRC.basename .. '_orig.st ' .. MRC.filename)
+  end
+
+  if options.mode == 'align' then 
+    log:close()
+    os.exit(0)
+  end
+elseif options.mode ~= 'align' then
+  if options.do_CTF then
+    local CTF_log = correct_CTF(MRC, sandbox)
+    log:write(CTF_log .. '\n')
+    CTF_log = nil
+  end
+
+  local reconstruct_log = run_reconstruction(MRC, sandbox)
+  log:write(reconstruct_log .. '\n')
+  reconstruct_log = nil
+
+  log:close()
+  os.exit(0)
+end
+
+-- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :
