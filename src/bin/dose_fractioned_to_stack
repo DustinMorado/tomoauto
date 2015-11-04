@@ -162,8 +162,8 @@ local function update_temp_header (MRC_1, MRC_2)
   MRC_2.header.ylen = MRC_1.pixel_size * MRC_2.header.my
   MRC_2.header.zlen = MRC_1.pixel_size * MRC_2.header.mz
 
-  MRC_2.header.labels_1 = MRC_1.header.labels_1
-  MRC_2.header.labels_2 = MRC_1.header.labels_2
+  MRC_2:add_label(MRC_1.header.labels_1, 1)
+  MRC_2:add_label(MRC_1.header.labels_2, 2)
 
   return MRC_2
 end

@@ -1,5 +1,5 @@
 #tomoauto
-## Version 0.2.20
+## Version 0.2.30
 ### About
 tomoauto is a wrapper-library written in Lua to automate the alignment,
 correction and recontstruction of cryo-electron tomography (Cryo-ET)
@@ -15,6 +15,19 @@ Recent releases have expanded the original functionality to handle direct
 detector cameras, dose-fractionation, and more complex operations on MRC files.
 
 ### Change Log
+#### 0.2.30
+ * A really big overhaul that reorganized most of the libraries.
+ * mrcio.lua is now handled in an object oriented manner to make interactive
+   user use more friendly.
+ * Settings have been broken up and placed in their own folder to make editing
+   global configuration more easy, and it is now also in a standard format using
+   lua tables to make the syntax a little easier to remember and read.
+ * Every option for every command handled by tomoauto is now in the settings.
+ * Added mdoc support, hopefully in the future we will move to just handling
+   mdocs and not MRC files or logs for `dose_fractioned_to_stack`.
+ * Added some transform routines, they're not in use right now but will be used
+   later on to do some conversions from I3 to dynamo in terms of orientations
+   and such.
 #### 0.2.20
  * Update for Lua 5.3.0 release
  * Added a CTF test-suite comparing CTFFIND4 and CTFPLOTTER

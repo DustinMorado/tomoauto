@@ -431,7 +431,7 @@ local function get_label_table (MRC)
 
   for i = 1, 10 do
     local field = 'labels_' .. i
-    label_table[i] = MRC.header[field]
+    label_table[i] = string.format('%-80s', MRC.header[field]):sub(1, 80)
   end
 
   return label_table
@@ -440,12 +440,16 @@ end
 local function set_labels_from_label_table (MRC, label_table)
   for i = 1, 10 do
     local field = 'labels_' .. i
-    MRC.header[field] = label_table[i]
+    MRC.header[field] = string.format('%-80s', label_table[i]):sub(1, 80)
   end
 end
 
 local function MRC_add_label (MRC, label, position)
   assert(type(label) == 'string')
+  if position then
+    assert(type(position) == 'number' and postion >= 1 and position <= 10)
+  end
+
   local label = string.format('%-80s', label):sub(1, 80)
   local label_table = get_label_table(MRC)
   local position = position or MRC.header.nlabl + 1
@@ -453,6 +457,19 @@ local function MRC_add_label (MRC, label, position)
   table.insert(label_table, position, label)
   set_labels_from_label_table(MRC, label_table)
   MRC.header.nlabl = MRC.header.nlabl == 10 and 10 or MRC.header.nlabl + 1
+end
+
+local function MRC_delete_label (MRC, position)
+  assert(type(label) == 'string')
+  if position then
+    assert(type(position) == 'number' and position >= 1 and position <= 10)
+  end
+
+  local position = position or MRC.header.nlabl
+  local label_table = get_label_table(MRC)
+  table.remove(label_table, position)
+  set_labels_from_label_table(MRC, label_table)
+  MRC.header.nlabl = MRC.header.nlabl - 1
 end
 
 local function MRC_update (MRC)
@@ -1023,6 +1040,7 @@ function mrcio.new_MRC (path, fiducial_diameter_nm, mdoc_path)
   MRC.get_pixel_size = MRC_get_pixel_size
   MRC.get_tilt_axis_angle = MRC_get_tilt_axis_angle
   MRC.add_label = MRC_add_label
+  MRC.delete_label = MRC_delete_label
   MRC.update = MRC_update
   MRC.add_FEI_extended_header = MRC_add_FEI_extended_header
   MRC.add_FEI_extended_header_field = MRC_add_FEI_extended_header_field

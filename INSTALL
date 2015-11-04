@@ -4,12 +4,39 @@
 #                                                                              #
 #------------------------------------------------------------------------------#
 # AUTHOR: Dustin Reed Morado                                                   #
-# VERSION: 0.2.20                                                              #
-# DATE: 12.02.2015                                                             #
+# VERSION: 0.2.30                                                              #
+# DATE: 02.11.2015                                                             #
 ################################################################################
 
-1. Move the tomoauto directory to the location you want it to be installed.
-   - e.g. mv tomoauto ~/opt
+-- Preferably you can use git to copy the tomoauto repository to your system,
+   which allows you to quickly update to the newest version or make changes and
+   contribute bug-fixes very easily.
+
+1. Change into the directory you want to install tomoauto.
+   - e.g. cd ~/opt
+
+2. Clone the tomoauto git repository from GitHub:
+   - e.g. git clone https://github.com/DustinMorado/tomoauto.git
+
+3. Change into the tomoauto directory.
+   - e.g. cd ~/opt/tomoauto
+
+4. Execute the install_tomoauto.sh script and follow the prompts.
+   - e.g. ./install_tomoauto.sh
+
+5. To use tomoauto first source the resulting tomoauto_init shell script
+   - e.g. source ~/opt/tomoauto/tomoauto_init.zsh
+
+6. [Optional] If you want access to tomoauto at startup add step 4 to your
+   approriate shell startup file.
+   - e.g. echo source ~/opt/tomoauto/tomoauto_init.zsh >> ~/.zshrc
+
+--------------------------------------------------------------------------------
+
+-- If you downloaded a zip release from GitHub then:
+
+1. Unzip the tomoauto directory to the location you want it to be installed.
+   - e.g. cd ~/opt && unzip ~/Downloads/tomoauto.zip
 
 2. Change into the tomoauto directory.
    - e.g. cd ~/opt/tomoauto
