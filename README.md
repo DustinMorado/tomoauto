@@ -28,20 +28,24 @@ detector cameras, dose-fractionation, and more complex operations on MRC files.
  * Added some transform routines, they're not in use right now but will be used
    later on to do some conversions from I3 to dynamo in terms of orientations
    and such.
+
 #### 0.2.20
  * Update for Lua 5.3.0 release
  * Added a CTF test-suite comparing CTFFIND4 and CTFPLOTTER
  * Added programs to handle motion-correction with MOTIONCORR
  * No longer need struct library
  * bit32 library was deprecated and therefore removed
+
 #### 0.2.15
  * Wrote a new installation script and packaged with sources for lua and needed
    Lua libraries.
+
 #### 0.2.10
  * Changed final files kept to save space and rely on options available in 3dmod
  * As of IMOD 4.7.9 autofidseed works better than RAPTOR to generate the
    fiducial seed model and is now default. RAPTOR can still be used by passing
    the appropriate option (see tomoauto --help).
+
 #### 0.2.0
  * Added mode option to stop at alignment, ccderase, or to only perform
    reconstruction
