@@ -137,7 +137,7 @@ ctfplotter = {
   'ExpectedDefocus',
   ExpectedDefocus = {
     use = true,
-    value = '5'
+    value = '5000.0'
   },
 
   'LeftDefTol',
@@ -154,7 +154,7 @@ ctfplotter = {
 
   'AngleRange',
   AngleRange = {
-    use = true,
+    use = false,
     value = { -40.0, 40.0 }
   },
 
@@ -168,6 +168,12 @@ ctfplotter = {
   FrequencyRangeToFit = {
     use = true,
     value = { 0.05, 0.225 }
+  },
+
+  'ExtraZerosToFit',
+  ExtraZerosToFit = {
+    use = false,
+    value = nil
   },
 
   'VaryExponentInFit',
