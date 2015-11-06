@@ -28,10 +28,13 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local MOTIONCORR = {}
-package.loaded[...] = MOTIONCORR
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
+
+_ENV = nil
+
+local MOTIONCORR = {}
 
 MOTIONCORR = {
   Index = 'MOTIONCORR',

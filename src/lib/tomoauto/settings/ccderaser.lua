@@ -29,192 +29,219 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local autofidseed = {}
-package.loaded[...] = autofidseed
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
 
-autofidseed = {
-  Index = 'autofidseed',
-  Name = 'TOMOAUTO{basename}_autofidseed.com',
-  Log = 'TOMOAUTO{basename}_autofidseed.log',
-  Command = '$autofidseed -StandardInput',
+_ENV = nil
 
-  'TrackCommandFile',
-  TrackCommandFile = {
+local ccderaser = {}
+
+ccderaser = {
+  Index = 'ccderaser',
+  Name = 'TOMOAUTO{basename}_ccderaser.com',
+  Log = 'TOMOAUTO{basename}_ccderaser.log',
+  Command = '$ccderaser -StandardInput',
+
+  'InputFile',
+  InputFile = {
     use = true,
-    value = 'TOMOAUTO{basename}_beadtrack.com'
+    value = 'TOMOAUTO{filename}'
   },
 
-  'AppendToSeedModel',
-  AppendToSeedModel = {
-    use = false,
-    value = nil
-  },
-
-  'MinGuessNumBeads',
-  MinGuessNumBeads = {
-    use = false,
-    value = nil
-  },
-
-  'MinSpacing',
-  MinSpacing = {
+  'OutputFile',
+  OutputFile = {
     use = true,
-    value = 0.85
+    value = 'TOMOAUTO{basename}_fixed.st'
   },
 
-  'BeadSize',
-  BeadSize = {
+  'PieceListFile',
+  PieceListFile = {
     use = false,
     value = nil
   },
 
-  'AdjustSizes',
-  AdjustSizes = {
+  'OverlapsForModel',
+  OverlapsForModel = {
     use = false,
     value = nil
   },
 
-  'PeakStorageFraction',
-  PeakStorageFraction = {
+  'FindPeaks',
+  FindPeaks = {
     use = true,
-    value = 1.0
-  },
-
-  'FindBeadOptions',
-  FindBeadOptions = {
-    use = false,
     value = nil
   },
 
-  'NumberOfSeedViews',
-  NumberOfSeedViews = {
-    use = false,
-    value = nil
-  },
-
-  'BoundaryModel',
-  BoundaryModel = {
-    use = false,
-    value = nil
-  },
-
-  'ExcludeInsideAreas',
-  ExcludeInsideAreas = {
-    use = false,
-    value = nil
-  },
-
-  'BordersInXandY',
-  BordersInXandY = {
-    use = false,
-    value = nil
-  },
-
-  'TwoSurfaces',
-  TwoSurfaces = {
-    use = false,
-    value = nil
-  },
-
-  'TargetNumberOfBeads',
-  TargetNumberOfBeads = {
+  'PeakCriterion',
+  PeakCriterion = {
     use = true,
-    value = 20
+    value = 8.0
   },
 
-  'TargetDensityOfBeads',
-  TargetDensityOfBeads = {
+  'DiffCriterion',
+  DiffCriterion = {
+    use = true,
+    value = 6.0
+  },
+
+  'GrowCriterion',
+  GrowCriterion = {
+    use = true,
+    value = 4.0
+  },
+
+  'ScanCriterion',
+  ScanCriterion = {
+    use = true,
+    value = 3.0
+  },
+
+  'MaximumRadius',
+  MaximumRadius = {
+    use = true,
+    value = 4.2
+  },
+
+  'GiantCriterion',
+  GiantCriterion = {
+    use = true,
+    value = 12.0
+  },
+
+  'ExtraLargeRadius',
+  ExtraLargeRadius = {
+    use = true,
+    value = 8.0
+  },
+
+  'BigDiffCriterion',
+  BigDiffCriterion = {
+    use = true,
+    value = 19.0
+  },
+
+  'MaxPixelsInDiffPatch',
+  MaxPixelsInDiffPatch = {
     use = false,
     value = nil
   },
 
-  'MaxMajorToMinorRatio',
-  MaxMajorToMinorRatio = {
+  'OuterRadius',
+  OuterRadius = {
     use = false,
     value = nil
   },
 
-  'ElongatedPointsAllowed',
-  ElongatedPointsAllowed = {
+  'AnnulusWidth',
+  AnnulusWidth = {
+    use = true,
+    value = 2.0
+  },
+
+  'XYScanSize',
+  XYScanSize = {
+    use = true,
+    value = 100
+  },
+
+  'EdgeExclusionWidth',
+  EdgeExclusionWidth = {
+    use = true,
+    value = 4
+  },
+
+  'PointModel',
+  PointModel = {
+    use = false,
+    value = 'TOMOAUTO{basename}_peak.mod'
+  },
+
+  'ModelFile',
+  ModelFile = {
     use = false,
     value = nil
   },
 
-  'ClusteredPointsAllowed',
-  ClusteredPointsAllowed = {
+  'LineObjects',
+  LineObjects = {
     use = false,
     value = nil
   },
 
-  'LowerTargetForClustered',
-  LowerTargetForClustered = {
+  'BoundaryObjects',
+  BoundaryObjects = {
     use = false,
     value = nil
   },
 
-  'SubareaSize',
-  SubareaSize = {
+  'AllSectionObjects',
+  AllSectionObjects = {
     use = false,
     value = nil
   },
 
-  'SortAreasMinNumAndSize',
-  SortAreasMinNumAndSize = {
+  'CircleObjects',
+  CircleObjects = {
     use = false,
     value = nil
   },
 
-  'IgnoreSurfaceData',
-  IgnoreSurfaceData = {
+  'BetterRadius',
+  BetterRadius = {
     use = false,
     value = nil
   },
 
-  'DropTracks',
-  DropTracks = {
+  'ExpandCircleIterations',
+  ExpandCircleIterations = {
     use = false,
     value = nil
   },
 
-  'PickSeedOptions',
-  PickSeedOptions = {
+  'MergePatches',
+  MergePatches = {
     use = false,
     value = nil
   },
 
-  'RemoveTempFiles',
-  RemoveTempFiles = {
+  'BorderSize',
+  BorderSize = {
+    use = true,
+    value = 2
+  },
+
+  'PolynomialOrder',
+  PolynomialOrder = {
+    use = true,
+    value = 2
+  },
+
+  'ExcludeAdjacent',
+  ExcludeAdjacent = {
     use = false,
     value = nil
   },
 
-  'OutputSeedModel',
-  OutputSeedModel = {
+  'TrialMode',
+  TrialMode = {
     use = false,
     value = nil
   },
 
-  'InfoFile',
-  InfoFile = {
+  'Verbose',
+  Verbose = {
     use = false,
     value = nil
   },
 
-  'TemporaryDirectory',
-  TemporaryDirectory = {
-    use = false,
-    value = nil
-  },
-
-  'LeaveTempFiles',
-  LeaveTempFiles = {
+  'ProcessID',
+  ProcessID = {
     use = false,
     value = nil
   },
 }
-setmetatable(autofidseed, { __index = config.IMOD })
+setmetatable(ccderaser, { __index = config.IMOD })
 
-return autofidseed
+return ccderaser
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

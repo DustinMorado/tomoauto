@@ -28,15 +28,13 @@
 -- @license MIT
 -- @release 0.2.30
 
-local mdoc = {}
-package.loaded[...] = mdoc
-
-local mrcio = require('tomoauto.mrcio')
 local utils = require('tomoauto.utils')
 local ipairs, pairs, type = ipairs, pairs, type
 local io, string, table = io, string, table
 
 _ENV = nil
+
+local mdoc = {}
 
 function mdoc.has_mdoc (path)
   return utils.is_file(path) and path or nil

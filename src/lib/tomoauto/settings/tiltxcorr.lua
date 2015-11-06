@@ -29,145 +29,166 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local prenewstack = {}
-package.loaded[...] = prenewstack 
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
 
-prenewstack = {
-  Index = 'prenewstack',
-  Name = 'TOMOAUTO{basename}_prenewstack.com',
-  Log = 'TOMOAUTO{basename}_prenewstack.log',
-  Command = '$newstack -StandardInput',
+_ENV = nil
+
+local tiltxcorr = {}
+
+tiltxcorr = {
+  Index = 'tiltxcorr',
+  Name = 'TOMOAUTO{basename}_tiltxcorr.com',
+  Log = 'TOMOAUTO{basename}_tiltxcorr.log',
+  Command = '$tiltxcorr -StandardInput',
 
   'InputFile',
   InputFile = {
     use = true,
-    value = 'TOMOAUTO{basename}.st'
+    value = 'TOMOAUTO{filename}'
+  },
+
+  'PieceListFile',
+  PieceListFile = {
+    use = false,
+    value = nil
   },
 
   'OutputFile',
   OutputFile = {
     use = true,
-    value = 'TOMOAUTO{basename}.preali'
+    value = 'TOMOAUTO{basename}.prexf'
   },
 
-  'FileOfInputs',
-  FileOfInputs = {
-    use = false,
-    value = nil
-  },
-
-  'FileOfOutputs',
-  FileOfOutputs = {
-    use = false,
-    value = nil
-  },
-
-  'SplitStartingNumber',
-  SplitStartingNumber = {
-    use = false,
-    value = nil
-  },
-
-  'AppendExtension',
-  AppendExtension = {
-    use = false,
-    value = nil
-  },
-
-  'SectionsToRead',
-  SectionsToRead = {
-    use = false,
-    value = nil
-  },
-
-  'NumberedFromOne',
-  NumberedFromOne = {
-    use = false,
-    value = nil
-  },
-
-  'ExcludeSections',
-  ExcludeSections = {
-    use = false,
-    value = nil
-  },
-
-  'TwoDirectionTiltSeries',
-  TwoDirectionTiltSeries = {
-    use = false,
-    value = nil
-  },
-
-  'SkipSectionIncrement',
-  SkipSectionIncrement = {
-    use = false,
-    value = nil
-  },
-
-  'NumberToOutput',
-  NumberToOutput = {
-    use = false,
-    value = nil
-  },
-
-  'ReplaceSections',
-  ReplaceSections = {
-    use = false,
-    value = nil
-  },
-
-  'BlankOutput',
-  BlankOutput = {
-    use = false,
-    value = nil
-  },
-
-  'OffsetsInXandY',
-  OffsetsInXandY = {
-    use = false,
-    value = nil
-  },
-
-  'ApplyOffsetsFirst',
-  ApplyOffsetsFirst = {
-    use = false,
-    value = nil
-  },
-
-  'TransformFile',
-  TransformFile = {
+  'RotationAngle',
+  RotationAngle = {
     use = true,
-    value = 'TOMOAUTO{basename}.prexg'
+    value = 'TOMOAUTO{tilt_axis_angle}'
   },
 
-  'UseTransformLines',
-  UseTransformLines = {
+  'FirstTiltAngle',
+  FirstTiltAngle = {
     use = false,
     value = nil
   },
 
-  'OneTrasformPerFile',
-  OneTrasformPerFile = {
+  'TiltIncrement',
+  TiltIncrement = {
     use = false,
     value = nil
   },
 
-  'RotateByAngle',
-  RotateByAngle = {
+  'TiltFile',
+  TiltFile = {
+    use = true,
+    value = 'TOMOAUTO{basename}.rawtlt'
+  },
+
+  'TiltAngles',
+  TiltAngles = {
     use = false,
     value = nil
   },
 
-  'ExpandByFactor',
-  ExpandByFactor = {
+  'AngleOffset',
+  AngleOffset = {
     use = false,
     value = nil
   },
 
-  'ShrinkByFactor',
-  ShrinkByFactor = {
+  'ReverseOrder',
+  ReverseOrder = {
+    use = false,
+    value = nil
+  },
+
+  'FilterRadius1',
+  FilterRadius1 = {
+    use = false,
+    value = nil
+  },
+
+  'FilterRadius2',
+  FilterRadius2 = {
+    use = true,
+    value = 0.25
+  },
+
+  'FilterSigma1',
+  FilterSigma1 = {
+    use = true,
+    value = 0.03
+  },
+
+  'FilterSigma2',
+  FilterSigma2 = {
+    use = true,
+    value = 0.05
+  },
+
+  'ExcludeCentralPeak',
+  ExcludeCentralPeak = {
+    use = false,
+    value = nil
+  },
+
+  'CentralPeakExclusionCriteria',
+  CentralPeakExclusionCriteria = {
+    use = false,
+    value = nil
+  },
+
+  'ShiftLimitsXandY',
+  ShiftLimitsXandY = {
+    use = false,
+    value = nil
+  },
+
+  'RectangularLimits',
+  RectangularLimits = {
+    use = false,
+    value = nil
+  },
+
+  'CorrelationCoefficient',
+  CorrelationCoefficient = {
+    use = false,
+    value = nil
+  },
+
+  'BordersInXandY',
+  BordersInXandY = {
+    use = false,
+    value = nil
+  },
+
+  'XMinAndMax',
+  XMinAndMax = {
+    use = false,
+    value = nil
+  },
+
+  'YMinAndMax',
+  YMinAndMax = {
+    use = false,
+    value = nil
+  },
+
+  'BoundaryModel',
+  BoundaryModel = {
+    use = false,
+    value = nil
+  },
+
+  'BoundaryObject',
+  BoundaryObject = {
+    use = false,
+    value = nil
+  },
+
+  'BinningToApply',
+  BinningToApply = {
     use = false,
     value = nil
   },
@@ -178,14 +199,122 @@ prenewstack = {
     value = nil
   },
 
-  'BinByFactor',
-  BinByFactor = {
+  'LeaveTiltAxisShifted',
+  LeaveTiltAxisShifted = {
     use = false,
     value = nil
   },
 
-  'DistortionField',
-  DistortionField = {
+  'PadsInXandY',
+  PadsInXandY = {
+    use = false,
+    value = nil
+  },
+
+  'TapersInXandY',
+  TapersInXandY = {
+    use = false,
+    value = nil
+  },
+
+  'StartingEndingViews',
+  StartingEndingViews = {
+    use = false,
+    value = nil
+  },
+
+  'SkipViews',
+  SkipViews = {
+    use = false,
+    value = nil
+  },
+
+  'BreakAtViews',
+  BreakAtViews = {
+    use = false,
+    value = nil
+  },
+
+  'CumulativeCorrelation',
+  CumulativeCorrelation = {
+    use = false,
+    value = nil
+  },
+
+  'AbsoluteCosineStretch',
+  AbsoluteCosineStretch = {
+    use = false,
+    value = nil
+  },
+
+  'NoCosineStretch',
+  NoCosineStretch = {
+    use = false,
+    value = nil
+  },
+
+  'IterateCorrelations',
+  IterateCorrelations = {
+    use = false,
+    value = nil
+  },
+
+  'SearchMagChanges',
+  SearchMagChanges = {
+    use = false,
+    value = nil
+  },
+
+  'ViewsWithMagChanges',
+  ViewsWithMagChanges = {
+    use = false,
+    value = nil
+  },
+
+  'MagnificationLimits',
+  MagnificationLimits = {
+    use = false,
+    value = nil
+  },
+
+  'SizeOfPatchesXandY',
+  SizeOfPatchesXandY = {
+    use = false,
+    value = nil
+  },
+
+  'NumberOfPatchesXandY',
+  NumberOfPatchesXandY = {
+    use = false,
+    value = nil
+  },
+
+  'OverlapPatchesXandY',
+  OverlapPatchesXandY = {
+    use = false,
+    value = nil
+  },
+
+  'SeedModel',
+  SeedModel = {
+    use = false,
+    value = nil
+  },
+
+  'SeedObject',
+  SeedObject = {
+    use = false,
+    value = nil
+  },
+
+  'LengthAndOverlap',
+  LengthAndOverlap = {
+    use = false,
+    value = nil
+  },
+
+  'PrealignmentTransformFile',
+  PrealignmentTransformFile = {
     use = false,
     value = nil
   },
@@ -196,110 +325,32 @@ prenewstack = {
     value = nil
   },
 
-  'UseFields',
-  UseFields = {
+  'UnalignedSizeXandY',
+  UnalignedSizeXandY = {
     use = false,
     value = nil
   },
 
-  'GradientFile',
-  GradientFile = {
+  'FindWarpTransforms',
+  FindWarpTransforms = {
     use = false,
     value = nil
   },
 
-  'AdjustOrigin',
-  AdjustOrigin = {
+  'RawAndAlignedPair',
+  RawAndAlignedPair = {
     use = false,
     value = nil
   },
 
-  'LinearInterpolation',
-  LinearInterpolation = {
+  'AppendToWarpFile',
+  AppendToWarpFile = {
     use = false,
     value = nil
   },
 
-  'NearestNeighbor',
-  NearestNeighbor = {
-    use = false,
-    value = nil
-  },
-
-  'SizeToOutputInXandY',
-  SizeToOutputInXandY = {
-    use = false,
-    value = nil
-  },
-
-  'ModeToOutput',
-  ModeToOutput = {
-    use = false,
-    value = nil
-  },
-
-  'BytesSignedInOutput',
-  BytesSignedInOutput = {
-    use = false,
-    value = nil
-  },
-
-  'StripExtraHeader',
-  StripExtraHeader = {
-    use = false,
-    value = nil
-  },
-
-  'FloatDensities',
-  FloatDensities = {
-    use = false,
-    value = nil
-  },
-
-  'MeanAndStandardDeviation',
-  MeanAndStandardDeviation = {
-    use = false,
-    value = nil
-  },
-
-  'ContrastBlackWhite',
-  ContrastBlackWhite = {
-    use = false,
-    value = nil
-  },
-
-  'ScaleMinAndMax',
-  ScaleMinAndMax = {
-    use = false,
-    value = nil
-  },
-
-  'MultiplyAndAdd',
-  MultiplyAndAdd = {
-    use = false,
-    value = nil
-  },
-
-  'FillValue',
-  FillValue = {
-    use = false,
-    value = nil
-  },
-
-  'TaperAtFill',
-  TaperAtFill = {
-    use = false,
-    value = nil
-  },
-
-  'MemoryLimit',
-  MemoryLimit = {
-    use = false,
-    value = nil
-  },
-
-  'TestLimits',
-  TestLimits = {
+  'TestOutput',
+  TestOutput = {
     use = false,
     value = nil
   },
@@ -310,7 +361,7 @@ prenewstack = {
     value = nil
   },
 }
-setmetatable(prenewstack, { __index = config.IMOD })
+setmetatable(tiltxcorr, { __index = config.IMOD })
 
-return prenewstack
+return tiltxcorr
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

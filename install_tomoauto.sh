@@ -167,9 +167,9 @@ install -m 0644 "${TOMOAUTOROOT}"/external/yalgo.lua \
   "${TOMOAUTOROOT}"/lib/lua/5.3/
 install -m 0755 "${TOMOAUTOROOT}"/src/bin/* "${TOMOAUTOROOT}"/bin
 mkdir -p "${TOMOAUTOROOT}"/lib/lua/5.3/tomoauto/settings
-install -m 0644 "${TOMOAUTOROOT}"/src/lib/*.lua \
+install -m 0644 "${TOMOAUTOROOT}"/src/lib/tomoauto/*.lua \
   "${TOMOAUTOROOT}"/lib/lua/5.3/tomoauto
-install -m 0644 "${TOMOAUTOROOT}"/src/lib/settings/*.lua \
+install -m 0644 "${TOMOAUTOROOT}"/src/lib/tomoauto/settings/*.lua \
   "${TOMOAUTOROOT}"/lib/lua/5.3/tomoauto/settings
 
 if [[ -a "${TOMOAUTOINIT}" ]]

@@ -29,17 +29,16 @@
 -- @license MIT
 -- @release 0.2.30
 
-local mrcio = {}
-package.loaded[...] = mdoc
 
 local utils = require('tomoauto.utils')
 local mdoc = require('tomoauto.mdoc')
 local lfs = require('lfs')
 local assert, ipairs, setmetatable, type = assert, ipairs, setmetatable, type
-local print = print
 local io, math, os, string, table = io, math, os, string, table
 
 _ENV = nil
+
+local mrcio = {}
 
 local header_format = 'iiiiiiiiiiffffffiiifffiihc6c4ic16hhc20iihhhhhhfffffffff'
 header_format = header_format .. 'c4c4fic80c80c80c80c80c80c80c80c80c80'
@@ -962,7 +961,6 @@ end
 local function write_extended_header (MRC)
   local extended_header = ''
 
-  print('DEBUG: ', MRC.num_extended_header_sections)
   for index = 1, MRC.num_extended_header_sections do
     extended_header = extended_header ..
 		      write_extended_header_section(MRC, index)

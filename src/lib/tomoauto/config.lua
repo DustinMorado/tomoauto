@@ -28,9 +28,6 @@
 -- @license MIT
 -- @release 0.2.30
 
-local config = {}
-package.loaded[...] = config
-
 local utils = require('tomoauto.utils')
 local io, os, string, table = io, os, string, table
 local assert, getmetatable, ipairs = assert, getmetatable, ipairs
@@ -38,10 +35,13 @@ local loadfile, pairs, setmetatable, type = loadfile, pairs, setmetatable, type
 
 _ENV = nil
 
+local config = {}
+
 function config.copy (setting)
   local new_setting = {
     Name = setting.Name,
     Log  = setting.Log,
+    Index = setting.Index,
     Command = setting.Command
   }
 

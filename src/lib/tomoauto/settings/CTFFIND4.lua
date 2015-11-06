@@ -28,10 +28,13 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local CTFFIND4 = {}
-package.loaded[...] = CTFFIND4
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
+
+_ENV = nil
+
+local CTFFIND4 = {}
 
 CTFFIND4 = {
   Index   = 'CTFFIND4',

@@ -29,27 +29,30 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local ccderaser = {}
-package.loaded[...] = ccderaser 
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
 
-ccderaser = {
-  Index = 'ccderaser',
-  Name = 'TOMOAUTO{basename}_ccderaser.com',
-  Log = 'TOMOAUTO{basename}_ccderaser.log',
+_ENV = nil
+
+local gold_ccderaser = {}
+
+gold_ccderaser = {
+  Index = 'gold_ccderaser',
+  Name = 'TOMOAUTO{basename}_gold_ccderaser.com',
+  Log = 'TOMOAUTO{basename}_gold_ccderaser.log',
   Command = '$ccderaser -StandardInput',
 
   'InputFile',
   InputFile = {
     use = true,
-    value = 'TOMOAUTO{filename}'
+    value = 'TOMOAUTO{basename}.ali'
   },
 
   'OutputFile',
   OutputFile = {
     use = true,
-    value = 'TOMOAUTO{basename}_fixed.st'
+    value = 'TOMOAUTO{basename}_erase.ali'
   },
 
   'PieceListFile',
@@ -66,56 +69,56 @@ ccderaser = {
 
   'FindPeaks',
   FindPeaks = {
-    use = true,
+    use = false,
     value = nil
   },
 
   'PeakCriterion',
   PeakCriterion = {
-    use = true,
-    value = 10.0
+    use = false,
+    value = nil
   },
 
   'DiffCriterion',
   DiffCriterion = {
-    use = true,
-    value = 8.0
+    use = false,
+    value = nil
   },
 
   'GrowCriterion',
   GrowCriterion = {
-    use = true,
-    value = 4.0
+    use = false,
+    value = nil
   },
 
   'ScanCriterion',
   ScanCriterion = {
-    use = true,
-    value = 3.0
+    use = false,
+    value = nil
   },
 
   'MaximumRadius',
   MaximumRadius = {
-    use = true,
-    value = 4.2
+    use = false,
+    value = nil
   },
 
   'GiantCriterion',
   GiantCriterion = {
-    use = true,
-    value = 12.0
+    use = false,
+    value = nil
   },
 
   'ExtraLargeRadius',
   ExtraLargeRadius = {
-    use = true,
-    value = 8.0
+    use = false,
+    value = nil
   },
 
   'BigDiffCriterion',
   BigDiffCriterion = {
-    use = true,
-    value = 19.0
+    use = false,
+    value = nil
   },
 
   'MaxPixelsInDiffPatch',
@@ -132,32 +135,32 @@ ccderaser = {
 
   'AnnulusWidth',
   AnnulusWidth = {
-    use = true,
-    value = 2.0
+    use = false,
+    value = nil
   },
 
   'XYScanSize',
   XYScanSize = {
-    use = true,
-    value = 100
+    use = false,
+    value = nil
   },
 
   'EdgeExclusionWidth',
   EdgeExclusionWidth = {
-    use = true,
-    value = 4
+    use = false,
+    value = nil
   },
 
   'PointModel',
   PointModel = {
     use = false,
-    value = 'TOMOAUTO{basename}_peak.mod'
+    value = nil
   },
 
   'ModelFile',
   ModelFile = {
-    use = false,
-    value = nil
+    use = true,
+    value = 'TOMOAUTO{basename}_erase.fid'
   },
 
   'LineObjects',
@@ -180,14 +183,14 @@ ccderaser = {
 
   'CircleObjects',
   CircleObjects = {
-    use = false,
-    value = nil
+    use = true,
+    value = '/'
   },
 
   'BetterRadius',
   BetterRadius = {
-    use = false,
-    value = nil
+    use = true,
+    value = 13.25
   },
 
   'ExpandCircleIterations',
@@ -198,25 +201,25 @@ ccderaser = {
 
   'MergePatches',
   MergePatches = {
-    use = false,
+    use = true,
     value = nil
   },
 
   'BorderSize',
   BorderSize = {
-    use = true,
-    value = 2
+    use = false,
+    value = nil
   },
 
   'PolynomialOrder',
   PolynomialOrder = {
     use = true,
-    value = 2
+    value = 0
   },
 
   'ExcludeAdjacent',
   ExcludeAdjacent = {
-    use = false,
+    use = true,
     value = nil
   },
 
@@ -237,8 +240,14 @@ ccderaser = {
     use = false,
     value = nil
   },
-}
-setmetatable(ccderaser, { __index = config.IMOD })
 
-return ccderaser
+  'ParameterFile',
+  ParameterFile = {
+    use = false,
+    value = nil
+  },
+}
+setmetatable(gold_ccderaser, { __index = config.IMOD })
+
+return gold_ccderaser
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

@@ -27,18 +27,18 @@
 -- @license MIT
 -- @release 0.2.30
 
-local utils = {}
-package.loaded[...] = mdoc
 local lfs = require('lfs')
 local io, math, os, string = io, math, os, string
 local assert, type = assert, type
-
 local pathsep = string.sub(_G.package.config, 1, 1)
 
 _ENV = nil
 
+local utils = {}
+
 function utils.check_type (argument, Type)
-  assert(type(Type) == 'string')
+  assert(type(Type) == 'string',
+	 'ERROR: utils.check_type: Type must be string.')
   return type(argument) == Type
 end
 
@@ -75,27 +75,32 @@ function utils.is_userdata (argument)
 end
 
 function utils.is_path (path)
-  if not utils.is_string(path) then return nil end
+  assert(utils.is_string(path),
+	 'ERROR: utils.is_path: path must be a string.')
   return lfs.attributes(path, 'mode') and path or nil
 end
 
 function utils.is_absolute_path (path)
-  if not utils.is_string(path) then return nil end
+  assert(utils.is_string(path),
+	 'ERROR: utils.is_absolute_path: path must be a string.')
   return path:sub(1, 1) == pathsep and true or nil
 end
 
 function utils.is_directory (path)
-  if not utils.is_string(path) then return nil end
+  assert(utils.is_string(path),
+	 'ERROR: utils.is_directory: path must be a string.')
   return lfs.attributes(path, 'mode') == 'directory' and true or nil
 end
 
 function utils.is_file (path)
-  if not utils.is_string(path) then return nil end
+  assert(utils.is_string(path),
+	 'ERROR: utils.is_file: path must be a string.')
   return lfs.attributes(path, 'mode') == 'file' and true or nil
 end
 
 function utils.join_paths (path_1, path_2)
-  assert(utils.is_string(path_1) and utils.is_string(path_2))
+  assert(utils.is_string(path_1) and utils.is_string(path_2),
+         'ERROR: utils.join_paths: paths must be strings.')
 
   if path_1:len() * path_2:len() == 0 then
     return path_1 .. path_2

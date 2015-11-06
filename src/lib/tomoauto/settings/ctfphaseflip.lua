@@ -29,150 +29,123 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local xfmodel = {}
-package.loaded[...] = xfmodel 
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
 
-xfmodel = {
-  Index = 'xfmodel',
-  Name = 'TOMOAUTO{basename}_xfmodel.com',
-  Log = 'TOMOAUTO{basename}_xfmodel.log',
-  Command = '$xfmodel -StandardInput',
+_ENV = nil
 
-  'InputFile',
-  InputFile = {
+local ctfphaseflip = {}
+
+ctfphaseflip = {
+  Index = 'ctfphaseflip',
+  Name = 'TOMOAUTO{basename}_ctfphaseflip.com',
+  Log = 'TOMOAUTO{basename}_ctfphaseflip.log',
+  Command = '$ctfphaseflip -StandardInput',
+
+  'InputStack',
+  InputStack = {
     use = true,
-    value = 'TOMOAUTO{basename}.fid'
+    value = 'TOMOAUTO{basename}.ali'
   },
 
-  'OutputFile',
-  OutputFile = {
+  'OutputFileName',
+  OutputFileName = {
     use = true,
-    value = 'TOMOAUTO{basename}_erase.fid'
+    value = 'TOMOAUTO{basename}_ctfcorr.ali'
   },
 
-  'ImageFile',
-  ImageFile = {
-    use = false,
-    value = nil
-  },
-
-  'PieceListFile',
-  PieceListFile = {
-    use = false,
-    value = nil
-  },
-
-  'AllZhaveTransforms',
-  AllZhaveTransforms = {
-    use = false,
-    value = nil
-  },
-
-  'CenterInXandY',
-  CenterInXandY = {
-    use = false,
-    value = nil
-  },
-
-  'TranslationOnly',
-  TranslationOnly = {
-    use = false,
-    value = nil
-  },
-
-  'RotationTranslation',
-  RotationTranslation = {
-    use = false,
-    value = nil
-  },
-
-  'MagRotTrans',
-  MagRotTrans = {
-    use = false,
-    value = nil
-  },
-
-  'SectionsToAnalyze',
-  SectionsToAnalyze = {
-    use = false,
-    value = nil
-  },
-
-  'SingleSection',
-  SingleSection = {
-    use = false,
-    value = nil
-  },
-
-  'FullReportMeanAndMax',
-  FullReportMeanAndMax = {
-    use = false,
-    value = nil
-  },
-
-  'PrealignTransforms',
-  PrealignTransforms = {
-    use = false,
-    value = nil
-  },
-
-  'EditTransforms',
-  EditTransforms = {
-    use = false,
-    value = nil
-  },
-
-  'XformsToApply',
-  XformsToApply = {
+  'AngleFile',
+  AngleFile = {
     use = true,
-    value = 'TOMOAUTO{basename}.tltxf'
+    value = 'TOMOAUTO{basename}.tlt'
   },
 
-  'UseTransformLine',
-  UseTransformLine = {
+  'InvertTiltAngles',
+  InvertTiltAngles = {
     use = false,
     value = nil
   },
 
-  'ChunkSizes',
-  ChunkSizes = {
+  'DefocusFile',
+  DefocusFile = {
+    use = true,
+    value = 'TOMOAUTO{basename}.defocus'
+  },
+
+  'TransformFile',
+  TransformFile = {
+    use = true,
+    value = 'TOMOAUTO{basename}.xf'
+  },
+
+  'DefocusTol',
+  DefocusTol = {
+    use = true,
+    value = 200
+  },
+
+  'MaximumStripWidth',
+  MaximumStripWidth = {
     use = false,
     value = nil
   },
 
-  'BackTransform',
-  BackTransform = {
+  'InterpolationWidth',
+  InterpolationWidth = {
+    use = true,
+    value = 20
+  },
+
+  'PixelSize',
+  PixelSize = {
+    use = true,
+    value = 'TOMOAUTO{pixel_size_nm}'
+  },
+
+  'Voltage',
+  Voltage = {
+    use = true,
+    value = 300
+  },
+
+  'SphericalAberration',
+  SphericalAberration = {
+    use = true,
+    value = 2.0
+  },
+
+  'AmplitudeContrast',
+  AmplitudeContrast = {
+    use = true,
+    value = 0.10
+  },
+
+  'StartingEndingViews',
+  StartingEndingViews = {
     use = false,
     value = nil
   },
 
-  'ScaleShifts',
-  ScaleShifts = {
+  'TotalViews',
+  TotalViews = {
     use = false,
     value = nil
   },
 
-  'DistortionField',
-  DistortionField = {
+  'BoundaryInfoFile',
+  BoundaryInfoFile = {
     use = false,
     value = nil
   },
 
-  'BinningOfImages',
-  BinningOfImages = {
-    use = false,
-    value = nil
-  },
-
-  'GradientFile',
-  GradientFile = {
+  'AxisAngle',
+  AxisAngle = {
     use = false,
     value = nil
   },
 }
-setmetatable(xfmodel, { __index = config.IMOD })
+setmetatable(ctfphaseflip, { __index = config.IMOD })
 
-return xfmodel
+return ctfphaseflip
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

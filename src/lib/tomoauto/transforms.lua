@@ -28,8 +28,13 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local transforms = {}
+
 local math, table = math, table
+local type = type
+
+_ENV = nil 
+
+local transforms = {}
 
 --- Initialize an empty matrix with the given dimensions.
 -- @tparam number row_dimension Row dimension of matrix.

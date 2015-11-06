@@ -29,10 +29,13 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local beadtrack = {}
-package.loaded[...] = beadtrack 
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
+
+_ENV = nil
+
+local beadtrack = {}
 
 beadtrack = {
   Index = 'beadtrack',
@@ -72,8 +75,8 @@ beadtrack = {
 
   'ImagesAreBinned',
   ImagesAreBinned = {
-    use = false,
-    value = nil
+    use = true,
+    value = 1
   },
 
   'XYZOutputFile',
@@ -133,7 +136,7 @@ beadtrack = {
   'TiltDefaultGrouping',
   TiltDefaultGrouping = {
     use = true,
-    value = 5
+    value = 7
   },
 
   'TiltNondefaultGrouping',
@@ -216,20 +219,20 @@ beadtrack = {
 
   'MinTiltRangeToFindAngles',
   MinTiltRangeToFindAngles = {
-    use = false,
-    value = nil
+    use = true,
+    value = 20.0
   },
 
   'BoxSizeXandY',
   BoxSizeXandY = {
     use = true,
-    value = { 72, 72 }
+    value = { 128, 128 }
   },
 
   'RoundsOfTracking',
   RoundsOfTracking = {
     use = true,
-    value = 20
+    value = 2
   },
 
   'MaxViewsInAlign',
@@ -265,13 +268,13 @@ beadtrack = {
   'MinBeadsInArea',
   MinBeadsInArea = {
     use = true,
-    value = 3
+    value = 8
   },
 
   'MinOverlapBeads',
   MinOverlapBeads = {
     use = true,
-    value = 3
+    value = 5
   },
 
   'TrackObjectsTogether',
@@ -289,13 +292,13 @@ beadtrack = {
   'SobelFilterCentering',
   SobelFilterCentering = {
     use = true,
-    value = nil
+    value = 1
   },
 
   'KernelSigmaForSobel',
   KernelSigmaForSobel = {
     use = true,
-    value = 1.75
+    value = 1.5
   },
 
   'AverageBeadsForSobel',

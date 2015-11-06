@@ -29,120 +29,184 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local xyzproj = {}
-package.loaded[...] = xyzproj 
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
 
-xyzproj = {
-  Index = 'xyzproj',
-  Name = 'TOMOAUTO{basename}_xyzproj.com',
-  Log = 'TOMOAUTO{basename}_xyzproj.log',
-  Command = '$xyzproj -StandardInput',
+_ENV = nil
 
-  'InputFile',
-  InputFile = {
+local ctfplotter = {}
+
+ctfplotter = {
+  Index = 'ctfplotter',
+  Name = 'TOMOAUTO{basename}_ctfplotter.com',
+  Log = 'TOMOAUTO{basename}_ctfplotter.log',
+  Command = '$ctfplotter -StandardInput',
+
+  'InputStack',
+  InputStack = {
     use = true,
-    value = 'TOMOAUTO{basename}.ali'
+    value = 'TOMOAUTO{basename}.st'
   },
 
-  'OutputFile',
-  OutputFile = {
+  'AngleFile',
+  AngleFile = {
     use = true,
-    value = 'TOMOAUTO{basename}_driftcorr.mrc'
+    value = 'TOMOAUTO{basename}.tlt'
   },
 
-  'AxisToTiltAround',
-  AxisToTiltAround = {
+  'InvertTiltAngles',
+  InvertTiltAngles = {
+    use = false,
+    value = nil
+  },
+
+  'OffsetToAdd',
+  OffsetToAdd = {
+    use = false,
+    value = nil
+  },
+
+  'ConfigFile',
+  ConfigFile = {
     use = true,
-    value = 'Y'
+    value = '/usr/local/ImodCalib/CTFnoise/K24Kbackground/' ..
+            'polara-K2-4K-2014.ctg'
   },
 
-  'XMinAndMax',
-  XMinAndMax = {
+  'DefocusFile',
+  DefocusFile = {
+    use = true,
+    value = 'TOMOAUTO{basename}.defocus'
+  },
+
+  'AxisAngle',
+  AxisAngle = {
+    use = true,
+    value = 'TOMOAUTO{tilt_axis_angle}'
+  },
+
+  'PSResolution',
+  PSResolution = {
     use = false,
     value = nil
   },
 
-  'YMinAndMax',
-  YMinAndMax = {
+  'TileSize',
+  TileSize = {
     use = false,
     value = nil
   },
 
-  'ZMinAndMax',
-  ZMinAndMax = {
+  'Voltage',
+  Voltage = {
+    use = true,
+    value = 300
+  },
+
+  'MaxCacheSize',
+  MaxCacheSize = {
     use = false,
     value = nil
   },
 
-  'StartEndIncAngle',
-  StartEndIncAngle = {
+  'SphericalAberration',
+  SphericalAberration = {
+    use = true,
+    value = 2.0
+  },
+
+  'DefocusTol',
+  DefocusTol = {
     use = false,
     value = nil
   },
 
-  'ModeToOutput',
-  ModeToOutput = {
+  'PixelSize',
+  PixelSize = {
+    use = true,
+    value = 'TOMOAUTO{pixel_size_nm}'
+  },
+
+  'AmplitudeContrast',
+  AmplitudeContrast = {
+    use = true,
+    value = 0.10
+  },
+
+  'ExpectedDefocus',
+  ExpectedDefocus = {
+    use = true,
+    value = '5'
+  },
+
+  'LeftDefTol',
+  LeftDefTol = {
     use = false,
     value = nil
   },
 
-  'WidthToOutput',
-  WidthToOutput = {
+  'RightDefTol',
+  RightDefTol = {
     use = false,
     value = nil
   },
 
-  'AddThenMultiply',
-  AddThenMultiply = {
+  'AngleRange',
+  AngleRange = {
+    use = true,
+    value = { -40.0, 40.0 }
+  },
+
+  'AutoFitRangeAndStep',
+  AutoFitRangeAndStep = {
+    use = true,
+    value = { 0.0, 0.0 }
+  },
+
+  'FrequencyRangeToFit',
+  FrequencyRangeToFit = {
+    use = true,
+    value = { 0.05, 0.225 }
+  },
+
+  'VaryExponentInFit',
+  VaryExponentInFit = {
     use = false,
     value = nil
   },
 
-  'FillValue',
-  FillValue = {
+  'BaselineFittingOrder',
+  BaselineFittingOrder = {
+    use = true,
+    value = 2
+  },
+
+  'SaveAndExit',
+  SaveAndExit = {
+    use = true,
+    value = nil
+  },
+
+  'DebugLevel',
+  DebugLevel = {
     use = false,
     value = nil
   },
 
-  'ConstantScaling',
-  ConstantScaling = {
+  'Parameter',
+  Parameter = {
     use = false,
     value = nil
   },
 
-  'TiltFile',
-  TiltFile = {
-    use = false,
-    value = nil
-  },
-
-  'FirstTiltAngle',
-  FirstTiltAngle = {
-    use = false,
-    value = nil
-  },
-
-  'TiltIncrement',
-  TiltIncrement = {
-    use = false,
-    value = nil
-  },
-
-  'TiltAngles',
-  TiltAngles = {
-    use = false,
-    value = nil
-  },
-
-  'FullAreaAtTilt',
-  FullAreaAtTilt = {
+  'FocalPairDefocusOffset',
+  FocalPairDefocusOffset = {
     use = false,
     value = nil
   },
 }
-setmetatable(xyzproj, { __index = config.IMOD })
+setmetatable(ctfplotter, { __index = config.IMOD })
 
-return xyzproj
+return ctfplotter
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

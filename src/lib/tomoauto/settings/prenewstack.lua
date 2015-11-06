@@ -29,27 +29,30 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local newstack = {}
-package.loaded[...] = newstack 
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
 
-newstack = {
-  Index = 'newstack',
-  Name = 'TOMOAUTO{basename}_newstack.com',
-  Log = 'TOMOAUTO{basename}_newstack.log',
+_ENV = nil
+
+local prenewstack = {}
+
+prenewstack = {
+  Index = 'prenewstack',
+  Name = 'TOMOAUTO{basename}_prenewstack.com',
+  Log = 'TOMOAUTO{basename}_prenewstack.log',
   Command = '$newstack -StandardInput',
 
   'InputFile',
   InputFile = {
     use = true,
-    value = 'TOMOAUTO{filename}'
+    value = 'TOMOAUTO{basename}.st'
   },
 
   'OutputFile',
   OutputFile = {
     use = true,
-    value = 'TOMOAUTO{basename}.ali'
+    value = 'TOMOAUTO{basename}.preali'
   },
 
   'FileOfInputs',
@@ -139,7 +142,7 @@ newstack = {
   'TransformFile',
   TransformFile = {
     use = true,
-    value = 'TOMOAUTO{basename}.xf'
+    value = 'TOMOAUTO{basename}.prexg'
   },
 
   'UseTransformLines',
@@ -175,13 +178,13 @@ newstack = {
   'AntialiasFilter',
   AntialiasFilter = {
     use = false,
-    value = nil
+    value = -1
   },
 
   'BinByFactor',
   BinByFactor = {
-    use = false,
-    value = nil
+    use = true,
+    value = 1
   },
 
   'DistortionField',
@@ -192,8 +195,8 @@ newstack = {
 
   'ImagesAreBinned',
   ImagesAreBinned = {
-    use = false,
-    value = nil
+    use = true,
+    value = 1
   },
 
   'UseFields',
@@ -210,7 +213,7 @@ newstack = {
 
   'AdjustOrigin',
   AdjustOrigin = {
-    use = true,
+    use = false,
     value = nil
   },
 
@@ -234,8 +237,8 @@ newstack = {
 
   'ModeToOutput',
   ModeToOutput = {
-    use = false,
-    value = nil
+    use = true,
+    value = 0
   },
 
   'BytesSignedInOutput',
@@ -252,8 +255,8 @@ newstack = {
 
   'FloatDensities',
   FloatDensities = {
-    use = false,
-    value = nil
+    use = true,
+    value = 2
   },
 
   'MeanAndStandardDeviation',
@@ -288,8 +291,8 @@ newstack = {
 
   'TaperAtFill',
   TaperAtFill = {
-    use = true,
-    value = { 1, 0 }
+    use = false,
+    value = nil
   },
 
   'MemoryLimit',
@@ -310,7 +313,7 @@ newstack = {
     value = nil
   },
 }
-setmetatable(newstack, { __index = config.IMOD })
+setmetatable(prenewstack, { __index = config.IMOD })
 
-return newstack
+return prenewstack
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

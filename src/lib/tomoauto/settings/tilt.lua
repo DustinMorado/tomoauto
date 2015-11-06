@@ -29,10 +29,13 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local tilt = {}
-package.loaded[...] = tilt 
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
+
+_ENV = nil
+
+local tilt = {}
 
 tilt = {
   Index = 'tilt',

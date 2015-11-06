@@ -29,48 +29,123 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local xfproduct = {}
-package.loaded[...] = xfproduct 
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
 
-xfproduct = {
-  Index = 'xfproduct',
-  Name = 'TOMOAUTO{basename}_xfproduct.com',
-  Log = 'TOMOAUTO{basename}_xfproduct.log',
-  Command = '$xfproduct -StandardInput',
+_ENV = nil
 
-  'InputFile1',
-  InputFile1 = {
+local xyzproj = {}
+
+xyzproj = {
+  Index = 'xyzproj',
+  Name = 'TOMOAUTO{basename}_xyzproj.com',
+  Log = 'TOMOAUTO{basename}_xyzproj.log',
+  Command = '$xyzproj -StandardInput',
+
+  'InputFile',
+  InputFile = {
     use = true,
-    value = 'TOMOAUTO{basename}.prexg'
-  },
-
-  'InputFile2',
-  InputFile2 = {
-    use = true,
-    value = 'TOMOAUTO{basename}.tltxf'
+    value = 'TOMOAUTO{basename}.ali'
   },
 
   'OutputFile',
   OutputFile = {
     use = true,
-    value = 'TOMOAUTO{basename}.xf'
+    value = 'TOMOAUTO{basename}_driftcorr.mrc'
   },
 
-  'ScaleShifts',
-  ScaleShifts = {
+  'AxisToTiltAround',
+  AxisToTiltAround = {
+    use = true,
+    value = 'Y'
+  },
+
+  'XMinAndMax',
+  XMinAndMax = {
     use = false,
     value = nil
   },
 
-  'OneXformToMultiply',
-  OneXformToMultiply = {
+  'YMinAndMax',
+  YMinAndMax = {
+    use = false,
+    value = nil
+  },
+
+  'ZMinAndMax',
+  ZMinAndMax = {
+    use = false,
+    value = nil
+  },
+
+  'StartEndIncAngle',
+  StartEndIncAngle = {
+    use = false,
+    value = nil
+  },
+
+  'ModeToOutput',
+  ModeToOutput = {
+    use = false,
+    value = nil
+  },
+
+  'WidthToOutput',
+  WidthToOutput = {
+    use = false,
+    value = nil
+  },
+
+  'AddThenMultiply',
+  AddThenMultiply = {
+    use = false,
+    value = nil
+  },
+
+  'FillValue',
+  FillValue = {
+    use = false,
+    value = nil
+  },
+
+  'ConstantScaling',
+  ConstantScaling = {
+    use = false,
+    value = nil
+  },
+
+  'TiltFile',
+  TiltFile = {
+    use = false,
+    value = nil
+  },
+
+  'FirstTiltAngle',
+  FirstTiltAngle = {
+    use = false,
+    value = nil
+  },
+
+  'TiltIncrement',
+  TiltIncrement = {
+    use = false,
+    value = nil
+  },
+
+  'TiltAngles',
+  TiltAngles = {
+    use = false,
+    value = nil
+  },
+
+  'FullAreaAtTilt',
+  FullAreaAtTilt = {
     use = false,
     value = nil
   },
 }
-setmetatable(xfproduct, { __index = config.IMOD })
+setmetatable(xyzproj, { __index = config.IMOD })
 
-return xfproduct
+return xyzproj
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

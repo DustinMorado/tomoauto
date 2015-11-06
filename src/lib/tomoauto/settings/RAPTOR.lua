@@ -29,180 +29,129 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local xfalign = {}
-package.loaded[...] = xfalign 
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
 
-xfalign = {
-  Index = 'xfalign',
-  Name = 'TOMOAUTO{basename}_xfalign.com',
-  Log = 'TOMOAUTO{basename}_xfalign.log',
-  Command = '$xfalign -StandardInput',
+_ENV = nil
 
-  'InputImageFile',
-  InputImageFile = {
+local RAPTOR = {}
+
+RAPTOR = {
+  Index = 'RAPTOR',
+  Name = 'TOMOAUTO{basename}_RAPTOR.com',
+  Log = 'TOMOAUTO{basename}_RAPTOR.log',
+  Command = '$RAPTOR -StandardInput',
+
+  'RaptorExecPath',
+  RaptorExecPath = {
     use = true,
-    value = 'TOMOAUTO{abspath}'
+    value = '/usr/local/IMOD/bin/realbin/'
   },
 
-  'OutputTransformFile',
-  OutputTransformFile = {
+  'InputPath',
+  InputPath = {
     use = true,
-    value = 'TOMOAUTO{basename}.xf'
+    value = 'TOMOAUTO{dirname}'
   },
 
-  'SizeToAnalyze',
-  SizeToAnalyze = {
-    use = false,
-    value = nil
-  },
-
-  'OffsetToSubarea',
-  OffsetToSubarea = {
-    use = false,
-    value = nil
-  },
-
-  'EdgeToIgnore',
-  EdgeToIgnore = {
-    use = false,
-    value = nil
-  },
-
-  'ReduceByBinning',
-  ReduceByBinning = {
+  'InputFile',
+  InputFile = {
     use = true,
-    value = 4
+    value = 'TOMOAUTO{basename}.preali'
   },
 
-  'FilterParameters',
-  FilterParameters = {
+  'OutputPath',
+  OutputPath = {
+    use = true,
+    value = 'TOMOAUTO{currentdir}/TOMOAUTO{basename}_RAPTOR'
+  },
+
+  'Diameter',
+  Diameter = {
+    use = true,
+    value = 'TOMOAUTO{fiducial_diameter_px}'
+  },
+
+  'WhiteMarkers',
+  WhiteMarkers = {
     use = false,
     value = nil
   },
 
-  'SobelFilter',
-  SobelFilter = {
+  'MarkersPerImage',
+  MarkersPerImage = {
     use = false,
     value = nil
   },
 
-  'ParametersToSearch',
-  ParametersToSearch = {
-    use = false,
-    value = nil
-  },
-
-  'LimitsOnSearch',
-  LimitsOnSearch = {
-    use = false,
-    value = nil
-  },
-
-  'BilinearInterpolation',
-  BilinearInterpolation = {
-    use = false,
-    value = nil
-  },
-
-  'CorrelationCoefficient',
-  CorrelationCoefficient = {
-    use = false,
-    value = nil
-  },
-
-  'LocalPatchSize',
-  LocalPatchSize = {
-    use = false,
-    value = nil
-  },
-
-  'ReferenceFile',
-  ReferenceFile = {
-    use = false,
-    value = nil
-  },
-
-  'PreCrossCorrelation',
-  PreCrossCorrelation = {
+  'AnglesInHeader',
+  AnglesInHeader = {
     use = true,
     value = nil
   },
 
-  'XcorrFilter',
-  XcorrFilter = {
-    use = true,
-    value = { 0.01, 0.02, 0, 0.3 }
-  },
-
-  'InitialTransform',
-  InitialTransform = {
+  'Binning',
+  Binning = {
     use = false,
     value = nil
   },
 
-  'WarpPatchSizeXandY',
-  WarpPatchSizeXandY = {
+  'Reconstruction',
+  Reconstruction = {
     use = false,
     value = nil
   },
 
-  'BoundaryModel',
-  BoundaryModel = {
+  'Thickness',
+  Thickness = {
     use = false,
     value = nil
   },
 
-  'ShiftLimitsForWarp',
-  ShiftLimitsForWarp = {
+  'Orient',
+  Orient = {
     use = false,
     value = nil
   },
 
-  'SkipSections',
-  SkipSections = {
+  'TrackingOnly',
+  TrackingOnly = {
     use = false,
     value = nil
   },
 
-  'BreakAtSections',
-  BreakAtSections = {
+  'xRay',
+  xRay = {
     use = false,
     value = nil
   },
 
-  'PairedImages',
-  PairedImages = {
+  'Verbose',
+  Verbose = {
     use = false,
     value = nil
   },
 
-  'TomogramAverages',
-  TomogramAverages = {
+  'MaxDistanceCandidate',
+  MaxDistanceCandidate = {
     use = false,
     value = nil
   },
 
-  'DifferenceOutput',
-  DifferenceOutput = {
+  'MinNeighborsMRF',
+  MinNeighborsMRF = {
     use = false,
     value = nil
   },
 
-  'SectionsNumberedFromOne',
-  SectionsNumberedFromOne = {
-    use = false,
-    value = nil
-  },
-
-  'PID',
-  PID = {
+  'RollOffMRF',
+  RollOffMRF = {
     use = false,
     value = nil
   },
 }
-setmetatable(xfalign, { __index = config.IMOD })
+setmetatable(RAPTOR, { __index = config.IMOD })
 
-return xfalign
+return RAPTOR
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

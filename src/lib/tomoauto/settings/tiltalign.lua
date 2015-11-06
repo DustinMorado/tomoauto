@@ -29,10 +29,13 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local tiltalign = {}
-package.loaded[...] = tiltalign 
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
+
+_ENV = nil
+
+local tiltalign = {}
 
 tiltalign = {
   Index = 'tiltalign',
@@ -72,8 +75,8 @@ tiltalign = {
 
   'ImagesAreBinned',
   ImagesAreBinned = {
-    use = false,
-    value = nil
+    use = true,
+    value = 1
   },
 
   'OutputModelFile',
@@ -166,6 +169,12 @@ tiltalign = {
     value = '1-TOMOAUTO{bidirectional_section}'
   },
 
+  'NoSeparateTiltGroups',
+  NoSeparateTiltGroups = {
+    use = true,
+    value = 1
+  },
+
   'FirstTiltAngle',
   FirstTiltAngle = {
     use = false,
@@ -192,8 +201,8 @@ tiltalign = {
 
   'AngleOffset',
   AngleOffset = {
-    use = false,
-    value = nil
+    use = true,
+    value = 0.0
   },
 
   'ProjectionStretch',
@@ -205,7 +214,7 @@ tiltalign = {
   'BeamTiltOption',
   BeamTiltOption = {
     use = true,
-    value = 2
+    value = 0
   },
 
   'FixedOrInitialBeamTilt',
@@ -217,7 +226,7 @@ tiltalign = {
   'RotOption',
   RotOption = {
     use = true,
-    value = 3
+    value = 1
   },
 
   'RotDefaultGrouping',
@@ -240,13 +249,13 @@ tiltalign = {
 
   'LocalRotOption',
   LocalRotOption = {
-    use = false,
+    use = true,
     value = 3
   },
 
   'LocalRotDefaultGrouping',
   LocalRotDefaultGrouping = {
-    use = false,
+    use = true,
     value = 6
   },
 
@@ -288,7 +297,7 @@ tiltalign = {
 
   'LocalTiltOption',
   LocalTiltOption = {
-    use = false,
+    use = true,
     value = 5
   },
 
@@ -306,7 +315,7 @@ tiltalign = {
 
   'LocalTiltDefaultGrouping',
   LocalTiltDefaultGrouping = {
-    use = false,
+    use = true,
     value = 6
   },
 
@@ -325,7 +334,7 @@ tiltalign = {
   'MagOption',
   MagOption = {
     use = true,
-    value = 3
+    value = 1
   },
 
   'MagDefaultGrouping',
@@ -342,19 +351,19 @@ tiltalign = {
 
   'LocalMagReferenceView',
   LocalMagReferenceView = {
-    use = false,
+    use = true,
     value = 1
   },
 
   'LocalMagOption',
   LocalMagOption = {
-    use = false,
+    use = true,
     value = 3
   },
 
   'LocalMagDefaultGrouping',
   LocalMagDefaultGrouping = {
-    use = false,
+    use = true,
     value = 7
   },
 
@@ -408,14 +417,14 @@ tiltalign = {
 
   'LocalXStretchOption',
   LocalXStretchOption = {
-    use = false,
-    value = 3
+    use = true,
+    value = 0
   },
 
   'LocalXStretchDefaultGrouping',
   LocalXStretchDefaultGrouping = {
-    use = false,
-    value = 11
+    use = true,
+    value = 7
   },
 
   'LocalXStretchNondefaultGrouping',
@@ -444,13 +453,13 @@ tiltalign = {
 
   'LocalSkewOption',
   LocalSkewOption = {
-    use = false,
-    value = 3
+    use = true,
+    value = 0
   },
 
   'LocalSkewDefaultGrouping',
   LocalSkewDefaultGrouping = {
-    use = false,
+    use = true,
     value = 11
   },
 
@@ -462,14 +471,14 @@ tiltalign = {
 
   'XTiltOption',
   XTiltOption = {
-    use = false,
-    value = nil
+    use = true,
+    value = 0
   },
 
   'XTiltDefaultGrouping',
   XTiltDefaultGrouping = {
-    use = false,
-    value = nil
+    use = true,
+    value = 1000
   },
 
   'XTiltNondefaultGrouping',
@@ -505,7 +514,7 @@ tiltalign = {
   'SurfacesToAnalyze',
   SurfacesToAnalyze = {
     use = true,
-    value = 2
+    value = 1
   },
 
   'MetroFactor',
@@ -559,7 +568,7 @@ tiltalign = {
   'ShiftZFromOriginal',
   ShiftZFromOriginal = {
     use = true,
-    value = nil
+    value = 1
   },
 
   'AxisXShift',
@@ -570,14 +579,14 @@ tiltalign = {
 
   'LocalAlignments',
   LocalAlignments = {
-    use = false,
-    value = nil
+    use = true,
+    value = 0
   },
 
   'OutputLocalFile',
   OutputLocalFile = {
-    use = false,
-    value = nil
+    use = true,
+    value = 'TOMOAUTO{basename}local.xf'
   },
 
   'NumberOfLocalPatchesXandY',
@@ -588,8 +597,8 @@ tiltalign = {
 
   'TargetPatchSizeXandY',
   TargetPatchSizeXandY = {
-    use = false,
-    value = nil
+    use = true,
+    value = { 700, 700}
   },
 
   'MinSizeOrOverlapXandY',
@@ -601,18 +610,18 @@ tiltalign = {
   'MinFidsTotalAndEachSurface',
   MinFidsTotalAndEachSurface = {
     use = true,
-    value = { 8, 3}
+    value = { 8, 3 }
   },
 
   'FidXYZCoordinates',
   FidXYZCoordinates = {
-    use = false,
-    value = nil
+    use = true,
+    value = 0
   },
 
   'LocalOutputOptions',
   LocalOutputOptions = {
-    use = false,
+    use = true,
     value = { 1, 0, 1 }
   },
 

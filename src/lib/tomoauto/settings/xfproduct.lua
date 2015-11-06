@@ -29,120 +29,51 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local ctfphaseflip = {}
-package.loaded[...] = ctfphaseflip 
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
 
-ctfphaseflip = {
-  Index = 'ctfphaseflip',
-  Name = 'TOMOAUTO{basename}_ctfphaseflip.com',
-  Log = 'TOMOAUTO{basename}_ctfphaseflip.log',
-  Command = '$ctfphaseflip -StandardInput',
+_ENV = nil
 
-  'InputStack',
-  InputStack = {
+local xfproduct = {}
+
+xfproduct = {
+  Index = 'xfproduct',
+  Name = 'TOMOAUTO{basename}_xfproduct.com',
+  Log = 'TOMOAUTO{basename}_xfproduct.log',
+  Command = '$xfproduct -StandardInput',
+
+  'InputFile1',
+  InputFile1 = {
     use = true,
-    value = 'TOMOAUTO{basename}.ali'
+    value = 'TOMOAUTO{basename}.prexg'
   },
 
-  'OutputFileName',
-  OutputFileName = {
+  'InputFile2',
+  InputFile2 = {
     use = true,
-    value = 'TOMOAUTO{basename}_ctfcorr.ali'
+    value = 'TOMOAUTO{basename}.tltxf'
   },
 
-  'AngleFile',
-  AngleFile = {
-    use = true,
-    value = 'TOMOAUTO{basename}.tlt'
-  },
-
-  'InvertTiltAngles',
-  InvertTiltAngles = {
-    use = false,
-    value = nil
-  },
-
-  'DefocusFile',
-  DefocusFile = {
-    use = true,
-    value = 'TOMOAUTO{basename}.defocus'
-  },
-
-  'TransformFile',
-  TransformFile = {
+  'OutputFile',
+  OutputFile = {
     use = true,
     value = 'TOMOAUTO{basename}.xf'
   },
 
-  'DefocusTol',
-  DefocusTol = {
-    use = true,
-    value = 200
-  },
-
-  'MaximumStripWidth',
-  MaximumStripWidth = {
+  'ScaleShifts',
+  ScaleShifts = {
     use = false,
     value = nil
   },
 
-  'InterpolationWidth',
-  InterpolationWidth = {
-    use = true,
-    value = 20
-  },
-
-  'PixelSize',
-  PixelSize = {
-    use = true,
-    value = 'TOMOAUTO{pixel_size_nm}'
-  },
-
-  'Voltage',
-  Voltage = {
-    use = true,
-    value = 300
-  },
-
-  'SphericalAberration',
-  SphericalAberration = {
-    use = true,
-    value = 2.0
-  },
-
-  'AmplitudeContrast',
-  AmplitudeContrast = {
-    use = true,
-    value = 0.10
-  },
-
-  'StartingEndingViews',
-  StartingEndingViews = {
-    use = false,
-    value = nil
-  },
-
-  'TotalViews',
-  TotalViews = {
-    use = false,
-    value = nil
-  },
-
-  'BoundaryInfoFile',
-  BoundaryInfoFile = {
-    use = false,
-    value = nil
-  },
-
-  'AxisAngle',
-  AxisAngle = {
+  'OneXformToMultiply',
+  OneXformToMultiply = {
     use = false,
     value = nil
   },
 }
-setmetatable(ctfphaseflip, { __index = config.IMOD })
+setmetatable(xfproduct, { __index = config.IMOD })
 
-return ctfphaseflip
+return xfproduct
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

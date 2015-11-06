@@ -29,10 +29,13 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local tomo3d = {}
-package.loaded[...] = tomo3d 
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
+
+_ENV = nil
+
+local tomo3d = {}
 
 tomo3d = {
   Index = 'tomo3d',

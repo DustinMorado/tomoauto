@@ -29,126 +29,195 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local RAPTOR = {}
-package.loaded[...] = RAPTOR  
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
 
-RAPTOR = {
-  Index = 'RAPTOR',
-  Name = 'TOMOAUTO{basename}_RAPTOR.com',
-  Log = 'TOMOAUTO{basename}_RAPTOR.log',
-  Command = '$RAPTOR -StandardInput',
+_ENV = nil
 
-  'RaptorExecPath',
-  RaptorExecPath = {
+local autofidseed = {}
+
+autofidseed = {
+  Index = 'autofidseed',
+  Name = 'TOMOAUTO{basename}_autofidseed.com',
+  Log = 'TOMOAUTO{basename}_autofidseed.log',
+  Command = '$autofidseed -StandardInput',
+
+  'TrackCommandFile',
+  TrackCommandFile = {
     use = true,
-    value = '/usr/local/IMOD/bin/realbin/'
+    value = 'TOMOAUTO{basename}_beadtrack.com'
   },
 
-  'InputPath',
-  InputPath = {
+  'AppendToSeedModel',
+  AppendToSeedModel = {
+    use = false,
+    value = nil
+  },
+
+  'MinGuessNumBeads',
+  MinGuessNumBeads = {
+    use = false,
+    value = nil
+  },
+
+  'MinSpacing',
+  MinSpacing = {
     use = true,
-    value = 'TOMOAUTO{dirname}'
+    value = 0.85
   },
 
-  'InputFile',
-  InputFile = {
+  'BeadSize',
+  BeadSize = {
+    use = false,
+    value = nil
+  },
+
+  'AdjustSizes',
+  AdjustSizes = {
+    use = false,
+    value = nil
+  },
+
+  'PeakStorageFraction',
+  PeakStorageFraction = {
     use = true,
-    value = 'TOMOAUTO{basename}.preali'
+    value = 1.0
   },
 
-  'OutputPath',
-  OutputPath = {
+  'FindBeadOptions',
+  FindBeadOptions = {
+    use = false,
+    value = nil
+  },
+
+  'NumberOfSeedViews',
+  NumberOfSeedViews = {
+    use = false,
+    value = nil
+  },
+
+  'BoundaryModel',
+  BoundaryModel = {
+    use = false,
+    value = nil
+  },
+
+  'ExcludeInsideAreas',
+  ExcludeInsideAreas = {
+    use = false,
+    value = nil
+  },
+
+  'BordersInXandY',
+  BordersInXandY = {
+    use = false,
+    value = nil
+  },
+
+  'TwoSurfaces',
+  TwoSurfaces = {
+    use = false,
+    value = nil
+  },
+
+  'TargetNumberOfBeads',
+  TargetNumberOfBeads = {
     use = true,
-    value = 'TOMOAUTO{currentdir}/TOMOAUTO{basename}_RAPTOR'
+    value = 20
   },
 
-  'Diameter',
-  Diameter = {
-    use = true,
-    value = 'TOMOAUTO{fiducial_diameter_px}'
-  },
-
-  'WhiteMarkers',
-  WhiteMarkers = {
+  'TargetDensityOfBeads',
+  TargetDensityOfBeads = {
     use = false,
     value = nil
   },
 
-  'MarkersPerImage',
-  MarkersPerImage = {
+  'MaxMajorToMinorRatio',
+  MaxMajorToMinorRatio = {
     use = false,
     value = nil
   },
 
-  'AnglesInHeader',
-  AnglesInHeader = {
-    use = true,
-    value = nil
-  },
-
-  'Binning',
-  Binning = {
+  'ElongatedPointsAllowed',
+  ElongatedPointsAllowed = {
     use = false,
     value = nil
   },
 
-  'Reconstruction',
-  Reconstruction = {
+  'ClusteredPointsAllowed',
+  ClusteredPointsAllowed = {
     use = false,
     value = nil
   },
 
-  'Thickness',
-  Thickness = {
+  'LowerTargetForClustered',
+  LowerTargetForClustered = {
     use = false,
     value = nil
   },
 
-  'Orient',
-  Orient = {
+  'SubareaSize',
+  SubareaSize = {
     use = false,
     value = nil
   },
 
-  'TrackingOnly',
-  TrackingOnly = {
+  'SortAreasMinNumAndSize',
+  SortAreasMinNumAndSize = {
     use = false,
     value = nil
   },
 
-  'xRay',
-  xRay = {
+  'IgnoreSurfaceData',
+  IgnoreSurfaceData = {
     use = false,
     value = nil
   },
 
-  'Verbose',
-  Verbose = {
+  'DropTracks',
+  DropTracks = {
     use = false,
     value = nil
   },
 
-  'MaxDistanceCandidate',
-  MaxDistanceCandidate = {
+  'PickSeedOptions',
+  PickSeedOptions = {
     use = false,
     value = nil
   },
 
-  'MinNeighborsMRF',
-  MinNeighborsMRF = {
+  'RemoveTempFiles',
+  RemoveTempFiles = {
     use = false,
     value = nil
   },
 
-  'RollOffMRF',
-  RollOffMRF = {
+  'OutputSeedModel',
+  OutputSeedModel = {
+    use = false,
+    value = nil
+  },
+
+  'InfoFile',
+  InfoFile = {
+    use = false,
+    value = nil
+  },
+
+  'TemporaryDirectory',
+  TemporaryDirectory = {
+    use = false,
+    value = nil
+  },
+
+  'LeaveTempFiles',
+  LeaveTempFiles = {
     use = false,
     value = nil
   },
 }
-setmetatable(RAPTOR, { __index = config.IMOD })
+setmetatable(autofidseed, { __index = config.IMOD })
 
-return RAPTOR
+return autofidseed
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :

@@ -29,84 +29,153 @@
 -- @author Dustin Reed Morado
 -- @license MIT
 -- @release 0.2.30
-local xftoxg = {}
-package.loaded[...] = xftoxg 
 
 local config = require('tomoauto.config')
+local setmetatable = setmetatable
 
-xftoxg = {
-  Index = 'xftoxg',
-  Name = 'TOMOAUTO{basename}_xftoxg.com',
-  Log = 'TOMOAUTO{basename}_xftoxg.log',
-  Command = '$xftoxg -StandardInput',
+_ENV = nil
+
+local xfmodel = {}
+
+xfmodel = {
+  Index = 'xfmodel',
+  Name = 'TOMOAUTO{basename}_xfmodel.com',
+  Log = 'TOMOAUTO{basename}_xfmodel.log',
+  Command = '$xfmodel -StandardInput',
 
   'InputFile',
   InputFile = {
     use = true,
-    value = 'TOMOAUTO{basename}.prexf'
+    value = 'TOMOAUTO{basename}.fid'
   },
 
-  'GOutputFile',
-  GOutputFile = {
+  'OutputFile',
+  OutputFile = {
     use = true,
-    value = 'TOMOAUTO{basename}.prexg'
+    value = 'TOMOAUTO{basename}_erase.fid'
   },
 
-  'NumberToFit',
-  NumberToFit = {
+  'ImageFile',
+  ImageFile = {
+    use = false,
+    value = nil
+  },
+
+  'PieceListFile',
+  PieceListFile = {
+    use = false,
+    value = nil
+  },
+
+  'AllZhaveTransforms',
+  AllZhaveTransforms = {
+    use = false,
+    value = nil
+  },
+
+  'CenterInXandY',
+  CenterInXandY = {
+    use = false,
+    value = nil
+  },
+
+  'TranslationOnly',
+  TranslationOnly = {
+    use = false,
+    value = nil
+  },
+
+  'RotationTranslation',
+  RotationTranslation = {
+    use = false,
+    value = nil
+  },
+
+  'MagRotTrans',
+  MagRotTrans = {
+    use = false,
+    value = nil
+  },
+
+  'SectionsToAnalyze',
+  SectionsToAnalyze = {
+    use = false,
+    value = nil
+  },
+
+  'SingleSection',
+  SingleSection = {
+    use = false,
+    value = nil
+  },
+
+  'FullReportMeanAndMax',
+  FullReportMeanAndMax = {
+    use = false,
+    value = nil
+  },
+
+  'PrealignTransforms',
+  PrealignTransforms = {
+    use = false,
+    value = nil
+  },
+
+  'EditTransforms',
+  EditTransforms = {
+    use = false,
+    value = nil
+  },
+
+  'XformsToApply',
+  XformsToApply = {
     use = true,
-    value = 0
+    value = 'TOMOAUTO{basename}.tltxf'
   },
 
-  'ReferenceSection',
-  ReferenceSection = {
+  'UseTransformLine',
+  UseTransformLine = {
     use = false,
     value = nil
   },
 
-  'OrderOfPolynomialFit',
-  OrderOfPolynomialFit = {
+  'ChunkSizes',
+  ChunkSizes = {
     use = false,
     value = nil
   },
 
-  'HybridFits',
-  HybridFits = {
+  'BackTransform',
+  BackTransform = {
     use = false,
     value = nil
   },
 
-  'RangeOfAnglesInAverage',
-  RangeOfAnglesInAverage = {
+  'ScaleShifts',
+  ScaleShifts = {
     use = false,
     value = nil
   },
 
-  'RobustFit',
-  RobustFit = {
+  'DistortionField',
+  DistortionField = {
     use = false,
     value = nil
   },
 
-  'KFactorScaling',
-  KFactorScaling = {
+  'BinningOfImages',
+  BinningOfImages = {
     use = false,
     value = nil
   },
 
-  'MaximumIterations',
-  MaximumIterations = {
-    use = false,
-    value = nil
-  },
-
-  'IterationParams',
-  IterationParams = {
+  'GradientFile',
+  GradientFile = {
     use = false,
     value = nil
   },
 }
-setmetatable(xftoxg, { __index = config.IMOD })
+setmetatable(xfmodel, { __index = config.IMOD })
 
-return xftoxg
+return xfmodel
 -- vim: set ft=lua tw=80 ts=8 sts=2 sw=2 noet :
