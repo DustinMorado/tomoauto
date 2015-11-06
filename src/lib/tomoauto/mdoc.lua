@@ -29,7 +29,7 @@
 -- @release 0.2.30
 
 local utils = require('tomoauto.utils')
-local ipairs, pairs, type = ipairs, pairs, type
+local assert, ipairs, pairs, type = assert, ipairs, pairs, type
 local io, string, table = io, string, table
 
 _ENV = nil
