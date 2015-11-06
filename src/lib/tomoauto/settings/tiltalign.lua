@@ -613,8 +613,8 @@ tiltalign = {
     value = { 8, 3 }
   },
 
-  'FidXYZCoordinates',
-  FidXYZCoordinates = {
+  'FixXYZCoordinates',
+  FixXYZCoordinates = {
     use = true,
     value = 0
   },
