@@ -408,12 +408,17 @@ local function get_MDOC_tilt_axis_angle (MRC)
 end
 
 local function get_tilt_axis_angle (MRC)
-  if MRC.extended_header and has_extended_header_field(MRC, 'tilt_axis') then
-    return get_FEI_tilt_axis_angle(MRC)
-  elseif MRC.mdoc then
-    return get_MDOC_tilt_axis_angle(MRC)
+  local tilt_axis_angle = get_IMOD_tilt_axis_angle(MRC)
+  if tilt_axis_angle == 0.0 then
+    if MRC.extended_header and has_extended_header_field(MRC, 'tilt_axis') then
+      return get_FEI_tilt_axis_angle(MRC)
+    elseif MRC.mdoc then
+      return get_MDOC_tilt_axis_angle(MRC)
+    else
+      return 0.0
+    end
   else
-    return get_IMOD_tilt_axis_angle(MRC)
+    return tilt_axis_angle
   end
 end
 
